@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: planning
-stopped_at: Completed 02-02-PLAN.md
-last_updated: "2026-03-12T12:38:03.214Z"
+stopped_at: Completed 02-01-PLAN.md
+last_updated: "2026-03-12T12:39:04.936Z"
 last_activity: 2026-03-12 — Roadmap created
 progress:
   total_phases: 5
   completed_phases: 1
   total_plans: 10
-  completed_plans: 7
+  completed_plans: 8
   percent: 0
 ---
 
@@ -57,6 +57,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 01-paste-in-dax-commands P04 | 4 | 1 tasks | 1 files |
 | Phase 01-paste-in-dax-commands P03 | 2 | 1 tasks | 2 files |
 | Phase 02-context-detection-and-pbip-file-i-o P02 | 1 | 2 tasks | 1 files |
+| Phase 02-context-detection-and-pbip-file-i-o P01 | 2 | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -85,6 +86,9 @@ Recent decisions affecting current work:
 - [Phase 02-context-detection-and-pbip-file-i-o]: pbi-load startup uses three bash injections: PBIP detection + file index + session context; PBIP_MODE and PBIP_FORMAT flags drive all branching
 - [Phase 02-context-detection-and-pbip-file-i-o]: No-project path outputs locked message and stops; does not mention file mode, does not write .pbi-context.md
 - [Phase 02-context-detection-and-pbip-file-i-o]: Read-then-Write single pass: Model Context + Last Command + Command History updated atomically in .pbi-context.md
+- [Phase 02-context-detection-and-pbip-file-i-o]: TMDL and TMSL fixtures exercise both add-description and update-description code paths (Revenue YTD has description, Revenue does not)
+- [Phase 02-context-detection-and-pbip-file-i-o]: TMSL model.bim uses array expression for Revenue YTD and string for Revenue — write-back must preserve original form to avoid TMSL parse errors
+- [Phase 02-context-detection-and-pbip-file-i-o]: Both fixtures include bidirectional relationship — intentionally included for Phase 3 audit rule testing
 
 ### Pending Todos
 
@@ -97,6 +101,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-12T12:38:03.212Z
-Stopped at: Completed 02-02-PLAN.md
+Last session: 2026-03-12T12:39:04.934Z
+Stopped at: Completed 02-01-PLAN.md
 Resume file: None
