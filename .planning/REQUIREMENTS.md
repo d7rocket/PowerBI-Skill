@@ -119,60 +119,60 @@
 
 ## Traceability
 
-| Requirement | Phase | Status |
-|-------------|-------|--------|
-| INFRA-01 | Phase 1 | Pending |
-| INFRA-02 | Phase 5 | Pending |
-| INFRA-03 | Phase 2 | Pending |
-| INFRA-04 | Phase 2 | Pending |
-| INFRA-05 | Phase 2 | Pending |
-| INFRA-06 | Phase 2 | Pending |
-| CTX-01 | Phase 1 | Pending |
-| CTX-02 | Phase 1 | Pending |
-| CTX-03 | Phase 1 | Pending |
-| CTX-04 | Phase 1 | Pending |
-| DAX-01 | Phase 1 | Pending |
-| DAX-02 | Phase 1 | Pending |
-| DAX-03 | Phase 1 | Pending |
-| DAX-04 | Phase 1 | Pending |
-| DAX-05 | Phase 1 | Pending |
-| DAX-06 | Phase 1 | Pending |
-| DAX-07 | Phase 1 | Pending |
-| DAX-08 | Phase 1 | Pending |
-| DAX-09 | Phase 1 | Pending |
-| DAX-10 | Phase 1 | Pending |
-| DAX-11 | Phase 1 | Pending |
-| DAX-12 | Phase 1 | Pending |
-| DAX-13 | Phase 2 | Pending |
-| ERR-01 | Phase 1 | Pending |
-| ERR-02 | Phase 1 | Pending |
-| ERR-03 | Phase 2 | Pending |
-| ERR-04 | Phase 1 | Pending |
-| AUD-01 | Phase 3 | Pending |
-| AUD-02 | Phase 3 | Pending |
-| AUD-03 | Phase 3 | Pending |
-| AUD-04 | Phase 3 | Pending |
-| AUD-05 | Phase 3 | Pending |
-| AUD-06 | Phase 3 | Pending |
-| AUD-07 | Phase 3 | Pending |
-| GIT-01 | Phase 4 | Pending |
-| GIT-02 | Phase 4 | Pending |
-| GIT-03 | Phase 4 | Pending |
-| GIT-04 | Phase 4 | Pending |
-| GIT-05 | Phase 4 | Pending |
-| GIT-06 | Phase 4 | Pending |
-| GIT-07 | Phase 4 | Pending |
-| GIT-08 | Phase 4 | Pending |
-| EDIT-01 | Phase 5 | Pending |
-| EDIT-02 | Phase 5 | Pending |
-| EDIT-03 | Phase 5 | Pending |
-| EDIT-04 | Phase 5 | Pending |
+| Requirement | Phase | Phase Name | Status |
+|-------------|-------|------------|--------|
+| INFRA-01 | Phase 1 | Paste-in DAX Commands | Pending |
+| INFRA-02 | Phase 5 | Direct Editing and Router | Pending |
+| INFRA-03 | Phase 2 | Context Detection and PBIP File I/O | Pending |
+| INFRA-04 | Phase 2 | Context Detection and PBIP File I/O | Pending |
+| INFRA-05 | Phase 2 | Context Detection and PBIP File I/O | Pending |
+| INFRA-06 | Phase 2 | Context Detection and PBIP File I/O | Pending |
+| CTX-01 | Phase 1 | Paste-in DAX Commands | Pending |
+| CTX-02 | Phase 1 | Paste-in DAX Commands | Pending |
+| CTX-03 | Phase 1 | Paste-in DAX Commands | Pending |
+| CTX-04 | Phase 1 | Paste-in DAX Commands | Pending |
+| DAX-01 | Phase 1 | Paste-in DAX Commands | Pending |
+| DAX-02 | Phase 1 | Paste-in DAX Commands | Pending |
+| DAX-03 | Phase 1 | Paste-in DAX Commands | Pending |
+| DAX-04 | Phase 1 | Paste-in DAX Commands | Pending |
+| DAX-05 | Phase 1 | Paste-in DAX Commands | Pending |
+| DAX-06 | Phase 1 | Paste-in DAX Commands | Pending |
+| DAX-07 | Phase 1 | Paste-in DAX Commands | Pending |
+| DAX-08 | Phase 1 | Paste-in DAX Commands | Pending |
+| DAX-09 | Phase 1 | Paste-in DAX Commands | Pending |
+| DAX-10 | Phase 1 | Paste-in DAX Commands | Pending |
+| DAX-11 | Phase 1 | Paste-in DAX Commands | Pending |
+| DAX-12 | Phase 1 | Paste-in DAX Commands | Pending |
+| DAX-13 | Phase 2 | Context Detection and PBIP File I/O | Pending |
+| ERR-01 | Phase 1 | Paste-in DAX Commands | Pending |
+| ERR-02 | Phase 1 | Paste-in DAX Commands | Pending |
+| ERR-03 | Phase 2 | Context Detection and PBIP File I/O | Pending |
+| ERR-04 | Phase 1 | Paste-in DAX Commands | Pending |
+| AUD-01 | Phase 3 | Model-Wide Audit | Pending |
+| AUD-02 | Phase 3 | Model-Wide Audit | Pending |
+| AUD-03 | Phase 3 | Model-Wide Audit | Pending |
+| AUD-04 | Phase 3 | Model-Wide Audit | Pending |
+| AUD-05 | Phase 3 | Model-Wide Audit | Pending |
+| AUD-06 | Phase 3 | Model-Wide Audit | Pending |
+| AUD-07 | Phase 3 | Model-Wide Audit | Pending |
+| GIT-01 | Phase 4 | Git Workflow | Pending |
+| GIT-02 | Phase 4 | Git Workflow | Pending |
+| GIT-03 | Phase 4 | Git Workflow | Pending |
+| GIT-04 | Phase 4 | Git Workflow | Pending |
+| GIT-05 | Phase 4 | Git Workflow | Pending |
+| GIT-06 | Phase 4 | Git Workflow | Pending |
+| GIT-07 | Phase 4 | Git Workflow | Pending |
+| GIT-08 | Phase 4 | Git Workflow | Pending |
+| EDIT-01 | Phase 5 | Direct Editing and Router | Pending |
+| EDIT-02 | Phase 5 | Direct Editing and Router | Pending |
+| EDIT-03 | Phase 5 | Direct Editing and Router | Pending |
+| EDIT-04 | Phase 5 | Direct Editing and Router | Pending |
 
 **Coverage:**
 - v1 requirements: 43 total
 - Mapped to phases: 43
-- Unmapped: 0 ✓
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-03-12*
-*Last updated: 2026-03-12 after initial definition*
+*Last updated: 2026-03-12 after roadmap creation — phase names added to traceability*
