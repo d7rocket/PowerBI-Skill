@@ -83,7 +83,13 @@ Plans:
   3. `/pbi:commit` stages PBIP changes and commits locally with a generated message naming the actual model changes (tables, measures, relationships)
   4. After any successful PBIP file write by any command, an automatic local git commit is created without requiring the analyst to manually run `/pbi:commit`
   5. If no git repo exists, `/pbi:commit` initialises one and creates an initial commit; push to remote is always manual and never triggered automatically
-**Plans**: TBD
+**Plans**: 4 plans
+
+Plans:
+- [ ] 04-01-PLAN.md — Wave 0 test fixtures: git baseline in pbip-tmdl, pbip-tmdl-no-gitignore variant, pbip-no-repo variant
+- [ ] 04-02-PLAN.md — /pbi:diff skill: PBIP-scoped git diff, business-language output, silent gitignore auto-fix
+- [ ] 04-03-PLAN.md — /pbi:commit skill: conventional commit generation, git init flow, scoped git add
+- [ ] 04-04-PLAN.md — Auto-commit block additions to pbi-comment and pbi-error (GIT-06)
 
 ### Phase 5: Direct Editing and Router
 **Goal**: Analysts can describe any model change in plain language and have Claude apply it directly to PBIP files, and bare `/pbi` orients any analyst to the full command suite
@@ -106,5 +112,5 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 | 1. Paste-in DAX Commands | 6/6 | Complete   | 2026-03-12 |
 | 2. Context Detection and PBIP File I/O | 4/4 | Complete   | 2026-03-12 |
 | 3. Model-Wide Audit | 2/2 | Complete   | 2026-03-12 |
-| 4. Git Workflow | 0/TBD | Not started | - |
+| 4. Git Workflow | 0/4 | Not started | - |
 | 5. Direct Editing and Router | 0/TBD | Not started | - |
