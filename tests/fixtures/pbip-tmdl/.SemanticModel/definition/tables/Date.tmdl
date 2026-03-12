@@ -1,0 +1,11 @@
+table Date
+	dataCategory: Time
+
+	column Date
+		dataType: dateTime
+		formatString: General Date
+
+	column Year
+		dataType: int64
+		formatString: 0
+
