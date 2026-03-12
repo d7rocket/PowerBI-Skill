@@ -67,7 +67,11 @@ Plans:
   2. Every finding includes the specific table or measure name (not a JSON path) and a concrete recommendation for resolution
   3. Audit runs in chunked domain passes (one category per context window pass) so large models do not saturate context and degrade output quality
   4. Bidirectional relationships and missing fact-to-dimension relationships are explicitly flagged with severity CRITICAL or WARN
-**Plans**: TBD
+**Plans**: 2 plans
+
+Plans:
+- [ ] 03-01-PLAN.md — Add Date.tmdl and Products.tmdl test fixtures for AUD-03/AUD-04 verification cases
+- [ ] 03-02-PLAN.md — /pbi:audit skill: four-pass domain architecture, severity-sorted report, audit-report.md write
 
 ### Phase 4: Git Workflow
 **Goal**: Analysts can get a human-readable summary of model changes since the last commit, and can commit PBIP changes with an auto-generated business-language commit message
@@ -101,6 +105,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 |-------|----------------|--------|-----------|
 | 1. Paste-in DAX Commands | 6/6 | Complete   | 2026-03-12 |
 | 2. Context Detection and PBIP File I/O | 4/4 | Complete   | 2026-03-12 |
-| 3. Model-Wide Audit | 0/TBD | Not started | - |
+| 3. Model-Wide Audit | 0/2 | Not started | - |
 | 4. Git Workflow | 0/TBD | Not started | - |
 | 5. Direct Editing and Router | 0/TBD | Not started | - |
