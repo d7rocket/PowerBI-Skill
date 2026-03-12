@@ -3,7 +3,7 @@ name: pbi-error
 description: Diagnose a Power BI error message or error log and provide root cause analysis and a fix. Use when an analyst encounters an error in Power BI Desktop, a DAX measure fails to evaluate, or a model refresh error appears.
 disable-model-invocation: true
 model: sonnet
-allowed-tools: Read, Write
+allowed-tools: Read, Write, Bash
 ---
 
 ## PBIP Detection
@@ -85,7 +85,22 @@ If the fix targets a specific measure expression (Category A name errors with a 
 6. Append write confirmation after the preview:
    > Written to: [MeasureName] expression in [file path]
 
-7. Proceed to Step 6 (context update).
+7. Run the auto-commit bash block (inside the `y` response branch only — not reached if analyst responded n/N):
+   ```bash
+   GIT_STATUS=$(git rev-parse --is-inside-work-tree 2>/dev/null && echo "yes" || echo "no")
+   if [ "$GIT_STATUS" = "yes" ]; then
+     git add '.SemanticModel/' 2>/dev/null
+     git commit -m "chore: apply error fix in [TABLE_NAME]" 2>/dev/null && echo "AUTO_COMMIT=ok" || echo "AUTO_COMMIT=fail"
+   else
+     echo "AUTO_COMMIT=skip_no_repo"
+   fi
+   ```
+   Where [TABLE_NAME] is the table name of the file that was written.
+   - AUTO_COMMIT=ok: append line `Auto-committed: chore: apply error fix in [TABLE_NAME]`
+   - AUTO_COMMIT=skip_no_repo: append line `No git repo — run /pbi:commit to initialise one.`
+   - AUTO_COMMIT=fail: do not output anything (git failure is non-fatal)
+
+8. Proceed to Step 6 (context update).
 
 ---
 
