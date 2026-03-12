@@ -17,15 +17,15 @@
 ### Session Context
 
 - [x] **CTX-01**: A `.pbi-context.md` session file is maintained in the project root, tracking: last command run, what was changed, what was tried and failed, and open issues
-- [ ] **CTX-02**: Each command reads `.pbi-context.md` at startup and uses it to avoid repeating failed approaches
-- [ ] **CTX-03**: Each command updates `.pbi-context.md` after execution with a summary of what was done and the outcome
-- [ ] **CTX-04**: If a previous approach failed (logged in context), the command flags this to the analyst and suggests an alternative rather than retrying the same method
+- [x] **CTX-02**: Each command reads `.pbi-context.md` at startup and uses it to avoid repeating failed approaches
+- [x] **CTX-03**: Each command updates `.pbi-context.md` after execution with a summary of what was done and the outcome
+- [x] **CTX-04**: If a previous approach failed (logged in context), the command flags this to the analyst and suggests an alternative rather than retrying the same method
 
 ### DAX — Explain
 
-- [ ] **DAX-01**: User can paste a DAX measure expression and receive a plain-English explanation of what it calculates
-- [ ] **DAX-02**: Explanation identifies filter context, row context, and any context transitions present
-- [ ] **DAX-03**: Explanation adapts register to inferred analyst skill level (simpler for straightforward measures, technical depth for complex ones)
+- [x] **DAX-01**: User can paste a DAX measure expression and receive a plain-English explanation of what it calculates
+- [x] **DAX-02**: Explanation identifies filter context, row context, and any context transitions present
+- [x] **DAX-03**: Explanation adapts register to inferred analyst skill level (simpler for straightforward measures, technical depth for complex ones)
 
 ### DAX — Format
 

@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: planning
-stopped_at: Completed 01-paste-in-dax-commands/01-01-PLAN.md
-last_updated: "2026-03-12T10:22:52.973Z"
+stopped_at: Completed 01-paste-in-dax-commands/01-05-PLAN.md
+last_updated: "2026-03-12T10:26:23.548Z"
 last_activity: 2026-03-12 — Roadmap created
 progress:
   total_phases: 5
   completed_phases: 0
   total_plans: 6
-  completed_plans: 1
+  completed_plans: 4
   percent: 0
 ---
 
@@ -51,6 +51,8 @@ Progress: [░░░░░░░░░░] 0%
 
 *Updated after each plan completion*
 | Phase 01-paste-in-dax-commands P01 | 2 | 2 tasks | 12 files |
+| Phase 01-paste-in-dax-commands P02 | 1 | 1 tasks | 1 files |
+| Phase 01-paste-in-dax-commands P05 | 1 | 1 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -64,6 +66,11 @@ Recent decisions affecting current work:
 - v1 focuses on DAX + model layer, not visuals: highest-value pain points are measure quality and model health
 - [Phase 01-paste-in-dax-commands]: pbi-load is complete for Phase 1 — informs analysts that PBIP context loading arrives in Phase 2; all placeholder skills use disable-model-invocation: true
 - [Phase 01-paste-in-dax-commands]: Reasoning skills use model: sonnet; pbi-load uses model: haiku; all use relative .pbi-context.md path for portability
+- [Phase 01-paste-in-dax-commands]: tail -80 cap on context injection prevents history bloat in .pbi-context.md bash injection
+- [Phase 01-paste-in-dax-commands]: Complexity classification inferred from DAX function patterns, not analyst-declared — zero-setup UX preserved
+- [Phase 01-paste-in-dax-commands]: Read-then-Write enforced for .pbi-context.md updates (not bash append) to prevent malformed state
+- [Phase 01-paste-in-dax-commands]: Comment rules focus on business logic (why/what) not DAX mechanics — avoids noise from line-by-line syntax translation
+- [Phase 01-paste-in-dax-commands]: Description Field capped at 300 chars with no markdown and no DAX function names — matches Power BI tooltip display constraints
 
 ### Pending Todos
 
@@ -76,6 +83,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-12T10:22:52.972Z
-Stopped at: Completed 01-paste-in-dax-commands/01-01-PLAN.md
+Last session: 2026-03-12T10:26:22.603Z
+Stopped at: Completed 01-paste-in-dax-commands/01-05-PLAN.md
 Resume file: None

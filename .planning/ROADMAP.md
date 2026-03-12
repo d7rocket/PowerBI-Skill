@@ -93,7 +93,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Paste-in DAX Commands | 1/6 | In Progress|  |
+| 1. Paste-in DAX Commands | 4/6 | In Progress|  |
 | 2. Context Detection and PBIP File I/O | 0/TBD | Not started | - |
 | 3. Model-Wide Audit | 0/TBD | Not started | - |
 | 4. Git Workflow | 0/TBD | Not started | - |
