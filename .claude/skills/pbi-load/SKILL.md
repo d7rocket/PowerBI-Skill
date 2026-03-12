@@ -1,18 +1,143 @@
 ---
 name: pbi-load
 description: Load PBIP model context for use by DAX commands. Use when the analyst asks to load model context or when a PBIP project is present.
-disable-model-invocation: true
 model: haiku
-allowed-tools: Read
+allowed-tools: Read, Write
 ---
 
-Model context loading is available when a PBIP project is present (Phase 2).
+## PBIP Detection
+!`PBIP_RESULT=""; if [ -d ".SemanticModel" ]; then PBISM=$(cat ".SemanticModel/definition.pbism" 2>/dev/null); if echo "$PBISM" | grep -q '"version": "1.0"'; then PBIP_RESULT="PBIP_MODE=file PBIP_FORMAT=tmsl"; else PBIP_RESULT="PBIP_MODE=file PBIP_FORMAT=tmdl"; fi; else PBIP_RESULT="PBIP_MODE=paste"; fi; echo "$PBIP_RESULT"`
 
-For now, paste your DAX measure directly into any `/pbi` command — all DAX commands work without prior model loading.
+## PBIP File Index
+!`if [ -d ".SemanticModel/definition/tables" ]; then find ".SemanticModel/definition/tables/" -name "*.tmdl" 2>/dev/null; elif [ -f ".SemanticModel/model.bim" ]; then echo "tmsl:.SemanticModel/model.bim"; fi`
 
-**Available commands:**
-- `/pbi:explain` — explain a DAX measure
-- `/pbi:format` — format a DAX measure to SQLBI style
-- `/pbi:optimise` — optimise a DAX measure with rationale
-- `/pbi:comment` — add inline comments and generate a Description field value
-- `/pbi:error` — diagnose a Power BI error
+## Session Context
+!`cat .pbi-context.md 2>/dev/null | tail -80 || echo "No prior context found."`
+
+---
+
+## Instructions
+
+### Step 0 — Check startup detection output
+
+Read the output from the PBIP Detection block above.
+
+**If the output contains `PBIP_MODE=paste`:**
+
+Respond with exactly this message and stop — do not read any files, do not update `.pbi-context.md`:
+
+> No PBIP project found in this directory. All commands work with pasted DAX — paste a measure into any /pbi command to get started.
+
+---
+
+**If the output contains `PBIP_MODE=file`:** proceed to Step 1 below.
+
+---
+
+### Step 1 — Output the file mode header immediately
+
+Determine the format from the detection output:
+- `PBIP_FORMAT=tmdl` → format label is **TMDL**
+- `PBIP_FORMAT=tmsl` → format label is **TMSL (model.bim)**
+
+Output immediately:
+
+```
+File mode — PBIP project detected ([FORMAT]) | Loading model context...
+```
+
+---
+
+### Step 2 — Read model files and extract structure
+
+**For TMDL (`PBIP_FORMAT=tmdl`):**
+
+The PBIP File Index block has already listed all `.tmdl` file paths under `.SemanticModel/definition/tables/`.
+
+Use the Read tool to read each `.tmdl` file from that list.
+
+From each file, extract:
+- **Table name:** from the `table TableName` declaration at the top of the file
+- **Measure names:** lines matching `measure 'Name'` or `measure Name` (single-word). Extract the text after `measure ` up to ` =` or end of line, stripping any single quotes.
+- **Column names:** lines matching `column 'Name'` or `column Name`. Same extraction rule — strip single quotes if present.
+
+Also check for `.SemanticModel/definition/relationships.tmdl` using the Read tool (if it exists). Extract relationship pairs from lines containing `fromTable:`, `fromColumn:`, `toTable:`, `toColumn:`. Build pairs: `[FromTable][FromColumn] → [ToTable][ToColumn] (many-to-one)`.
+
+**Disambiguation rule (TMDL only):** If the same measure name appears in multiple table files, log it as `[MeasureName] (found in: Table1, Table2)` in the Measures column of the summary table. Do not fail — report all locations.
+
+---
+
+**For TMSL (`PBIP_FORMAT=tmsl`):**
+
+Read `.SemanticModel/model.bim` with the Read tool.
+
+Navigate the JSON structure:
+- `model.tables[]` → for each table extract: `name`, `measures[].name`, `columns[].name`
+- `model.relationships[]` → for each relationship extract: `fromTable`, `fromColumn`, `toTable`, `toColumn`
+
+Build relationship pairs: `[FromTable][FromColumn] → [ToTable][ToColumn] (many-to-one)`.
+
+---
+
+### Step 3 — Format the Model Context section
+
+Build the following markdown block:
+
+```markdown
+## Model Context
+**Loaded:** [current UTC time in ISO 8601 format]
+**Format:** [TMDL or TMSL (model.bim)]
+**Project:** .SemanticModel
+
+| Table | Measures | Columns |
+|-------|----------|---------|
+| [TableName] | [measure1, measure2] | [col1, col2] |
+| [TableName] | (none) | [col1, col2] |
+
+**Relationships summary:** [FromTable][FromColumn] → [ToTable][ToColumn] (many-to-one) · [additional relationships separated by ·]
+```
+
+Rules:
+- If no relationships file or data is found: omit the **Relationships summary** line entirely.
+- If a table has no measures: write `(none)` in the Measures column.
+
+---
+
+### Step 4 — Write `.pbi-context.md` (Read-then-Write, single pass)
+
+Perform a single Read-then-Write pass to update `.pbi-context.md`:
+
+1. **Read** `.pbi-context.md` using the Read tool.
+
+2. **Build the updated file content** — in one pass, update three things:
+   a. **`## Model Context` section:** If it already exists, replace everything from `## Model Context` through the end of that section (up to the next `##` heading or end of file) with the new Model Context block. If it does not exist, append the new Model Context block after the last existing section.
+   b. **`## Last Command` section:** Update with:
+      - Command: `/pbi:load`
+      - Timestamp: current UTC time
+      - Measure: `[N tables loaded]` where N is the count of tables found
+      - Outcome: `Model context loaded ([FORMAT])`
+   c. **`## Command History` section:** Append a row with the same values. Keep history to 20 rows max — remove the oldest row if the count exceeds 20.
+
+3. **CRITICAL:** Do not remove or modify `## Analyst-Reported Failures` or any other sections not listed above. Only `## Model Context`, `## Last Command`, and `## Command History` are updated.
+
+4. **Write** the entire updated file back using the Write tool.
+
+---
+
+### Step 5 — Output the summary table to the analyst
+
+After writing `.pbi-context.md`, output:
+
+```
+File mode — PBIP project detected ([FORMAT]) | Context loaded.
+
+| Table | Measures | Columns |
+|-------|----------|---------|
+[same table as written to .pbi-context.md]
+
+**Relationships summary:** [same as written, if present]
+
+Context loaded — all DAX commands will now use model-aware analysis.
+```
+
+Where `[FORMAT]` is `TMDL` if `PBIP_FORMAT=tmdl`, or `TMSL (model.bim)` if `PBIP_FORMAT=tmsl`.
