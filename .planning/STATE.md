@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: planning
-stopped_at: Completed 04-git-workflow-02-PLAN.md
-last_updated: "2026-03-12T15:20:54.788Z"
+stopped_at: Completed 04-03-PLAN.md
+last_updated: "2026-03-12T15:21:44.594Z"
 last_activity: 2026-03-12 — Roadmap created
 progress:
   total_phases: 5
   completed_phases: 3
   total_plans: 16
-  completed_plans: 13
+  completed_plans: 14
   percent: 0
 ---
 
@@ -64,6 +64,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 03-model-wide-audit P02 | 15 | 1 tasks | 1 files |
 | Phase 03-model-wide-audit P02 | 25 | 2 tasks | 1 files |
 | Phase 04-git-workflow P02 | 2 | 1 tasks | 1 files |
+| Phase 04-git-workflow P03 | 2 | 1 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -105,6 +106,8 @@ Recent decisions affecting current work:
 - [Phase 04-git-workflow]: pbi-diff: silent gitignore auto-fix with glob coverage check prevents duplicate .gitignore entries on repeated runs
 - [Phase 04-git-workflow]: pbi-diff: git diff scoped to .SemanticModel/ paths only — never unscoped git diff to avoid report/theme file noise
 - [Phase 04-git-workflow]: pbi-diff: HAS_COMMITS=no fallback uses git status --porcelain instead of git diff HEAD to handle empty repos (Pitfall 1)
+- [Phase 04-git-workflow]: git push is never executed in pbi-commit bash blocks — push reminder is output text only (GIT-07)
+- [Phase 04-git-workflow]: pbi-commit git add scoped to '.SemanticModel/' in all three code paths (init, empty repo, normal) — never unscoped git add
 
 ### Pending Todos
 
@@ -117,6 +120,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-12T15:20:54.786Z
-Stopped at: Completed 04-git-workflow-02-PLAN.md
+Last session: 2026-03-12T15:21:44.592Z
+Stopped at: Completed 04-03-PLAN.md
 Resume file: None
