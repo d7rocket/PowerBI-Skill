@@ -6,9 +6,72 @@ model: sonnet
 allowed-tools: Read, Write
 ---
 
+## PBIP Detection
+
+!`PBIP_RESULT=""; if [ -d ".SemanticModel" ]; then PBISM=$(cat ".SemanticModel/definition.pbism" 2>/dev/null); if echo "$PBISM" | grep -q '"version": "1.0"'; then PBIP_RESULT="PBIP_MODE=file PBIP_FORMAT=tmsl"; else PBIP_RESULT="PBIP_MODE=file PBIP_FORMAT=tmdl"; fi; else PBIP_RESULT="PBIP_MODE=paste"; fi; echo "$PBIP_RESULT"`
+
+## Desktop Check
+
+!`tasklist /fi "imagename eq PBIDesktop.exe" 2>/dev/null | findstr /i "PBIDesktop.exe" >nul 2>&1 && echo "DESKTOP=open" || echo "DESKTOP=closed"`
+
 ## Session Context
 
 !`cat .pbi-context.md 2>/dev/null | tail -80 || echo "No prior context found."`
+
+## File Mode Branch
+
+If the PBIP Detection output contains `PBIP_MODE=paste`:
+- Proceed directly to Step 1 (paste-in mode). Do not output any file-mode header. Do not mention PBIP at all.
+
+If the PBIP Detection output contains `PBIP_MODE=file`:
+1. Output this header as the first line of your response (before Step 1 prompt):
+   > File mode — PBIP project detected ([FORMAT]) | Desktop: [STATUS]
+   Where [FORMAT] is "TMDL" if PBIP_FORMAT=tmdl, or "TMSL (model.bim)" if PBIP_FORMAT=tmsl.
+   Where [STATUS] is "closed — will write to disk" if DESKTOP=closed, or "open — output is paste-ready" if DESKTOP=open.
+
+2. Proceed to Step 1 (paste-in flow) to collect the measure and generate commented output. The measure name extracted in Step 2 and the output from Steps 4-5 will be used for write-back.
+
+3. After completing Steps 2-6 (output generated), check DESKTOP status:
+   - DESKTOP=open: add the note "Desktop is open — paste manually, then save." below the Description Field. Do not write any files. Skip to Step 7 (context update).
+   - DESKTOP=closed: proceed to File Write-Back (see below).
+
+### File Write-Back (DESKTOP=closed, PBIP_MODE=file)
+
+Use the measure name extracted in Step 2 as the search key.
+
+**If PBIP_FORMAT=tmdl:**
+1. Run bash: `grep -rl "measure.*[MeasureName]" ".SemanticModel/definition/tables/" 2>/dev/null`
+   - Replace [MeasureName] with the actual extracted measure name.
+   - If multiple files returned: output "Measure [Name] found in multiple tables: [list]. Use --table TableName to specify which one." Deliver paste-ready output only. Stop write-back.
+   - If no file returned: output "Measure [Name] not found in PBIP project — output is paste-ready for manual addition." Stop write-back.
+   - If exactly one file returned: proceed.
+2. Read the identified .tmdl file using the Read tool.
+3. Locate the measure block:
+   - Find the line matching `measure.*[MeasureName]` (the measure declaration line)
+   - The line(s) immediately above starting with `///` are the existing description (may be absent)
+   - The lines following the measure declaration through the blank line or next `measure`/`column`/`table` keyword are the expression and properties
+4. Modify the block:
+   - Replace or insert `///` description line directly above the measure declaration line (no blank line between `///` and `measure`). Use the Description Field value from Step 5 as the description text.
+   - Replace the expression body with the commented DAX from Step 4. Preserve tab indentation (TMDL uses tabs — do NOT convert to spaces). Preserve formatString, displayFolder, and any other property lines that follow the expression.
+5. Write the entire modified .tmdl file back using the Write tool.
+6. Append the write confirmation line after the Description Field in the output:
+   > Written to: [MeasureName] in [file path]
+
+**If PBIP_FORMAT=tmsl:**
+1. Read `.SemanticModel/model.bim` using the Read tool.
+2. Locate the measure JSON object where `"name"` equals the extracted measure name.
+   - If not found: output "Measure [Name] not found in PBIP project — output is paste-ready for manual addition." Stop write-back.
+3. Update the measure object:
+   - Set `"description"` to the Description Field value from Step 5 (plain string).
+   - Update `"expression"` with the commented DAX from Step 4. CRITICAL: detect whether the original expression was a JSON string or a JSON array of strings. If the commented DAX has line breaks (which it will if // comments were added inline), use the array form. Preserve the exact array/string form of the original if the expression is unchanged; use array if adding comments creates new lines.
+   - Preserve ALL other fields: formatString, displayFolder, annotations, etc.
+4. Write the entire model.bim back using the Write tool.
+5. Append the write confirmation line after the Description Field in the output:
+   > Written to: [MeasureName] in .SemanticModel/model.bim
+
+Edge cases (Claude's discretion per CONTEXT.md):
+- `tasklist` produces a permission error or empty output: treat as DESKTOP=closed and proceed with write. Log note but do not block.
+- .tmdl file has unusual indentation: preserve whatever indentation style is already in the file.
 
 ## Instructions
 
