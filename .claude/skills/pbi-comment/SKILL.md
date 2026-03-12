@@ -3,7 +3,7 @@ name: pbi-comment
 description: Add inline // comments to a DAX measure and generate a Description field value for Power BI. Use when an analyst asks to comment, document, or annotate a DAX measure.
 disable-model-invocation: true
 model: sonnet
-allowed-tools: Read, Write
+allowed-tools: Read, Write, Bash
 ---
 
 ## PBIP Detection
@@ -56,6 +56,20 @@ Use the measure name extracted in Step 2 as the search key.
 5. Write the entire modified .tmdl file back using the Write tool.
 6. Append the write confirmation line after the Description Field in the output:
    > Written to: [MeasureName] in [file path]
+7. Run the auto-commit bash block:
+   ```bash
+   GIT_STATUS=$(git rev-parse --is-inside-work-tree 2>/dev/null && echo "yes" || echo "no")
+   if [ "$GIT_STATUS" = "yes" ]; then
+     git add '.SemanticModel/' 2>/dev/null
+     git commit -m "chore: update [MEASURE_NAME] comment in [TABLE_NAME]" 2>/dev/null && echo "AUTO_COMMIT=ok" || echo "AUTO_COMMIT=fail"
+   else
+     echo "AUTO_COMMIT=skip_no_repo"
+   fi
+   ```
+   Where [MEASURE_NAME] is the actual measure name from Step 2 and [TABLE_NAME] is the table name extracted from the .tmdl file path.
+   - AUTO_COMMIT=ok: append line `Auto-committed: chore: update [MEASURE_NAME] comment in [TABLE_NAME]`
+   - AUTO_COMMIT=skip_no_repo: append line `No git repo — run /pbi:commit to initialise one.`
+   - AUTO_COMMIT=fail: do not output anything (git failure is non-fatal; file write succeeded)
 
 **If PBIP_FORMAT=tmsl:**
 1. Read `.SemanticModel/model.bim` using the Read tool.
@@ -68,6 +82,20 @@ Use the measure name extracted in Step 2 as the search key.
 4. Write the entire model.bim back using the Write tool.
 5. Append the write confirmation line after the Description Field in the output:
    > Written to: [MeasureName] in .SemanticModel/model.bim
+6. Run the auto-commit bash block:
+   ```bash
+   GIT_STATUS=$(git rev-parse --is-inside-work-tree 2>/dev/null && echo "yes" || echo "no")
+   if [ "$GIT_STATUS" = "yes" ]; then
+     git add '.SemanticModel/' 2>/dev/null
+     git commit -m "chore: update [MEASURE_NAME] comment in [TABLE_NAME]" 2>/dev/null && echo "AUTO_COMMIT=ok" || echo "AUTO_COMMIT=fail"
+   else
+     echo "AUTO_COMMIT=skip_no_repo"
+   fi
+   ```
+   Where [MEASURE_NAME] is the actual measure name from Step 2 and [TABLE_NAME] is the table name of the measure's table context in model.bim.
+   - AUTO_COMMIT=ok: append line `Auto-committed: chore: update [MEASURE_NAME] comment in [TABLE_NAME]`
+   - AUTO_COMMIT=skip_no_repo: append line `No git repo — run /pbi:commit to initialise one.`
+   - AUTO_COMMIT=fail: do not output anything (git failure is non-fatal; file write succeeded)
 
 Edge cases (Claude's discretion per CONTEXT.md):
 - `tasklist` produces a permission error or empty output: treat as DESKTOP=closed and proceed with write. Log note but do not block.
