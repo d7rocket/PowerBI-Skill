@@ -73,7 +73,7 @@
 
 - [x] **GIT-04**: User can run `/pbi:commit` to stage PBIP changes and commit locally with an auto-generated business-language commit message
 - [x] **GIT-05**: Commit message summarises the actual model changes (e.g. "feat: add [Revenue YTD] measure to Sales table; fix bidirectional relationship on Customer[CustomerKey]")
-- [ ] **GIT-06**: After every successful PBIP file write (from any command), an automatic local git commit is created without requiring the analyst to run `/pbi:commit` manually
+- [x] **GIT-06**: After every successful PBIP file write (from any command), an automatic local git commit is created without requiring the analyst to run `/pbi:commit` manually
 - [x] **GIT-07**: Push to remote (GitHub) is always manual — no command auto-pushes
 - [x] **GIT-08**: If no git repo exists in the project, `/pbi:commit` initialises one and creates an initial commit
 
