@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: planning
-stopped_at: Completed 03-02-PLAN.md
-last_updated: "2026-03-12T14:45:17.474Z"
+stopped_at: Completed 04-git-workflow-02-PLAN.md
+last_updated: "2026-03-12T15:20:54.788Z"
 last_activity: 2026-03-12 — Roadmap created
 progress:
   total_phases: 5
   completed_phases: 3
-  total_plans: 12
-  completed_plans: 12
+  total_plans: 16
+  completed_plans: 13
   percent: 0
 ---
 
@@ -63,6 +63,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 03-model-wide-audit P01 | 2 | 2 tasks | 2 files |
 | Phase 03-model-wide-audit P02 | 15 | 1 tasks | 1 files |
 | Phase 03-model-wide-audit P02 | 25 | 2 tasks | 1 files |
+| Phase 04-git-workflow P02 | 2 | 1 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -101,6 +102,9 @@ Recent decisions affecting current work:
 - [Phase 03-model-wide-audit]: /pbi:audit is read-only — no Desktop/tasklist check; four domain passes merged then severity-sorted before emit
 - [Phase 03-model-wide-audit]: Rule N-04 skipped in Naming domain — display folder handled exclusively by M-03 to avoid duplicate findings
 - [Phase 03-model-wide-audit]: /pbi:audit is read-only — four domain passes merged then severity-sorted before single emit; Rule N-04 skipped in Naming to avoid duplicate display-folder findings
+- [Phase 04-git-workflow]: pbi-diff: silent gitignore auto-fix with glob coverage check prevents duplicate .gitignore entries on repeated runs
+- [Phase 04-git-workflow]: pbi-diff: git diff scoped to .SemanticModel/ paths only — never unscoped git diff to avoid report/theme file noise
+- [Phase 04-git-workflow]: pbi-diff: HAS_COMMITS=no fallback uses git status --porcelain instead of git diff HEAD to handle empty repos (Pitfall 1)
 
 ### Pending Todos
 
@@ -113,6 +117,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-12T14:40:33.638Z
-Stopped at: Completed 03-02-PLAN.md
+Last session: 2026-03-12T15:20:54.786Z
+Stopped at: Completed 04-git-workflow-02-PLAN.md
 Resume file: None

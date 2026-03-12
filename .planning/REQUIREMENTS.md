@@ -65,9 +65,9 @@
 
 ### Version Control — Diff
 
-- [ ] **GIT-01**: User can run `/pbi:diff` to get a human-readable summary of what changed since the last commit (measures added/modified/removed, relationships changed) — not raw JSON diff
-- [ ] **GIT-02**: Diff summary uses business language (table and measure names, not JSON key paths)
-- [ ] **GIT-03**: Diff command verifies `.gitignore` is guarding noise files (`cache.abf`, `localSettings.json`) before presenting output
+- [x] **GIT-01**: User can run `/pbi:diff` to get a human-readable summary of what changed since the last commit (measures added/modified/removed, relationships changed) — not raw JSON diff
+- [x] **GIT-02**: Diff summary uses business language (table and measure names, not JSON key paths)
+- [x] **GIT-03**: Diff command verifies `.gitignore` is guarding noise files (`cache.abf`, `localSettings.json`) before presenting output
 
 ### Version Control — Commit
 
