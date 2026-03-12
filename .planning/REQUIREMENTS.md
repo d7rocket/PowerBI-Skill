@@ -42,8 +42,8 @@
 
 ### DAX — Comment
 
-- [ ] **DAX-11**: User can paste a DAX measure and receive a version with `//` inline comments explaining the business logic
-- [ ] **DAX-12**: Command also outputs a populated `description` field value suitable for pasting into the Power BI measure Description property
+- [x] **DAX-11**: User can paste a DAX measure and receive a version with `//` inline comments explaining the business logic
+- [x] **DAX-12**: Command also outputs a populated `description` field value suitable for pasting into the Power BI measure Description property
 - [ ] **DAX-13**: When in PBIP file mode, command writes inline comments and description back to the target table's `.tmdl` or `model.bim` file directly (Desktop must be confirmed closed)
 
 ### Error Recovery

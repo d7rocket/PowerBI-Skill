@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: planning
-stopped_at: Completed 01-paste-in-dax-commands/01-05-PLAN.md
-last_updated: "2026-03-12T10:26:23.548Z"
+stopped_at: Completed 01-paste-in-dax-commands/01-06-PLAN.md
+last_updated: "2026-03-12T10:26:35.301Z"
 last_activity: 2026-03-12 — Roadmap created
 progress:
   total_phases: 5
   completed_phases: 0
   total_plans: 6
-  completed_plans: 4
+  completed_plans: 5
   percent: 0
 ---
 
@@ -53,6 +53,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 01-paste-in-dax-commands P01 | 2 | 2 tasks | 12 files |
 | Phase 01-paste-in-dax-commands P02 | 1 | 1 tasks | 1 files |
 | Phase 01-paste-in-dax-commands P05 | 1 | 1 tasks | 1 files |
+| Phase 01-paste-in-dax-commands P06 | 2 | 1 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -71,6 +72,8 @@ Recent decisions affecting current work:
 - [Phase 01-paste-in-dax-commands]: Read-then-Write enforced for .pbi-context.md updates (not bash append) to prevent malformed state
 - [Phase 01-paste-in-dax-commands]: Comment rules focus on business logic (why/what) not DAX mechanics — avoids noise from line-by-line syntax translation
 - [Phase 01-paste-in-dax-commands]: Description Field capped at 300 chars with no markdown and no DAX function names — matches Power BI tooltip display constraints
+- [Phase 01-paste-in-dax-commands]: tail -100 used for pbi-error session context injection — error recovery benefits from more history than DAX commands (tail -80)
+- [Phase 01-paste-in-dax-commands]: Analyst-Reported Failures is analyst-managed only — pbi-error skill does not auto-write to that section to avoid false positives
 
 ### Pending Todos
 
@@ -83,6 +86,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-12T10:26:22.603Z
-Stopped at: Completed 01-paste-in-dax-commands/01-05-PLAN.md
+Last session: 2026-03-12T10:26:35.299Z
+Stopped at: Completed 01-paste-in-dax-commands/01-06-PLAN.md
 Resume file: None
