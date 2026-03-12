@@ -1,0 +1,9 @@
+table Products
+
+	column ProductID
+		dataType: int64
+		formatString: 0
+
+	column ProductName
+		dataType: string
+
