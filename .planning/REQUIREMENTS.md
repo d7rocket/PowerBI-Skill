@@ -55,13 +55,13 @@
 
 ### Model Audit
 
-- [ ] **AUD-01**: User can run `/pbi:audit` against a PBIP project and receive a structured severity-graded report (CRITICAL / WARN / INFO)
-- [ ] **AUD-02**: Audit checks naming conventions: table, column, and measure names follow a consistent pattern (e.g. measure prefixes, dim/fact table naming)
+- [x] **AUD-01**: User can run `/pbi:audit` against a PBIP project and receive a structured severity-graded report (CRITICAL / WARN / INFO)
+- [x] **AUD-02**: Audit checks naming conventions: table, column, and measure names follow a consistent pattern (e.g. measure prefixes, dim/fact table naming)
 - [x] **AUD-03**: Audit checks relationship health: flags bidirectional relationships, missing relationships between fact and dimension tables
 - [x] **AUD-04**: Audit checks date table presence and correct configuration (marked as date table, continuous date range, no gaps)
-- [ ] **AUD-05**: Audit checks measure quality: blank `formatString`, empty `description`, measures with no display folder
-- [ ] **AUD-06**: Audit is chunked by domain (one pass per category) to avoid context window saturation on large models
-- [ ] **AUD-07**: Audit report includes specific location (table/measure name) and a concrete recommendation for each finding
+- [x] **AUD-05**: Audit checks measure quality: blank `formatString`, empty `description`, measures with no display folder
+- [x] **AUD-06**: Audit is chunked by domain (one pass per category) to avoid context window saturation on large models
+- [x] **AUD-07**: Audit report includes specific location (table/measure name) and a concrete recommendation for each finding
 
 ### Version Control — Diff
 
