@@ -100,7 +100,11 @@ Plans:
   2. Before writing, `/pbi:edit` shows a before/after diff of the exact change and requires explicit analyst confirmation
   3. Pre-write checklist is enforced on every edit: Desktop-closed confirmation, `unappliedChanges.json` check, TMDL indentation preservation verified
   4. Bare `/pbi` presents all available commands with brief descriptions and asks what the analyst needs, then routes to the appropriate subcommand
-**Plans**: TBD
+**Plans**: 2 plans
+
+Plans:
+- [ ] 05-01-PLAN.md — /pbi router skill: category menu, inline intent routing, two-step follow-up for DAX/changes categories
+- [ ] 05-02-PLAN.md — /pbi:edit skill: entity resolution, pre-write checklist, Before/After preview, auto-commit + unappliedChanges.json test fixture
 
 ## Progress
 
@@ -113,4 +117,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 | 2. Context Detection and PBIP File I/O | 4/4 | Complete   | 2026-03-12 |
 | 3. Model-Wide Audit | 2/2 | Complete   | 2026-03-12 |
 | 4. Git Workflow | 4/4 | Complete   | 2026-03-12 |
-| 5. Direct Editing and Router | 0/TBD | Not started | - |
+| 5. Direct Editing and Router | 0/2 | Not started | - |
