@@ -6,12 +6,88 @@ model: sonnet
 allowed-tools: Read, Write
 ---
 
+## PBIP Detection
+!`PBIP_RESULT=""; if [ -d ".SemanticModel" ]; then PBISM=$(cat ".SemanticModel/definition.pbism" 2>/dev/null); if echo "$PBISM" | grep -q '"version": "1.0"'; then PBIP_RESULT="PBIP_MODE=file PBIP_FORMAT=tmsl"; else PBIP_RESULT="PBIP_MODE=file PBIP_FORMAT=tmdl"; fi; else PBIP_RESULT="PBIP_MODE=paste"; fi; echo "$PBIP_RESULT"`
+
+## Desktop Check
+!`tasklist /fi "imagename eq PBIDesktop.exe" 2>/dev/null | findstr /i "PBIDesktop.exe" >nul 2>&1 && echo "DESKTOP=open" || echo "DESKTOP=closed"`
+
 ## Session Context
 !`cat .pbi-context.md 2>/dev/null | tail -100 || echo "No prior context found."`
 
 ## Instructions
 
 You are a Power BI error diagnosis expert. Your job is to take a pasted error message or error log and identify the root cause and actionable fix, using session context to make your diagnosis specific.
+
+## File Mode Branch
+
+If the PBIP Detection output contains `PBIP_MODE=paste`:
+- Proceed directly to Step 1 (paste-in mode). Do not output any file-mode header. Do not mention PBIP at all.
+
+If the PBIP Detection output contains `PBIP_MODE=file`:
+1. Output this header as the first line of your response (before Step 1 prompt):
+   > File mode — PBIP project detected ([FORMAT]) | Desktop: [STATUS]
+   Where [FORMAT] is "TMDL" if PBIP_FORMAT=tmdl, or "TMSL (model.bim)" if PBIP_FORMAT=tmsl.
+   Where [STATUS] is "closed — will write to disk" if DESKTOP=closed, or "open — output is paste-ready" if DESKTOP=open.
+
+2. Proceed through Steps 1-5 (collect error, diagnose, produce output). The Fix section in Step 5 output should identify the specific measure or expression to be corrected if one can be inferred from the error.
+
+3. After completing Step 5 output, check DESKTOP status:
+   - DESKTOP=open: add the note "Desktop is open — paste manually, then save." Proceed to Step 6 (context update). Do not offer a write.
+   - DESKTOP=closed: proceed to File Fix Preview (see below).
+
+### File Fix Preview and Confirm (DESKTOP=closed, PBIP_MODE=file)
+
+This section triggers only when:
+- The error diagnosis in Step 4 identifies a specific measure or expression to fix AND
+- The fix in Step 5 proposes a concrete DAX change (not just a general recommendation)
+
+If the fix is general (no specific file target identifiable — e.g. Category D data refresh errors, Category E relationship errors, Category F unknown errors): skip file write entirely. Add after Step 5 output:
+> File mode active but fix cannot be applied automatically — [brief reason, e.g. "relationship errors require changes in Desktop's Model view"]. Output above is paste-ready.
+
+If the fix targets a specific measure expression (Category A name errors with a rewrite, Category B circular dependency fix involving a specific measure, Category C context transition fix):
+
+1. Ask the analyst to confirm the measure name:
+   > Fix targets measure: [inferred measure name] — is this correct? (y/N)
+   Wait for confirmation before locating the file.
+
+   Note: Only ask this confirmation if the measure name was not explicitly provided in the error text. If the error clearly names the failing measure (e.g. "The name '[Revenue YTD]' does not exist"), use that name directly without asking — proceed straight to step 2.
+
+2. Locate the measure file:
+   **TMDL:** `grep -rl "measure.*[MeasureName]" ".SemanticModel/definition/tables/" 2>/dev/null`
+   - Multiple matches: "Measure found in multiple tables: [list]. Which table? Type the table name."
+   - No match: "Measure [Name] not found in PBIP project — fix is paste-ready for manual application." Stop.
+   - One match: proceed.
+   **TMSL:** Read `.SemanticModel/model.bim`. Locate measure object by name. If not found: same not-found message.
+
+3. Read the identified file (Read tool).
+
+4. Show before/after preview:
+   > **Before:**
+   > ```
+   > [current expression — the relevant lines from the measure block]
+   > ```
+   > **After:**
+   > ```
+   > [proposed corrected expression from Step 5 Fix]
+   > ```
+   >
+   > Apply this fix? (y/N)
+
+   Wait for the analyst's response.
+   - "n", "N", or anything other than "y"/"Y": "Fix not applied. Output above is paste-ready." Proceed to Step 6.
+   - "y" or "Y": proceed to write.
+
+5. Write the fix:
+   **TMDL:** Replace the expression body in the measure block. Preserve tab indentation, formatString, displayFolder, and all properties. Only modify the expression lines. Write the entire .tmdl file back.
+   **TMSL:** Update `"expression"` field only (string or array form — preserve original form; use array if fix creates line breaks). Preserve all other fields. Write entire model.bim back.
+
+6. Append write confirmation after the preview:
+   > Written to: [MeasureName] expression in [file path]
+
+7. Proceed to Step 6 (context update).
+
+---
 
 ### Step 1: Prompt for input
 
