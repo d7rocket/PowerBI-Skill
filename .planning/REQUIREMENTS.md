@@ -88,22 +88,22 @@
 
 ### Extended DAX
 
-- **DAX-V2-01**: `/pbi:new` — scaffold a new measure with correct naming, format string, display folder, and description from a plain-English description
-- **DAX-V2-02**: Batch commenting — apply `/pbi:comment` across all measures in a table or the entire model at once
+- [x] **DAX-V2-01**: `/pbi:new` — scaffold a new measure with correct naming, format string, display folder, and description from a plain-English description
+- [x] **DAX-V2-02**: Batch commenting — apply `/pbi:comment` across all measures in a table or the entire model at once
 
 ### Extended Audit
 
-- **AUD-V2-01**: Hidden column hygiene check — columns that are visible but should be hidden (foreign keys, internal IDs)
-- **AUD-V2-02**: Audit auto-fix mode — apply CRITICAL and WARN fixes directly after audit with one confirmation
+- [x] **AUD-V2-01**: Hidden column hygiene check — columns that are visible but should be hidden (foreign keys, internal IDs)
+- [x] **AUD-V2-02**: Audit auto-fix mode — apply CRITICAL and WARN fixes directly after audit with one confirmation
 
 ### Extended Version Control
 
-- **GIT-V2-01**: `/pbi:branch` — create a feature branch for a set of model changes, merge back when done
-- **GIT-V2-02**: Changelog generation — produce a human-readable CHANGELOG.md from git history
+- [x] **GIT-V2-01**: `/pbi:branch` — create a feature branch for a set of model changes, merge back when done
+- [x] **GIT-V2-02**: Changelog generation — produce a human-readable CHANGELOG.md from git history
 
 ### Report Layer
 
-- **RPT-V2-01**: PBIR visual layer audit — check which measures are used in which visuals (requires PBIR format)
+- [x] **RPT-V2-01**: PBIR visual layer audit — check which measures are used in which visuals (requires PBIR format)
 
 ## Out of Scope
 

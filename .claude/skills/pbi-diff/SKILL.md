@@ -7,7 +7,7 @@ allowed-tools: Read, Write, Bash
 ---
 
 ## PBIP Context Detection
-!`PBIP_RESULT=""; if [ -d ".SemanticModel" ]; then PBISM=$(cat ".SemanticModel/definition.pbism" 2>/dev/null); if echo "$PBISM" | grep -q '"version": "1.0"'; then PBIP_RESULT="PBIP_MODE=file PBIP_FORMAT=tmsl"; else PBIP_RESULT="PBIP_MODE=file PBIP_FORMAT=tmdl"; fi; else PBIP_RESULT="PBIP_MODE=paste"; fi; echo "$PBIP_RESULT"`
+!`if [ -d ".SemanticModel" ]; then if [ -f ".SemanticModel/model.bim" ]; then echo "PBIP_MODE=file PBIP_FORMAT=tmsl"; elif [ -d ".SemanticModel/definition/tables" ]; then echo "PBIP_MODE=file PBIP_FORMAT=tmdl"; else echo "PBIP_MODE=file PBIP_FORMAT=tmdl"; fi; else echo "PBIP_MODE=paste"; fi`
 
 ## Git State Check
 !`GIT_INSIDE=$(git rev-parse --is-inside-work-tree 2>/dev/null && echo "GIT=yes" || echo "GIT=no"); HAS_COMMITS=$(git rev-parse HEAD 2>/dev/null && echo "HAS_COMMITS=yes" || echo "HAS_COMMITS=no"); echo "$GIT_INSIDE $HAS_COMMITS"`
@@ -150,7 +150,7 @@ Use Read-then-Write to update `.pbi-context.md`:
 
 1. Read `.pbi-context.md` using the Read tool (file may not exist — that is fine; create it if missing).
 2. Update:
-   - `## Last Command` section: Command = `/pbi:diff`, Timestamp = current UTC, Outcome = `Diff shown — [N] changes` (where N = total count of all changed items across all categories).
+   - `## Last Command` section: Command = `/pbi:diff`, Timestamp = current UTC, Measure = `(git operation)`, Outcome = `Diff shown — [N] changes` (where N = total count of all changed items across all categories).
    - `## Command History` section: append a row with the same values; trim to 20 rows max.
 3. Do NOT modify `## Model Context`, `## Analyst-Reported Failures`, or any other sections.
 4. Write the full updated file using the Write tool.

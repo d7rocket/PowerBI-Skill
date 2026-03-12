@@ -137,7 +137,95 @@ REWRITE ONLY IF: The inner iteration is trivially collapsible — meaning the in
 
 ---
 
-### Step 5 — Multiple Valid Rewrites
+**Rule 6 — Unnecessary SWITCH(TRUE())**
+
+DETECT: `SWITCH(TRUE(), condition1, result1, condition2, result2, ...)` where conditions are simple equality tests against the same column.
+
+Pattern example:
+```dax
+SWITCH(TRUE(), Table[Col] = "A", result1, Table[Col] = "B", result2, default)
+```
+
+REWRITE:
+```dax
+SWITCH(Table[Col], "A", result1, "B", result2, default)
+```
+
+RATIONALE: "SWITCH with a value argument evaluates the expression once and matches. SWITCH(TRUE()) evaluates every condition sequentially even after a match is found in some engines. Use the value form when all conditions test the same expression."
+
+---
+
+**Rule 7 — Verbose HASONEVALUE + VALUES Pattern**
+
+DETECT: `IF(HASONEVALUE(Table[Col]), VALUES(Table[Col]), fallback)` — the common verbose pattern for getting a single selected value.
+
+Pattern example:
+```dax
+IF(HASONEVALUE(Table[Col]), VALUES(Table[Col]), fallback)
+```
+
+REWRITE:
+```dax
+SELECTEDVALUE(Table[Col], fallback)
+```
+
+RATIONALE: "SELECTEDVALUE is a purpose-built function that replaces the HASONEVALUE + VALUES two-step pattern. Functionally identical, but clearer intent and marginally faster."
+
+---
+
+**Rule 8 — DIVIDE With Explicit Zero**
+
+DETECT: `DIVIDE(numerator, denominator, 0)` — DIVIDE with 0 as the alternate result.
+
+Pattern example:
+```dax
+DIVIDE(numerator, denominator, 0)
+```
+
+FLAG only (do not rewrite). Add to the **Flags** section:
+"DIVIDE(x, y, 0) returns 0 on division by zero. The default alternate (when omitted) is BLANK(). Zero and BLANK() behave differently in visuals: BLANK() hides the row, 0 shows it. Verify the third argument matches the intended visual behaviour."
+
+This is an INFO flag, not a rewrite — the analyst may intentionally want 0.
+
+---
+
+**Rule 9 — COUNTROWS(VALUES()) vs DISTINCTCOUNT**
+
+DETECT: `COUNTROWS(VALUES(Table[Col]))` or `COUNTROWS(DISTINCT(Table[Col]))` — counting distinct values via a two-function chain.
+
+Pattern example:
+```dax
+COUNTROWS(VALUES(Table[Col]))
+```
+
+REWRITE:
+```dax
+DISTINCTCOUNT(Table[Col])
+```
+
+RATIONALE: "DISTINCTCOUNT is a native aggregation that handles the distinct-count pattern in a single storage engine request. COUNTROWS(VALUES(...)) materialises the distinct value list first, then counts — adding unnecessary formula engine overhead."
+
+---
+
+**Rule 10 — CALCULATETABLE Inside COUNTROWS**
+
+DETECT: `COUNTROWS(CALCULATETABLE(Table, filter1, filter2, ...))` where the result is used as a scalar count.
+
+Pattern example:
+```dax
+COUNTROWS(CALCULATETABLE(Table, filter1, filter2, ...))
+```
+
+REWRITE:
+```dax
+CALCULATE(COUNTROWS(Table), filter1, filter2, ...)
+```
+
+RATIONALE: "CALCULATE wrapping COUNTROWS pushes filters to the storage engine in a single query. CALCULATETABLE materialises the filtered table first, then counts rows — which forces the formula engine to handle the intermediate table."
+
+---
+
+### Step 6 — Multiple Valid Rewrites
 
 If more than one valid rewrite exists for any portion of the measure, show each option as a labelled alternative with a brief trade-off comparison.
 
@@ -151,7 +239,7 @@ Example:
 
 ---
 
-### Step 6 — Complexity Inference
+### Step 7 — Complexity Inference
 
 Infer complexity using the same rules as `/pbi:explain`:
 - **Simple**: SUM, DIVIDE, basic CALCULATE with one filter, straightforward arithmetic
@@ -165,7 +253,7 @@ Rationale depth follows complexity:
 
 ---
 
-### Step 7 — Output
+### Step 8 — Output
 
 Produce output in this structure:
 
@@ -186,6 +274,7 @@ _Complexity: [Simple | Intermediate | Advanced]_
 If no rules apply, write: "No optimisation opportunities detected. This measure already follows efficient patterns."
 
 ### Changes
+<!-- Rules 1-7, 9-10 produce changes; Rules 4 and 8 produce flags only. -->
 - [Change 1 description]: [rationale — scaled to complexity]
 - [Change 2 description]: [rationale]
 
@@ -201,7 +290,7 @@ If no Flags apply, omit the Flags section entirely.
 
 ---
 
-### Step 8 — Update .pbi-context.md
+### Step 9 — Update .pbi-context.md
 
 After producing output, update `.pbi-context.md` using Read then Write:
 
@@ -213,6 +302,6 @@ After producing output, update `.pbi-context.md` using Read then Write:
    - Flags raised: [list flags raised, or "None"]
    - Timestamp: [current date/time]
 3. Append a new row to **Command History**. Keep history to the last 20 rows. If there are already 20 rows, remove the oldest before appending.
-   - Format: `| /pbi:optimise | [measure name] | [rules applied] | [timestamp] |`
+   - Format: `| [timestamp] | /pbi:optimise | [measure name] | Optimised — [rules applied] |`
 4. Do not modify the **Analyst-Reported Failures** section.
 5. Write the updated file back to `.pbi-context.md`.

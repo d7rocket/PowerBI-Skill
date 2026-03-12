@@ -7,7 +7,7 @@ allowed-tools: Read, Write, Bash
 ---
 
 ## PBIP Context Detection
-!`PBIP_RESULT=""; if [ -d ".SemanticModel" ]; then PBISM=$(cat ".SemanticModel/definition.pbism" 2>/dev/null); if echo "$PBISM" | grep -q '"version": "1.0"'; then PBIP_RESULT="PBIP_MODE=file PBIP_FORMAT=tmsl"; else PBIP_RESULT="PBIP_MODE=file PBIP_FORMAT=tmdl"; fi; else PBIP_RESULT="PBIP_MODE=paste"; fi; echo "$PBIP_RESULT"`
+!`if [ -d ".SemanticModel" ]; then if [ -f ".SemanticModel/model.bim" ]; then echo "PBIP_MODE=file PBIP_FORMAT=tmsl"; elif [ -d ".SemanticModel/definition/tables" ]; then echo "PBIP_MODE=file PBIP_FORMAT=tmdl"; else echo "PBIP_MODE=file PBIP_FORMAT=tmdl"; fi; else echo "PBIP_MODE=paste"; fi`
 
 ## Git State Check
 !`GIT_INSIDE=$(git rev-parse --is-inside-work-tree 2>/dev/null && echo "GIT=yes" || echo "GIT=no"); HAS_COMMITS=$(git rev-parse HEAD 2>/dev/null && echo "HAS_COMMITS=yes" || echo "HAS_COMMITS=no"); echo "$GIT_INSIDE $HAS_COMMITS"`
@@ -176,7 +176,7 @@ Show the analyst the planned commit message before executing:
 Run as a single bash block:
 
 ```bash
-git add '.SemanticModel/' 2>/dev/null && git commit -m "[full message]" 2>/dev/null && echo "COMMIT=ok" || echo "COMMIT=fail"
+git add '.SemanticModel/definition/' '.SemanticModel/model.bim' '.SemanticModel/definition.pbism' 2>/dev/null && git commit -m "[full message]" 2>/dev/null && echo "COMMIT=ok" || echo "COMMIT=fail"
 ```
 
 Replace `[full message]` with the actual generated commit message (subject + blank line + body).
@@ -192,7 +192,7 @@ Use Read-then-Write to update `.pbi-context.md`:
 
 1. Read `.pbi-context.md` using the Read tool.
 2. Update:
-   - `## Last Command` section: Command = `/pbi:commit`, Timestamp = current UTC, Outcome = the commit subject line (e.g. `feat: add [Revenue YTD] measure to Sales`).
+   - `## Last Command` section: Command = `/pbi:commit`, Timestamp = current UTC, Measure = `(git operation)`, Outcome = the commit subject line (e.g. `feat: add [Revenue YTD] measure to Sales`).
    - `## Command History` section: append a row with same values; trim to 20 rows max.
 3. Do NOT modify `## Model Context`, `## Analyst-Reported Failures`, or any other sections.
 4. Write the full updated file using the Write tool.

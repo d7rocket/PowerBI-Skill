@@ -8,11 +8,13 @@ allowed-tools: Read, Write, Bash
 
 ## PBIP Detection
 
-!`PBIP_RESULT=""; if [ -d ".SemanticModel" ]; then PBISM=$(cat ".SemanticModel/definition.pbism" 2>/dev/null); if echo "$PBISM" | grep -q '"version": "1.0"'; then PBIP_RESULT="PBIP_MODE=file PBIP_FORMAT=tmsl"; else PBIP_RESULT="PBIP_MODE=file PBIP_FORMAT=tmdl"; fi; else PBIP_RESULT="PBIP_MODE=paste"; fi; echo "$PBIP_RESULT"`
+!`if [ -d ".SemanticModel" ]; then if [ -f ".SemanticModel/model.bim" ]; then echo "PBIP_MODE=file PBIP_FORMAT=tmsl"; elif [ -d ".SemanticModel/definition/tables" ]; then echo "PBIP_MODE=file PBIP_FORMAT=tmdl"; else echo "PBIP_MODE=file PBIP_FORMAT=tmdl"; fi; else echo "PBIP_MODE=paste"; fi`
 
 ## Desktop Check
 
 !`tasklist /fi "imagename eq PBIDesktop.exe" 2>/dev/null | findstr /i "PBIDesktop.exe" >nul 2>&1 && echo "DESKTOP=open" || echo "DESKTOP=closed"`
+
+Note: `tasklist` is Windows-only. On non-Windows environments (WSL, macOS), this will always return DESKTOP=closed, which is the safe default (write-to-disk mode).
 
 ## Session Context
 
@@ -54,7 +56,7 @@ If change type is `update-expression`:
 **If PBIP_FORMAT=tmdl:**
 Run bash:
 ```bash
-grep -rl "measure.*[EntityName]" ".SemanticModel/definition/tables/" 2>/dev/null
+grep -rlF "[EntityName]" ".SemanticModel/definition/tables/" 2>/dev/null
 ```
 (Replace [EntityName] with the extracted name — omit brackets if present)
 
@@ -170,7 +172,7 @@ On AUTO_COMMIT=fail: silent (non-fatal).
 ### Step 7: Update Session Context
 
 Read `.pbi-context.md` (Read tool), update these sections, then Write the full file back:
-- `## Last Command`: Command = `/pbi:edit`, Timestamp = current UTC ISO 8601, Entity = [EntityName] in [TableName], Outcome = [Change type] applied
+- `## Last Command`: Command = `/pbi:edit`, Timestamp = current UTC ISO 8601, Measure = [EntityName] in [TableName], Outcome = [Change type] applied
 - `## Command History`: Append one row; keep last 20 rows maximum.
 - Do NOT modify `## Analyst-Reported Failures`.
 
