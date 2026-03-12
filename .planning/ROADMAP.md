@@ -15,7 +15,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 1: Paste-in DAX Commands** - All four DAX commands (explain, format, optimise, comment) plus session context — zero PBIP setup required (completed 2026-03-12)
 - [x] **Phase 2: Context Detection and PBIP File I/O** - Mode detection, TMSL/TMDL format detection, Desktop-open safety guard, comment write-back, error recovery write-back (completed 2026-03-12)
 - [x] **Phase 3: Model-Wide Audit** - Full `/pbi:audit` command with severity-graded output across all audit domains (completed 2026-03-12)
-- [ ] **Phase 4: Git Workflow** - `/pbi:diff` and `/pbi:commit` with business-language output and gitignore hygiene
+- [x] **Phase 4: Git Workflow** - `/pbi:diff` and `/pbi:commit` with business-language output and gitignore hygiene (completed 2026-03-12)
 - [ ] **Phase 5: Direct Editing and Router** - General-purpose `/pbi:edit` for any PBIP change, plus the bare `/pbi` routing command
 
 ## Phase Details
@@ -112,5 +112,5 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 | 1. Paste-in DAX Commands | 6/6 | Complete   | 2026-03-12 |
 | 2. Context Detection and PBIP File I/O | 4/4 | Complete   | 2026-03-12 |
 | 3. Model-Wide Audit | 2/2 | Complete   | 2026-03-12 |
-| 4. Git Workflow | 3/4 | In Progress|  |
+| 4. Git Workflow | 4/4 | Complete   | 2026-03-12 |
 | 5. Direct Editing and Router | 0/TBD | Not started | - |

@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: planning
-stopped_at: Completed 04-git-workflow-01-PLAN.md
-last_updated: "2026-03-12T15:23:19.958Z"
+stopped_at: Completed 04-git-workflow-04-PLAN.md
+last_updated: "2026-03-12T15:27:30.730Z"
 last_activity: 2026-03-12 — Roadmap created
 progress:
   total_phases: 5
-  completed_phases: 3
+  completed_phases: 4
   total_plans: 16
-  completed_plans: 15
+  completed_plans: 16
   percent: 0
 ---
 
@@ -66,6 +66,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 04-git-workflow P02 | 2 | 1 tasks | 1 files |
 | Phase 04-git-workflow P03 | 2 | 1 tasks | 1 files |
 | Phase 04-git-workflow P01 | 4 | 3 tasks | 9 files |
+| Phase 04-git-workflow P04 | 2 | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -111,6 +112,8 @@ Recent decisions affecting current work:
 - [Phase 04-git-workflow]: pbi-commit git add scoped to '.SemanticModel/' in all three code paths (init, empty repo, normal) — never unscoped git add
 - [Phase 04-git-workflow]: Nested git repos in test fixtures: fixture .git/ provides runtime git history; parent project repo tracks only content files, not the fixture's .git/
 - [Phase 04-git-workflow]: Test fixture baseline commit message 'chore: initial PBIP model commit' is the expected string in git log verification; pbip-no-repo has no git init by design — /pbi:commit initialises one during GIT-08 test flow
+- [Phase 04-git-workflow]: Auto-commit block placed after Written-to confirmation in both TMDL and TMSL paths in pbi-comment; inside y-confirm branch only in pbi-error (n/N path does not trigger it)
+- [Phase 04-git-workflow]: AUTO_COMMIT=fail is silent — file write success is primary outcome; git failure is non-fatal; no git push in pbi-comment or pbi-error (GIT-07)
 
 ### Pending Todos
 
@@ -123,6 +126,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-12T15:23:19.956Z
-Stopped at: Completed 04-git-workflow-01-PLAN.md
+Last session: 2026-03-12T15:27:30.728Z
+Stopped at: Completed 04-git-workflow-04-PLAN.md
 Resume file: None
