@@ -1,34 +1,18 @@
----
-gsd_state_version: 1.0
-milestone: v1.0
-milestone_name: milestone
-status: planning
-stopped_at: Completed 05-direct-editing-and-router-02-PLAN.md
-last_updated: "2026-03-12T17:00:14.561Z"
-last_activity: 2026-03-12 — Roadmap created
-progress:
-  total_phases: 5
-  completed_phases: 5
-  total_plans: 18
-  completed_plans: 18
-  percent: 0
----
-
 # Project State
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-03-12)
+See: .planning/PROJECT.md (updated 2026-03-13)
 
-**Core value:** A BI analyst can drop into `/pbi` at any point in their workflow and get expert-level help — DAX, model auditing, error recovery, version control — without leaving Claude.
-**Current focus:** Phase 1 — Paste-in DAX Commands
+**Core value:** Never write a line of DAX until the business question, data model state, and existing measures are understood
+**Current focus:** Phase 1 — Skill Core + Escalation
 
 ## Current Position
 
-Phase: 1 of 5 (Paste-in DAX Commands)
+Phase: 1 of 3 (Skill Core + Escalation)
 Plan: 0 of TBD in current phase
 Status: Ready to plan
-Last activity: 2026-03-12 — Roadmap created
+Last activity: 2026-03-13 — Roadmap created
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -50,25 +34,6 @@ Progress: [░░░░░░░░░░] 0%
 - Trend: -
 
 *Updated after each plan completion*
-| Phase 01-paste-in-dax-commands P01 | 2 | 2 tasks | 12 files |
-| Phase 01-paste-in-dax-commands P02 | 1 | 1 tasks | 1 files |
-| Phase 01-paste-in-dax-commands P05 | 1 | 1 tasks | 1 files |
-| Phase 01-paste-in-dax-commands P06 | 2 | 1 tasks | 1 files |
-| Phase 01-paste-in-dax-commands P04 | 4 | 1 tasks | 1 files |
-| Phase 01-paste-in-dax-commands P03 | 2 | 1 tasks | 2 files |
-| Phase 02-context-detection-and-pbip-file-i-o P02 | 1 | 2 tasks | 1 files |
-| Phase 02-context-detection-and-pbip-file-i-o P01 | 2 | 2 tasks | 5 files |
-| Phase 02-context-detection-and-pbip-file-i-o P03 | 30 | 2 tasks | 1 files |
-| Phase 02-context-detection-and-pbip-file-i-o P04 | continuation | 2 tasks | 1 files |
-| Phase 03-model-wide-audit P01 | 2 | 2 tasks | 2 files |
-| Phase 03-model-wide-audit P02 | 15 | 1 tasks | 1 files |
-| Phase 03-model-wide-audit P02 | 25 | 2 tasks | 1 files |
-| Phase 04-git-workflow P02 | 2 | 1 tasks | 1 files |
-| Phase 04-git-workflow P03 | 2 | 1 tasks | 1 files |
-| Phase 04-git-workflow P01 | 4 | 3 tasks | 9 files |
-| Phase 04-git-workflow P04 | 2 | 2 tasks | 2 files |
-| Phase 05-direct-editing-and-router P01 | 2 | 1 tasks | 1 files |
-| Phase 05-direct-editing-and-router P02 | 2min | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -77,51 +42,8 @@ Progress: [░░░░░░░░░░] 0%
 Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
 
-- Slash command architecture (like GSD): analyst knows exactly what command to reach for; smart routing for bare `/pbi`
-- Support both file-edit and paste-in modes: PBIP reload pain point means paste-ready output is often more practical
-- v1 focuses on DAX + model layer, not visuals: highest-value pain points are measure quality and model health
-- [Phase 01-paste-in-dax-commands]: pbi-load is complete for Phase 1 — informs analysts that PBIP context loading arrives in Phase 2; all placeholder skills use disable-model-invocation: true
-- [Phase 01-paste-in-dax-commands]: Reasoning skills use model: sonnet; pbi-load uses model: haiku; all use relative .pbi-context.md path for portability
-- [Phase 01-paste-in-dax-commands]: tail -80 cap on context injection prevents history bloat in .pbi-context.md bash injection
-- [Phase 01-paste-in-dax-commands]: Complexity classification inferred from DAX function patterns, not analyst-declared — zero-setup UX preserved
-- [Phase 01-paste-in-dax-commands]: Read-then-Write enforced for .pbi-context.md updates (not bash append) to prevent malformed state
-- [Phase 01-paste-in-dax-commands]: Comment rules focus on business logic (why/what) not DAX mechanics — avoids noise from line-by-line syntax translation
-- [Phase 01-paste-in-dax-commands]: Description Field capped at 300 chars with no markdown and no DAX function names — matches Power BI tooltip display constraints
-- [Phase 01-paste-in-dax-commands]: tail -100 used for pbi-error session context injection — error recovery benefits from more history than DAX commands (tail -80)
-- [Phase 01-paste-in-dax-commands]: Analyst-Reported Failures is analyst-managed only — pbi-error skill does not auto-write to that section to avoid false positives
-- [Phase 01-paste-in-dax-commands]: Iterator-over-measure-reference is flagged only, never auto-rewritten — context transition semantics must be manually verified before refactoring
-- [Phase 01-paste-in-dax-commands]: CRITICAL GUARD (Step 3) is positioned before rule application (Step 4) — order is load-bearing for correctness
-- [Phase 01-paste-in-dax-commands]: Rationale depth scales with inferred complexity: simple=one sentence, advanced=full paragraph explaining engine-level mechanism
-- [Phase 01-paste-in-dax-commands]: DAX Formatter JSON endpoint /api/daxformatter/dax returns 404 — legacy form-POST confirmed working; skill uses legacy endpoint with HTML strip pipeline
-- [Phase 01-paste-in-dax-commands]: API_FAIL fallback text locked: '_DAX Formatter API unavailable — formatted inline by Claude_'
-- [Phase 02-context-detection-and-pbip-file-i-o]: pbi-load startup uses three bash injections: PBIP detection + file index + session context; PBIP_MODE and PBIP_FORMAT flags drive all branching
-- [Phase 02-context-detection-and-pbip-file-i-o]: No-project path outputs locked message and stops; does not mention file mode, does not write .pbi-context.md
-- [Phase 02-context-detection-and-pbip-file-i-o]: Read-then-Write single pass: Model Context + Last Command + Command History updated atomically in .pbi-context.md
-- [Phase 02-context-detection-and-pbip-file-i-o]: TMDL and TMSL fixtures exercise both add-description and update-description code paths (Revenue YTD has description, Revenue does not)
-- [Phase 02-context-detection-and-pbip-file-i-o]: TMSL model.bim uses array expression for Revenue YTD and string for Revenue — write-back must preserve original form to avoid TMSL parse errors
-- [Phase 02-context-detection-and-pbip-file-i-o]: Both fixtures include bidirectional relationship — intentionally included for Phase 3 audit rule testing
-- [Phase 02-context-detection-and-pbip-file-i-o]: pbi-comment writes without confirm prompt; silent paste-in fallback when no PBIP; TMSL expression preserves original string/array form; tasklist permission error treated as DESKTOP=closed
-- [Phase 02-context-detection-and-pbip-file-i-o]: pbi-error confirm-before-write is unique vs pbi-comment silent write; capital N default on confirm prompt; category-gated writes (A/B/C only); manual live testing deferred pending PBI Desktop access
-- [Phase 03-model-wide-audit]: dataCategory: Time placed as table-level TMDL property before column blocks — not inside a column block
-- [Phase 03-model-wide-audit]: Products.tmdl intentionally isolated (no relationships.tmdl entry) to trigger AUD-03 WARN heuristic for tables with no outbound relationships
-- [Phase 03-model-wide-audit]: /pbi:audit is read-only — no Desktop/tasklist check; four domain passes merged then severity-sorted before emit
-- [Phase 03-model-wide-audit]: Rule N-04 skipped in Naming domain — display folder handled exclusively by M-03 to avoid duplicate findings
-- [Phase 03-model-wide-audit]: /pbi:audit is read-only — four domain passes merged then severity-sorted before single emit; Rule N-04 skipped in Naming to avoid duplicate display-folder findings
-- [Phase 04-git-workflow]: pbi-diff: silent gitignore auto-fix with glob coverage check prevents duplicate .gitignore entries on repeated runs
-- [Phase 04-git-workflow]: pbi-diff: git diff scoped to .SemanticModel/ paths only — never unscoped git diff to avoid report/theme file noise
-- [Phase 04-git-workflow]: pbi-diff: HAS_COMMITS=no fallback uses git status --porcelain instead of git diff HEAD to handle empty repos (Pitfall 1)
-- [Phase 04-git-workflow]: git push is never executed in pbi-commit bash blocks — push reminder is output text only (GIT-07)
-- [Phase 04-git-workflow]: pbi-commit git add scoped to '.SemanticModel/' in all three code paths (init, empty repo, normal) — never unscoped git add
-- [Phase 04-git-workflow]: Nested git repos in test fixtures: fixture .git/ provides runtime git history; parent project repo tracks only content files, not the fixture's .git/
-- [Phase 04-git-workflow]: Test fixture baseline commit message 'chore: initial PBIP model commit' is the expected string in git log verification; pbip-no-repo has no git init by design — /pbi:commit initialises one during GIT-08 test flow
-- [Phase 04-git-workflow]: Auto-commit block placed after Written-to confirmation in both TMDL and TMSL paths in pbi-comment; inside y-confirm branch only in pbi-error (n/N path does not trigger it)
-- [Phase 04-git-workflow]: AUTO_COMMIT=fail is silent — file write success is primary outcome; git failure is non-fatal; no git push in pbi-comment or pbi-error (GIT-07)
-- [Phase 05-direct-editing-and-router]: allowed-tools: Read used (not empty array) to avoid SKILL.md schema parse error
-- [Phase 05-direct-editing-and-router]: Router has no bash injection blocks — pure conversational routing skill
-- [Phase 05-direct-editing-and-router]: Category B (audit) and D (edit) route directly; A (DAX) and C (changes) ask one follow-up question
-- [Phase 05-direct-editing-and-router]: pbi-edit is PBIP-only — no paste-in fallback; stops with locked message on PBIP_MODE=paste
-- [Phase 05-direct-editing-and-router]: Capital-N default on confirm prompt means Enter = cancel; only explicit y or Y proceeds to write
-- [Phase 05-direct-editing-and-router]: Entity ambiguity always requires analyst clarification — no auto-selection when same name found in multiple tables
+- [Init]: Model after GSD structure — user identified GSD as reference for quality
+- [Init]: Progressive friction replaces upfront interrogation — core value inversion from v1
 
 ### Pending Todos
 
@@ -129,11 +51,10 @@ None yet.
 
 ### Blockers/Concerns
 
-- DAX Formatter API endpoint path is MEDIUM confidence — needs empirical verification with a test `curl` call before wiring into `/pbi:format`. Fallback to Claude inline formatting is available.
-- Phase 3 planning should include a research step to enumerate Tabular Editor BestPracticeRules catalogue for `knowledge/audit-rules.md`.
+None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-12T16:51:47.923Z
-Stopped at: Completed 05-direct-editing-and-router-02-PLAN.md
+Last session: 2026-03-13
+Stopped at: Roadmap created, no phases planned yet
 Resume file: None

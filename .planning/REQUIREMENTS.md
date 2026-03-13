@@ -1,178 +1,94 @@
-# Requirements: PBI Skill
+# Requirements: PBI Skill v2
 
-**Defined:** 2026-03-12
-**Core Value:** A BI analyst can drop into `/pbi` at any point in their workflow and get expert-level help — DAX, model auditing, error recovery, version control — without leaving Claude.
+**Defined:** 2026-03-13
+**Core Value:** Never block a data analyst — solve immediately, interrogate only when stuck or asked
 
 ## v1 Requirements
 
-### Skill Infrastructure
+### Progressive Friction
 
-- [x] **INFRA-01**: Skill suite is invocable via `/pbi` prefix commands (e.g. `/pbi:optimize`, `/pbi:audit`)
-- [x] **INFRA-02**: Bare `/pbi` command asks what the analyst needs and routes to the appropriate subcommand
-- [x] **INFRA-03**: All commands support two modes: paste-in (DAX/SQL pasted directly) and PBIP file mode (reads from disk when Desktop is closed)
-- [x] **INFRA-04**: Context detection — commands detect whether a `.SemanticModel/` PBIP project exists in the working directory
-- [x] **INFRA-05**: PBIP format detection — read `definition.pbism` version field to distinguish TMSL (`model.bim`) from TMDL (`definition/` folder) before any file operation
-- [x] **INFRA-06**: Desktop-open safety guard — before any file write, check for running `PBIDesktop.exe` process or require explicit analyst confirmation; default to paste-in output otherwise
+- [ ] **PROG-01**: Skill defaults to solving the immediate request without interrogation or phase gates
+- [ ] **PROG-02**: Skill escalates to structured questioning after 2-3 unresolved attempts, not upfront
+- [ ] **PROG-03**: Escalation surfaces targeted questions (only what's blocking the solution), not a full pre-flight checklist
+- [ ] **PROG-04**: Deep workflow mode (full phase breakdown + gates) only activates when user explicitly requests it
 
-### Session Context
+### Interrogation
 
-- [x] **CTX-01**: A `.pbi-context.md` session file is maintained in the project root, tracking: last command run, what was changed, what was tried and failed, and open issues
-- [x] **CTX-02**: Each command reads `.pbi-context.md` at startup and uses it to avoid repeating failed approaches
-- [x] **CTX-03**: Each command updates `.pbi-context.md` after execution with a summary of what was done and the outcome
-- [x] **CTX-04**: If a previous approach failed (logged in context), the command flags this to the analyst and suggests an alternative rather than retrying the same method
+- [ ] **INTR-01**: When escalating, skill extracts the business question the report needs to answer
+- [ ] **INTR-02**: When escalating, skill gathers data model state (tables, relationships, calculated columns)
+- [ ] **INTR-03**: When escalating, skill audits existing measures to prevent duplication or conflicts
+- [ ] **INTR-04**: Before writing filter-sensitive DAX (ratios, time intelligence, ranking), skill asks about visual consumption context (where the measure will be placed, active slicers)
 
-### DAX — Explain
+### DAX / Measures
 
-- [x] **DAX-01**: User can paste a DAX measure expression and receive a plain-English explanation of what it calculates
-- [x] **DAX-02**: Explanation identifies filter context, row context, and any context transitions present
-- [x] **DAX-03**: Explanation adapts register to inferred analyst skill level (simpler for straightforward measures, technical depth for complex ones)
+- [ ] **DAX-01**: Generated measures reference actual tables/columns described by user, not assumed generic schema
+- [ ] **DAX-02**: Duplication check — skill asks if a similar measure already exists before writing a new one
+- [ ] **DAX-03**: Filter context warning surfaced when generating CALCULATE-heavy patterns without knowing visual placement
 
-### DAX — Format
+### Workflow Phases (deep mode)
 
-- [x] **DAX-04**: User can paste a DAX measure and receive SQLBI-style formatted output (consistent indentation, keyword capitalisation, line breaks)
-- [x] **DAX-05**: Formatted output is returned as a copy-paste ready code block
-- [x] **DAX-06**: Format command attempts DAX Formatter API first; falls back to Claude inline formatting if API is unreachable
+- [ ] **PHASE-01**: Model review phase — analyze described model, flag health issues (M:M relationships, missing date table, bidirectional filters), outputs findings before any DAX
+- [ ] **PHASE-02**: Measures phase — context-aware DAX generation, explicit gate before advancing to next phase
 
-### DAX — Optimise
+### Verification
 
-- [x] **DAX-07**: User can paste a DAX measure and receive a performance-optimised rewrite with rationale explaining each change
-- [x] **DAX-08**: Optimiser detects and rewrites common slow patterns: unnecessary `FILTER` on a table, `SUMX` over a single column where `SUM` suffices, redundant `CALCULATE` wrappers
-- [x] **DAX-09**: Any measure containing iterators over measure references is flagged as "requires manual verification — context transition present" rather than auto-rewritten
-- [x] **DAX-10**: Optimiser suggests alternatives with trade-off explanations where multiple valid rewrites exist
-
-### DAX — Comment
-
-- [x] **DAX-11**: User can paste a DAX measure and receive a version with `//` inline comments explaining the business logic
-- [x] **DAX-12**: Command also outputs a populated `description` field value suitable for pasting into the Power BI measure Description property
-- [x] **DAX-13**: When in PBIP file mode, command writes inline comments and description back to the target table's `.tmdl` or `model.bim` file directly (Desktop must be confirmed closed)
-
-### Error Recovery
-
-- [x] **ERR-01**: User can paste a Power BI error log or error message and receive a diagnosis of the root cause
-- [x] **ERR-02**: Error recovery reads `.pbi-context.md` to understand what was last changed and correlates the error to recent edits
-- [x] **ERR-03**: Error recovery proposes a specific fix (not just an explanation) and, when in PBIP file mode with Desktop closed, can apply the fix directly
-- [x] **ERR-04**: If the same error has been seen before (logged in `.pbi-context.md`), the command skips failed prior approaches and leads with the correct method
-
-### Model Audit
-
-- [x] **AUD-01**: User can run `/pbi:audit` against a PBIP project and receive a structured severity-graded report (CRITICAL / WARN / INFO)
-- [x] **AUD-02**: Audit checks naming conventions: table, column, and measure names follow a consistent pattern (e.g. measure prefixes, dim/fact table naming)
-- [x] **AUD-03**: Audit checks relationship health: flags bidirectional relationships, missing relationships between fact and dimension tables
-- [x] **AUD-04**: Audit checks date table presence and correct configuration (marked as date table, continuous date range, no gaps)
-- [x] **AUD-05**: Audit checks measure quality: blank `formatString`, empty `description`, measures with no display folder
-- [x] **AUD-06**: Audit is chunked by domain (one pass per category) to avoid context window saturation on large models
-- [x] **AUD-07**: Audit report includes specific location (table/measure name) and a concrete recommendation for each finding
-
-### Version Control — Diff
-
-- [x] **GIT-01**: User can run `/pbi:diff` to get a human-readable summary of what changed since the last commit (measures added/modified/removed, relationships changed) — not raw JSON diff
-- [x] **GIT-02**: Diff summary uses business language (table and measure names, not JSON key paths)
-- [x] **GIT-03**: Diff command verifies `.gitignore` is guarding noise files (`cache.abf`, `localSettings.json`) before presenting output
-
-### Version Control — Commit
-
-- [x] **GIT-04**: User can run `/pbi:commit` to stage PBIP changes and commit locally with an auto-generated business-language commit message
-- [x] **GIT-05**: Commit message summarises the actual model changes (e.g. "feat: add [Revenue YTD] measure to Sales table; fix bidirectional relationship on Customer[CustomerKey]")
-- [x] **GIT-06**: After every successful PBIP file write (from any command), an automatic local git commit is created without requiring the analyst to run `/pbi:commit` manually
-- [x] **GIT-07**: Push to remote (GitHub) is always manual — no command auto-pushes
-- [x] **GIT-08**: If no git repo exists in the project, `/pbi:commit` initialises one and creates an initial commit
-
-### Direct PBIP Editing
-
-- [x] **EDIT-01**: User can run `/pbi:edit` with a description of what to change and Claude reads the relevant PBIP files, applies the change, and writes back to disk
-- [x] **EDIT-02**: Edit command performs pre-write checklist: Desktop-closed confirmation, `unappliedChanges.json` check, TMDL indentation preservation
-- [x] **EDIT-03**: Edit command shows a preview of the change before writing (diff of before/after) and requires confirmation
-- [x] **EDIT-04**: After a successful edit, an automatic local git commit is created (satisfies GIT-06)
+- [ ] **VERF-01**: Phase gates — hard checkpoints between phases in deep mode, user must confirm before advancing
+- [ ] **VERF-02**: Business question gate — final check that output answers the question stated at the start of the session
+- [ ] **VERF-03**: Context re-injection — explicit context summary restated at start of each phase to prevent drift in long sessions
 
 ## v2 Requirements
 
-### Extended DAX
+### Visuals & Polish
 
-- [x] **DAX-V2-01**: `/pbi:new` — scaffold a new measure with correct naming, format string, display folder, and description from a plain-English description
-- [x] **DAX-V2-02**: Batch commenting — apply `/pbi:comment` across all measures in a table or the entire model at once
+- **VIS-01**: Visual type recommendations based on the data and business question
+- **VIS-02**: Anti-pattern warnings (pie charts for >5 categories, excessive KPI cards, unlabeled axes)
+- **POL-01**: Report-level polish review: layout, color consistency, accessibility high-signal items
 
-### Extended Audit
+### Advanced DAX
 
-- [x] **AUD-V2-01**: Hidden column hygiene check — columns that are visible but should be hidden (foreign keys, internal IDs)
-- [x] **AUD-V2-02**: Audit auto-fix mode — apply CRITICAL and WARN fixes directly after audit with one confirmation
+- **DAX-04**: Pattern-first generation — select from curated SQLBI patterns (15-20 core patterns) when writing complex measures
+- **DAX-05**: Fabric/DirectLake-specific guidance (composite models, DirectLake mode gotchas)
 
-### Extended Version Control
+### Session Persistence
 
-- [x] **GIT-V2-01**: `/pbi:branch` — create a feature branch for a set of model changes, merge back when done
-- [x] **GIT-V2-02**: Changelog generation — produce a human-readable CHANGELOG.md from git history
-
-### Report Layer
-
-- [x] **RPT-V2-01**: PBIR visual layer audit — check which measures are used in which visuals (requires PBIR format)
+- **SESS-01**: Persist interrogation context to a file to survive context compaction in long sessions
 
 ## Out of Scope
 
 | Feature | Reason |
 |---------|--------|
-| Full report creation | Different product category; this is a helper not a builder |
-| Power BI Service / REST API | Requires Azure AD auth; desktop/file-first for v1 |
-| VertiPaq viewer / query runner | DAX Studio does this better; requires live connection |
-| M query optimisation | Different language/engine; separate domain from DAX+model |
-| Visual formatting / layout | Report visual layer uses immature PBIR JSON in v1 timeframe |
-| Real-time model monitoring | Requires persistent process; not a slash-command pattern |
-| Auto-push to remote | Always manual — analyst controls when changes go to GitHub |
+| DAX tutorials / educational content | Scope creep — skill is context-driven assistance, not a learning tool |
+| Power BI API / .pbix file access | Conversational only — no file system access to Power BI files |
+| Generic templates without model context | Anti-feature — false productivity that reproduces the exact failure mode we're fixing |
+| Free-form Q&A mode (no structure) | Destroys phase discipline in deep mode |
+| OAuth / Power BI Service integration | Infrastructure dependency; this skill works from described context only |
 
 ## Traceability
 
-| Requirement | Phase | Phase Name | Status |
-|-------------|-------|------------|--------|
-| INFRA-01 | Phase 1 | Paste-in DAX Commands | Pending |
-| INFRA-02 | Phase 5 | Direct Editing and Router | Pending |
-| INFRA-03 | Phase 2 | Context Detection and PBIP File I/O | Pending |
-| INFRA-04 | Phase 2 | Context Detection and PBIP File I/O | Pending |
-| INFRA-05 | Phase 2 | Context Detection and PBIP File I/O | Pending |
-| INFRA-06 | Phase 2 | Context Detection and PBIP File I/O | Pending |
-| CTX-01 | Phase 1 | Paste-in DAX Commands | Pending |
-| CTX-02 | Phase 1 | Paste-in DAX Commands | Pending |
-| CTX-03 | Phase 1 | Paste-in DAX Commands | Pending |
-| CTX-04 | Phase 1 | Paste-in DAX Commands | Pending |
-| DAX-01 | Phase 1 | Paste-in DAX Commands | Pending |
-| DAX-02 | Phase 1 | Paste-in DAX Commands | Pending |
-| DAX-03 | Phase 1 | Paste-in DAX Commands | Pending |
-| DAX-04 | Phase 1 | Paste-in DAX Commands | Pending |
-| DAX-05 | Phase 1 | Paste-in DAX Commands | Pending |
-| DAX-06 | Phase 1 | Paste-in DAX Commands | Pending |
-| DAX-07 | Phase 1 | Paste-in DAX Commands | Pending |
-| DAX-08 | Phase 1 | Paste-in DAX Commands | Pending |
-| DAX-09 | Phase 1 | Paste-in DAX Commands | Pending |
-| DAX-10 | Phase 1 | Paste-in DAX Commands | Pending |
-| DAX-11 | Phase 1 | Paste-in DAX Commands | Pending |
-| DAX-12 | Phase 1 | Paste-in DAX Commands | Pending |
-| DAX-13 | Phase 2 | Context Detection and PBIP File I/O | Pending |
-| ERR-01 | Phase 1 | Paste-in DAX Commands | Pending |
-| ERR-02 | Phase 1 | Paste-in DAX Commands | Pending |
-| ERR-03 | Phase 2 | Context Detection and PBIP File I/O | Pending |
-| ERR-04 | Phase 1 | Paste-in DAX Commands | Pending |
-| AUD-01 | Phase 3 | Model-Wide Audit | Pending |
-| AUD-02 | Phase 3 | Model-Wide Audit | Pending |
-| AUD-03 | Phase 3 | Model-Wide Audit | Pending |
-| AUD-04 | Phase 3 | Model-Wide Audit | Pending |
-| AUD-05 | Phase 3 | Model-Wide Audit | Pending |
-| AUD-06 | Phase 3 | Model-Wide Audit | Pending |
-| AUD-07 | Phase 3 | Model-Wide Audit | Pending |
-| GIT-01 | Phase 4 | Git Workflow | Pending |
-| GIT-02 | Phase 4 | Git Workflow | Pending |
-| GIT-03 | Phase 4 | Git Workflow | Pending |
-| GIT-04 | Phase 4 | Git Workflow | Pending |
-| GIT-05 | Phase 4 | Git Workflow | Pending |
-| GIT-06 | Phase 4 | Git Workflow | Pending |
-| GIT-07 | Phase 4 | Git Workflow | Pending |
-| GIT-08 | Phase 4 | Git Workflow | Pending |
-| EDIT-01 | Phase 5 | Direct Editing and Router | Pending |
-| EDIT-02 | Phase 5 | Direct Editing and Router | Pending |
-| EDIT-03 | Phase 5 | Direct Editing and Router | Pending |
-| EDIT-04 | Phase 5 | Direct Editing and Router | Pending |
+| Requirement | Phase | Status |
+|-------------|-------|--------|
+| PROG-01 | Phase 1 | Pending |
+| PROG-02 | Phase 1 | Pending |
+| PROG-03 | Phase 1 | Pending |
+| PROG-04 | Phase 1 | Pending |
+| INTR-01 | Phase 1 | Pending |
+| INTR-02 | Phase 1 | Pending |
+| INTR-03 | Phase 1 | Pending |
+| INTR-04 | Phase 2 | Pending |
+| DAX-01 | Phase 2 | Pending |
+| DAX-02 | Phase 2 | Pending |
+| DAX-03 | Phase 2 | Pending |
+| PHASE-01 | Phase 3 | Pending |
+| PHASE-02 | Phase 2 | Pending |
+| VERF-01 | Phase 3 | Pending |
+| VERF-02 | Phase 3 | Pending |
+| VERF-03 | Phase 3 | Pending |
 
 **Coverage:**
-- v1 requirements: 43 total
-- Mapped to phases: 43
-- Unmapped: 0
+- v1 requirements: 16 total
+- Mapped to phases: 16
+- Unmapped: 0 ✓
 
 ---
-*Requirements defined: 2026-03-12*
-*Last updated: 2026-03-12 after roadmap creation — phase names added to traceability*
+*Requirements defined: 2026-03-13*
+*Last updated: 2026-03-13 after roadmap creation*
