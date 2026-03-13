@@ -1,25 +1,8 @@
 # Feature Research
 
-**Domain:** Power BI PBIP analyst productivity — Claude slash-command skill
-**Researched:** 2026-03-12
-**Confidence:** HIGH (DAX tooling ecosystem well-documented; pain points confirmed across multiple community and official sources)
-
----
-
-## Competitive Landscape Summary
-
-The existing tool ecosystem covers distinct, non-overlapping niches:
-
-| Tool | Primary Niche | Free? | Requires Desktop Open? |
-|------|--------------|-------|------------------------|
-| DAX Studio | Query execution, performance profiling, VertiPaq analysis | Yes | Yes (connects live) |
-| Tabular Editor 3 | Model editing, BPA, bulk scripting | Paid (TE2 free) | No (reads PBIP/BIM directly) |
-| ALM Toolkit / BISM Normalizer | Model compare/merge, environment promotion | Yes | Connects via XMLA |
-| DAX Formatter (daxformatter.com) | DAX formatting (web paste-in only) | Yes | No (paste only) |
-| Power BI Copilot | Report-layer AI assistant, Q&A | Paid (Fabric) | In-service only |
-| Power BI MCP Server | Agent access to live model via TOM | Varies | Yes (live connection) |
-
-**The gap this skill fills:** A Claude-native workflow that works from the PBIP file layer (no live connection required), available at any point in the analyst's terminal/editor session via slash commands, covering DAX quality + model auditing + Git — which no single existing tool does end-to-end.
+**Domain:** Conversational Power BI assistant skill (Claude Code)
+**Researched:** 2026-03-13
+**Confidence:** HIGH (core categories), MEDIUM (polish/differentiators)
 
 ---
 
@@ -27,127 +10,110 @@ The existing tool ecosystem covers distinct, non-overlapping niches:
 
 ### Table Stakes (Users Expect These)
 
-Features analysts assume exist. Missing these = the tool feels like a prototype, not a skill.
+Features users assume exist. Missing these = skill feels broken or useless on first contact.
 
 | Feature | Why Expected | Complexity | Notes |
 |---------|--------------|------------|-------|
-| DAX explanation in plain English | Analysts paste measures they didn't write; "what does this do?" is the single most common question | LOW | LLMs excel at this; o-series and Claude 3.x virtually eliminate DAX hallucinations for explanation tasks (HIGH confidence per pbidax.wordpress.com 2025) |
-| DAX formatting / prettifying | daxformatter.com (SQLBI) has set the standard; analysts expect SQLBI-style indentation as the canonical format | LOW | SQLBI formatting rules are well-documented and deterministic; Claude can reproduce them precisely |
-| DAX inline commenting | Best practice for complex measures; currently a fully manual task in Power BI Desktop | MEDIUM | Should produce `//` comments per block of logic, plus a measure Description field value — two outputs from one command |
-| DAX performance issue detection | DAX Studio is used daily for this; analysts expect any DAX helper to flag common slow patterns | MEDIUM | Must cover: FILTER on full table instead of column, unnecessary SUMX where CALCULATE suffices, missing VAR for repeated sub-expressions, bidirectional filter side-effects |
-| Model naming convention audit | Tabular Editor BPA rules (TabularEditor/BestPracticeRules on GitHub) define the community standard; analysts expect these checks | MEDIUM | Must check: table/column Pascal case, measure sentence case, key column visibility, date table marking, dimension prefix removal |
-| Context-aware dual mode | PBIP files readable directly; paste-in when Desktop is open (Desktop must be closed for file writes) | LOW | Detect presence of PBIP files in cwd; fallback to paste-in output gracefully |
-| Routing / help entry point | Bare `/pbi` without a subcommand should orient new users and route to the right command | LOW | Like GSD's bare `/gsd` — ask what they want, suggest the right command |
+| Pre-flight interrogation: extract business question before any DAX | Every expert source (SQLBI, Sparkco, official MS docs) agrees: AI DAX without model context produces wrong or misleading output. Users who've been burned by generic Copilot output expect this. | MEDIUM | Must cover: what question the report answers, who consumes it, what time grain is needed. |
+| Data model state intake | DAX evaluation context depends entirely on relationships, filter flow, and cardinality. A measure that works on one model may silently fail on another. | MEDIUM | Ask for: tables, key relationships (1:M vs M:M), existing measures, date table presence/configuration. |
+| Existing measures audit before writing new ones | Duplicating calculations is the most common waste in Power BI work — users expect an assistant to ask "does this already exist?" | LOW | Simple but high-value: ask what measures are already defined before suggesting new ones. |
+| Context-aware DAX output | Generated measures must reference actual table/column names from the described model, not placeholder names. | HIGH | Failure mode: AI uses `Sales[Amount]` when user's column is `Fact_Sales[Net Revenue]`. Requires mapping user-described model to output. |
+| Phase structure: model → measures → visuals → polish | Users building reports go through this workflow. An assistant that skips phases creates rework — e.g., suggesting visuals before measures are validated breaks flow. | MEDIUM | This is the GSD-style structure from PROJECT.md. Each phase should gate the next. |
+| Verification gate per phase | After each phase, confirm the output actually answers the original business question before proceeding. Without this, errors compound across phases. | MEDIUM | Simple: "Does this [model structure / measure / visual layout] answer [business question]? Confirm before we move to the next phase." |
+| DAX that handles filter context correctly | Users expect CALCULATE, REMOVEFILTERS, ALLEXCEPT, etc. to be used correctly relative to the described visual context. Filter context mistakes produce numbers that look right but aren't. | HIGH | This is the #1 class of DAX error. Must ask about visual context (row context, slicer setup) before writing time intelligence or ratio measures. |
+| Visual type recommendation tied to data shape | Users expect guidance on bar vs line vs matrix — not a tutorial, but an opinionated "use X because Y for this data" recommendation. | LOW | Ground the recommendation in the data shape (categorical, time series, part-to-whole) and the business question. |
+| Report polish checklist | Color contrast, title clarity, axis labels, alt text flags. Users expect a conversational assistant to surface these before sign-off. | LOW | Not a full accessibility audit — just the high-value catches: missing titles, color-only encoding, 3D charts, too many slicers. |
+
+---
 
 ### Differentiators (Competitive Advantage)
 
-Features that set this skill apart from DAX Studio, Tabular Editor, and DAX Formatter individually.
+Features that set this skill apart from Copilot and generic LLM prompting. These align with the core value in PROJECT.md: never write DAX until the business question and model state are understood.
 
 | Feature | Value Proposition | Complexity | Notes |
 |---------|-------------------|------------|-------|
-| DAX rewrite with rationale | Not just "here is formatted code" — explain *why* the rewrite is faster (e.g., "replaced FILTER(Table, ...) with CALCULATE(...) to push filter to Storage Engine, dropping FE time from 44ms to 2ms") | HIGH | Requires understanding of SE vs FE split; Claude reasoning models handle this well. Real-world benchmarks show SUMX→CALCULATE rewrites delivering 10x+ speed improvement |
-| Git commit message generation from PBIP diff | Translates raw JSON diffs into human-readable summaries: "Added [Total Margin %] measure to Sales table. Modified [YTD Revenue] formula — replaced CALCULATE with SUMX pattern." | MEDIUM | PBIP/PBIR stores each measure as a separate file; a `git diff` produces granular, parseable diffs. No existing tool generates commit messages from these |
-| Human-readable diff summary | `/pbi:diff` explains what changed between two commits in analyst language — not JSON keys, but "3 measures modified, 1 table added, bi-directional relationship removed from Orders→Products" | HIGH | Must parse PBIP folder structure: `.Dataset/definition/tables/*/measures/*.measure.json`, `.Dataset/definition/relationships.json`, `.Dataset/model.bim` |
-| Full model audit in one command | DAX Studio covers performance; Tabular Editor BPA covers naming; nothing does both plus relationships, date table detection, and hidden column hygiene in a single conversational output | HIGH | Must synthesise: naming conventions + relationship health + date table marking + hidden column hygiene + measure quality + display folder usage |
-| Adaptive skill-level responses | Intermediate analysts need "use DIVIDE instead of /" explained; advanced analysts need "your measure forces a FE materialisation loop" — same tool, different register | MEDIUM | Prompt engineering; infer from context (how they describe the problem, complexity of their existing DAX) |
-| Measure Description field population | Power BI Desktop has a Description field per measure — almost never populated, making model documentation non-existent | LOW | `/pbi:comment` should produce both the `//` inline DAX comment AND a ready-to-paste Description field value, so analysts get two documentation artefacts at once |
-| Direct PBIP JSON editing | When Desktop is closed, Claude can read and write `.Dataset/definition/tables/*/measures/*.measure.json` directly — no GUI required | MEDIUM | PBIP format is stable JSON; PBIR (GA planned Q3 2026) improves this further. Claude should never write to PBIP files when Desktop is open (undefined behaviour) |
-| Slash-command discoverability | `/pbi:optimize`, `/pbi:explain`, `/pbi:format` etc. give analysts a predictable, memorable API — unlike free-form chat which requires prompt engineering skill | LOW | Architecture decision already taken in PROJECT.md; key differentiator vs asking Claude directly in chat |
+| Interrogation protocol with structured pre-flight | Copilot and ChatGPT accept vague requests and produce plausible-but-wrong DAX. This skill's interrogation phase prevents that class of failure entirely. The questioning is the product. | MEDIUM | Requires a defined question set: business question, grain, model topology, existing measures, date table state. This is what makes the skill GSD-quality. |
+| Duplicate measure detection heuristic | Before writing any measure, analyze user-described existing measures to identify potential duplicates or near-duplicates. Prevents measure sprawl — a real, named pain point in large Power BI projects. | MEDIUM | Conversational: "You have `Total Revenue` — is your new measure different from that in any filter context?" |
+| Business question traceability | Every measure and visual recommendation traces back explicitly to the stated business question. Keeps scope tight and prevents gold-plating. | LOW | Pattern: "This measure answers [business question] by [mechanism]. If the question changes, this measure changes too." |
+| DAX pattern selection over freeform generation | Instead of generating arbitrary DAX, the skill identifies the correct pattern category first (ratio, running total, period comparison, ranking, conditional accumulation) and then fills in model-specific details. Pattern-first generation produces more reliable output. | HIGH | SQLBI and Tabular Editor document well-established DAX patterns. Grounding in patterns reduces hallucination risk. |
+| Model health flags during intake | During data model state intake, surface warnings proactively: M:M relationships, missing date table, bidirectional filters, high-cardinality columns in relationships. Most AI tools skip this. | MEDIUM | These are the same checks a senior consultant runs before touching DAX. The skill should run them conversationally. |
+| Phase completion confirmation with explicit rollback gate | If the verification gate at the end of a phase fails (output doesn't answer the business question), the skill has a defined path back to re-interrogation rather than patching forward. Most AI tools patch forward — they add more DAX to fix DAX. | MEDIUM | This is what separates structured workflow from ad-hoc prompting. "The verification failed — let's go back to the model state intake." |
+| Visual anti-pattern warnings | Flag known bad practices in real-time: pie charts with >8 slices, 3D bars, KPI cards with no context, slicers that contradict measure filter assumptions. | LOW | One-sentence callouts with the reason and the fix. High signal-to-noise — not a lecture. |
 
-### Anti-Features (Things to Deliberately NOT Build)
+---
 
-Features that seem useful but create problems — either they duplicate existing tools better, create scope creep, or conflict with the tool's "helper, not builder" identity.
+### Anti-Features (Deliberately Not Built)
 
 | Feature | Why Requested | Why Problematic | Alternative |
 |---------|---------------|-----------------|-------------|
-| Interactive query runner / VertiPaq viewer | Analysts see DAX Studio and want that inside Claude | DAX Studio does this perfectly and requires a live connection we don't have; building a read-only version is low value and high complexity | Detect when analyst needs query execution; tell them "run this in DAX Studio" and provide the exact query to paste |
-| Full report creation from scratch | "Build me a sales dashboard" is a tempting use case | Scope explosion; visuals layer requires PBIR JSON knowledge that is immature (GA Q3 2026), and "report builder" is a completely different product category | Stay on DAX + model layer only; defer visual layer to v2+ after PBIR stabilises |
-| Power BI Service / REST API integration | Publishing, dataset refresh, workspace management | Desktop-first scope for v1; Service API adds OAuth complexity, tenant permission issues, and environment coupling | Out of scope per PROJECT.md; Service integration is v2+ at earliest |
-| Real-time model monitoring | "Alert me when a measure changes" | Requires persistent process, polling, or event hooks — not a slash-command pattern | One-shot audit on demand via `/pbi:audit` covers the actual need |
-| M query / Power Query optimisation | Analysts also struggle with M | M is a different language, different engine, different failure modes; dilutes DAX expertise | Acknowledge M queries in audit output if they appear in PBIP; defer M-specific commands to v2 |
-| Visual formatting suggestions | "Make my bar chart look better" | Completely outside the DAX + model layer; requires PBIR visual JSON (immature format pre-GA) | Explicitly out of scope per PROJECT.md |
-| Multi-project / workspace-wide operations | "Audit all my reports at once" | PBIP is one-project-at-a-time by design; multi-project scope creates ambiguity in file paths and context | Single PBIP project per session as stated in PROJECT.md Constraints |
-| Copilot-style inline suggestion in Desktop | Some users ask for IDE-style completions | Requires a persistent background process; Claude skills are invoked, not always-on | Slash-command pattern gives analysts instant access without always-on overhead |
+| DAX tutorial generation | Users ask "explain CALCULATE to me" or "teach me time intelligence." Seems educational. | Shifts the skill from a task-executor to a teacher. Slows down people who know DAX (the primary audience). Creates verbose, padded responses. | Link to SQLBI or Microsoft Learn. One-line context when a pattern is used: "Using REMOVEFILTERS here because your measure needs to ignore slicer context." |
+| Generic report templates | "Give me a sales dashboard template." Feels like it saves time. | Templates without model context produce unusable scaffolding. The user still has to map every field. False sense of progress. | Run the full interrogation first. Let the template emerge from the actual model and business question. |
+| Automated API / .pbix file operations | Power Automate, XMLA endpoint writes, REST API calls. Technically possible adjacent territory. | This is a conversational skill — a `.md` prompt file. It has no file system access and no service connector. Building toward API operations is a scope expansion that breaks the constraint. | Explicitly out of scope per PROJECT.md. Recommend external tools (Tabular Editor, XMLA) when the user needs programmatic model changes. |
+| Comprehensive accessibility audit | Running a full WCAG compliance check or accessibility report. | Requires actual visual rendering — impossible from a conversational description. Produces false assurance if the skill appears to audit something it cannot see. | Surface the high-signal items only (color-only encoding, missing alt text pattern, contrast ratio guidance) as part of the polish phase checklist. |
+| Multi-measure performance optimization | Analyzing VertiPaq stats, storage engine vs formula engine splits, DirectQuery optimization. | Requires actual query performance data (DAX Studio / VertiPaq Analyzer output) to be meaningful. Without it, recommendations are guesswork. | Point to DAX Studio and DAX Optimizer for this work. Out of scope for conversational skill. |
+| Free-form "ask me anything about Power BI" mode | Feels like a full assistant. | Destroys the structured workflow. Users will ask random questions mid-phase, derail the interrogation, and get half-baked answers. The skill's value comes from the structure, not breadth. | Maintain phase discipline. Parking lot pattern: "That's outside our current phase — noted. We'll address it in [phase X]." |
 
 ---
 
 ## Feature Dependencies
 
 ```
-/pbi:format
-    └──enables──> /pbi:comment         (formatting first makes comment placement accurate)
-    └──enables──> /pbi:optimize        (formatted code is easier to reason about for rewrite)
+[Pre-flight interrogation: business question]
+    └──required by──> [Data model state intake]
+                          └──required by──> [Existing measures audit]
+                                                └──required by──> [Context-aware DAX output]
 
-/pbi:explain
-    └──informs──> /pbi:optimize        (explain output validates the analyst understands the proposed rewrite)
+[Context-aware DAX output]
+    └──required by──> [Verification gate: measures phase]
+                          └──required by──> [Visual type recommendation]
+                                                └──required by──> [Verification gate: visuals phase]
+                                                                      └──required by──> [Report polish checklist]
 
-PBIP file detection (context mode)
-    └──gates──> /pbi:edit              (edit mode only available when PBIP files present)
-    └──gates──> /pbi:commit            (git operations require PBIP repo)
-    └──gates──> /pbi:diff              (diff requires git history)
-    └──gates──> /pbi:audit (full mode) (full audit reads model.bim / TMDL files)
+[Model health flags during intake] ──enhances──> [Data model state intake]
+[Duplicate measure detection] ──enhances──> [Existing measures audit]
+[DAX pattern selection] ──enhances──> [Context-aware DAX output]
+[Business question traceability] ──enhances──> [Verification gate: measures phase]
+[Phase completion confirmation with rollback] ──enhances──> [Verification gate: measures phase]
 
-paste-in mode
-    └──enables──> /pbi:explain         (always works)
-    └──enables──> /pbi:format          (always works)
-    └──enables──> /pbi:optimize        (always works)
-    └──enables──> /pbi:comment         (always works)
-    └──BLOCKS──>  /pbi:edit            (cannot write without file access)
-    └──BLOCKS──>  /pbi:commit          (no git context)
-    └──BLOCKS──>  /pbi:diff            (no git context)
-    └──BLOCKS──>  /pbi:audit (full)    (can audit pasted measure only, not whole model)
-
-/pbi:audit
-    └──requires──> PBIP folder readable
-    └──reads──>    model.bim OR TMDL definition files
-    └──outputs──>  findings that /pbi:edit can apply (when Desktop closed)
-
-/pbi:diff
-    └──requires──> git history (at least 2 commits)
-    └──requires──> PBIP format (not legacy PBIX)
+[DAX tutorial generation] ──conflicts with──> [Phase discipline / structured workflow]
+[Free-form Q&A mode] ──conflicts with──> [Pre-flight interrogation]
 ```
 
 ### Dependency Notes
 
-- **Format before comment:** DAX formatting ensures consistent indentation so comment placement (`//` per logical block) aligns predictably with structure.
-- **Context detection gates file-writes:** The single most important safety constraint — writing to PBIP files while Desktop is open produces corrupted state. Context detection must run before any edit/commit path.
-- **Paste-in is always available:** Four commands (`explain`, `format`, `optimize`, `comment`) should work with zero file access — this is the highest-value entry point for analysts who run Desktop constantly.
-- **Audit feeds edit:** `/pbi:audit` findings should be formatted so `/pbi:edit` can apply them as a follow-up without re-explaining context.
+- **Pre-flight interrogation requires data model state intake:** The business question cannot be assessed without knowing what data is available to answer it. These two run sequentially in phase 1.
+- **Context-aware DAX requires existing measures audit:** You cannot write non-duplicate, context-correct DAX until you know what already exists in the model.
+- **Verification gate requires business question traceability:** The gate cannot evaluate "does this answer the question?" without the original question being explicitly carried forward through each phase.
+- **DAX pattern selection enhances context-aware DAX:** Pattern-first generation is a strategy for producing reliable DAX — it layers on top of the base requirement, not a replacement for it.
+- **DAX tutorial generation conflicts with phase discipline:** Educational mode encourages open-ended conversation that breaks the linear interrogation-to-output workflow. These two modes are incompatible in the same interaction.
 
 ---
 
 ## MVP Definition
 
+This is a Claude Code skill file (a `.md` prompt). The "launch" is a working skill file Devesh can use daily. MVP = minimum scope where the skill is better than the current one on first use.
+
 ### Launch With (v1)
 
-Minimum needed to validate the slash-command concept and deliver daily-use value.
-
-- [ ] `/pbi` routing entry point — orient and route to the right subcommand
-- [ ] `/pbi:explain` — plain English explanation of pasted DAX (paste-in, always available)
-- [ ] `/pbi:format` — SQLBI-style DAX formatting (paste-in, always available)
-- [ ] `/pbi:optimize` — detect top 5 slow patterns + rewrite with rationale (paste-in, always available)
-- [ ] `/pbi:comment` — inline `//` comments + Description field value (paste-in, always available)
-- [ ] Context detection — detect PBIP vs paste-in mode; gate file-write commands appropriately
-- [ ] `/pbi:audit` — model audit reading PBIP files (naming, relationships, date tables, hidden columns)
-
-The first four commands work with zero PBIP setup — this lets analysts use the skill immediately, even if they haven't migrated to PBIP format yet.
+- [ ] Pre-flight interrogation protocol — why essential: this IS the differentiator. Without it, the skill is just another DAX assistant.
+- [ ] Data model state intake (tables, relationships, date table, existing measures) — why essential: all downstream DAX and visual output is only as good as this context.
+- [ ] Phase-gated workflow: model review → measures → visuals → polish — why essential: structure prevents the failure mode where measures are written before the model is understood.
+- [ ] Verification gate at end of measures phase — why essential: the one gate that prevents bad DAX from propagating into visuals and report polish.
+- [ ] Context-aware DAX output (uses user's actual table/column names) — why essential: the most common complaint about AI-generated DAX; non-context-aware output is immediately unusable.
+- [ ] Visual type recommendation tied to data shape and business question — why essential: covers the full workflow scope, low complexity, high perceived value.
+- [ ] Report polish checklist (high-signal items only) — why essential: completes the phase workflow. Low complexity, high completeness signal.
 
 ### Add After Validation (v1.x)
 
-Add when core paste-in commands are confirmed valuable.
-
-- [ ] `/pbi:commit` — stage + generate human-readable commit message from PBIP diff (trigger: analyst has PBIP repo and uses Git)
-- [ ] `/pbi:diff` — human-readable summary of changes between commits (trigger: team is doing code review on PBIP PRs)
-- [ ] `/pbi:edit` — direct PBIP JSON writes for audit-suggested fixes (trigger: analyst wants to apply audit findings without reopening Desktop)
+- [ ] Duplicate measure detection heuristic — trigger: user reports wasted time discovering duplicates after the skill has been used in anger.
+- [ ] Model health flags during intake — trigger: user hits a model-related DAX error (M:M filter ambiguity, missing date table) that the pre-flight didn't catch.
+- [ ] Visual anti-pattern warnings — trigger: user discovers polish issues the skill missed (3D charts, overloaded slicers).
 
 ### Future Consideration (v2+)
 
-Defer until v1 usage patterns are understood.
-
-- [ ] `/pbi:new` — scaffold a new measure with correct naming, format string, display folder, description (defer: need to understand analyst scaffolding patterns from v1 usage)
-- [ ] M query audit support — extend `/pbi:audit` to cover Power Query steps (defer: different language, different expertise surface)
-- [ ] PBIR visual layer support — read/write PBIR visual JSON for report-layer suggestions (defer: PBIR GA is Q3 2026; format still stabilising)
-- [ ] Batch measure operations — apply formatting/commenting across all measures in a model at once (defer: scope + safety risk; need single-measure confidence first)
+- [ ] DAX pattern selection (pattern-first generation) — defer: requires a curated pattern library and classification logic. High complexity, high value, but needs v1 to prove out the base workflow first.
+- [ ] Phase completion confirmation with rollback gate — defer: requires testing to find the right rollback trigger. Risk of over-engineering the workflow before validating basic phase discipline.
+- [ ] Business question traceability as explicit inline annotation — defer: the concept is in the v1 gates, but surfacing it as a named, persistent annotation through all phases is a UX refinement for v2.
 
 ---
 
@@ -155,88 +121,60 @@ Defer until v1 usage patterns are understood.
 
 | Feature | User Value | Implementation Cost | Priority |
 |---------|------------|---------------------|----------|
-| `/pbi:explain` | HIGH | LOW | P1 |
-| `/pbi:format` | HIGH | LOW | P1 |
-| `/pbi:optimize` | HIGH | MEDIUM | P1 |
-| `/pbi:comment` | HIGH | MEDIUM | P1 |
-| Context detection (PBIP vs paste-in) | HIGH | LOW | P1 |
-| `/pbi` routing entry point | MEDIUM | LOW | P1 |
-| `/pbi:audit` (naming + relationships) | HIGH | HIGH | P1 |
-| `/pbi:commit` | MEDIUM | MEDIUM | P2 |
-| `/pbi:diff` | MEDIUM | HIGH | P2 |
-| `/pbi:edit` (direct PBIP writes) | MEDIUM | MEDIUM | P2 |
-| Adaptive skill-level responses | MEDIUM | MEDIUM | P2 |
-| Batch measure operations | LOW | HIGH | P3 |
-| M query audit | LOW | HIGH | P3 |
-| PBIR visual layer | LOW | HIGH | P3 |
+| Pre-flight interrogation protocol | HIGH | MEDIUM | P1 |
+| Data model state intake | HIGH | MEDIUM | P1 |
+| Context-aware DAX output | HIGH | HIGH | P1 |
+| Phase-gated workflow structure | HIGH | MEDIUM | P1 |
+| Verification gate (measures phase) | HIGH | MEDIUM | P1 |
+| Existing measures audit | HIGH | LOW | P1 |
+| Visual type recommendation | MEDIUM | LOW | P1 |
+| Report polish checklist | MEDIUM | LOW | P1 |
+| Duplicate measure detection | HIGH | MEDIUM | P2 |
+| Model health flags during intake | HIGH | MEDIUM | P2 |
+| Visual anti-pattern warnings | MEDIUM | LOW | P2 |
+| DAX pattern selection | HIGH | HIGH | P3 |
+| Phase rollback gate | MEDIUM | HIGH | P3 |
+| Business question traceability annotation | MEDIUM | MEDIUM | P3 |
 
 **Priority key:**
-- P1: Must have for launch — validates the core value proposition
-- P2: Should have — adds depth once P1 commands are proven
-- P3: Nice to have — future phases only
+- P1: Must have for launch
+- P2: Should have, add when possible
+- P3: Nice to have, future consideration
 
 ---
 
 ## Competitor Feature Analysis
 
-| Feature | DAX Studio | Tabular Editor 3 | DAX Formatter | This Skill |
-|---------|------------|------------------|---------------|------------|
-| DAX explanation | No | No | No | Yes — plain English |
-| DAX formatting | Yes (editor) | Yes (editor) | Yes (web paste) | Yes — in-terminal |
-| DAX optimization suggestions | Partial (query plan) | Via BPA rules | No | Yes — with rationale |
-| Inline DAX commenting | No | No | No | Yes |
-| Measure Description population | Manual | Manual | No | Yes — auto-generated |
-| Model naming audit | No | Yes (BPA) | No | Yes |
-| Relationship audit | No | Partial (BPA) | No | Yes |
-| Date table detection | No | Via BPA | No | Yes |
-| Git commit message generation | No | No | No | Yes |
-| Human-readable diff | No | No | No | Yes |
-| Direct PBIP file edit | No | Yes | No | Yes |
-| Works without live connection | No | Yes | Yes (paste) | Yes |
-| Works when Desktop is open | Yes | Partial | Yes | Yes (paste-in mode) |
-| Requires GUI install | Yes | Yes | No (web) | No (Claude skill) |
-
-**Key insight:** This skill uniquely combines DAX intelligence (explain/format/optimize/comment) with model governance (audit) and Git workflow (commit/diff) in a single, no-install, terminal-native tool. No existing tool covers all three pillars.
-
----
-
-## Daily vs Occasional Usage Mapping
-
-Understanding cadence drives which features belong in v1.
-
-**Daily use (highest friction, most ROI):**
-- Explaining unfamiliar measures (inherited models, team handovers)
-- Formatting newly written DAX before committing
-- Optimizing measures flagged as slow in report testing
-- Adding comments before sharing work
-
-**Weekly use:**
-- Auditing model before publishing a new report version
-- Writing commit messages after a development session
-- Reviewing what changed in a colleague's PR (`/pbi:diff`)
-
-**Occasional use:**
-- Full model health check on a new project
-- Applying bulk naming fixes via direct PBIP edit
-- Scaffolding new measure sets from scratch
-
-This cadence confirms the P1 priority: paste-in DAX commands deliver daily value before the analyst even needs a PBIP repo.
+| Feature | Microsoft Copilot for Power BI | Generic LLM (ChatGPT/Claude no skill) | This Skill |
+|---------|-------------------------------|--------------------------------------|------------|
+| Pre-flight interrogation | No — accepts prompt immediately | No — accepts prompt immediately | Yes — gated, structured |
+| Data model context | Reads actual semantic model metadata (requires Premium) | User must describe manually, no structure enforced | User describes, skill enforces structure |
+| Existing measures awareness | Partial — can read model | No | Explicit audit step before DAX |
+| Phase discipline | No — single-turn Q&A | No | Yes — model → measures → visuals → polish |
+| Verification gates | No | No | Yes — after each phase |
+| Duplicate measure detection | No | No | Yes (v1.x) |
+| Model health warnings | No (separate Power Advisor tool) | No | Yes (v1.x) |
+| DAX pattern grounding | Partial — freeform with some patterns | Partial — freeform with hallucination risk | Yes (v2) |
+| Works without Premium license | No — requires F64+ or P1 SKU | Yes | Yes |
+| Works from described context (no .pbix access) | No — requires live semantic model | Yes | Yes — designed for this |
 
 ---
 
 ## Sources
 
-- [DAX Studio official site](https://daxstudio.org/) — Feature list, 2025 release notes (HIGH confidence)
-- [Tabular Editor 3 — January 2026 release](https://tabulareditor.com/blog/tabular-editor-3-january-2026-release) — Current TE3 features (HIGH confidence)
-- [TabularEditor/BestPracticeRules on GitHub](https://github.com/TabularEditor/BestPracticeRules) — Official BPA rule categories (HIGH confidence)
-- [LLMs and DAX: Where Things Stand Today — pbidax.wordpress.com (May 2025)](https://pbidax.wordpress.com/2025/05/14/llms-and-dax-where-things-stand-today/) — LLM capabilities/limits for DAX (MEDIUM confidence — single author blog, but technically detailed)
-- [Automate Power BI Model Optimization: BPA Meets Claude AI — Fabric Community Blog](https://community.fabric.microsoft.com/t5/Power-BI-Community-Blog/Automate-Power-BI-Model-Optimization-Best-Practice-Analyzer/ba-p/5000187) — Claude + BPA workflow validation (MEDIUM confidence)
-- [AI agents that work with Power BI semantic model MCP servers — Tabular Editor blog](https://tabulareditor.com/blog/ai-agents-that-work-with-power-bi-semantic-model-mcp-servers) — AI agent capabilities and limits (MEDIUM confidence)
-- [Power BI Desktop Projects (PBIP) — Microsoft Learn](https://learn.microsoft.com/en-us/power-bi/developer/projects/projects-overview) — PBIP file structure (HIGH confidence)
-- [PBIR transition — nickyvv.com Feb 2026](https://www.nickyvv.com/2026/02/transitioning-to-new-power-bi-enhanced-report-format-pbir.html) — PBIR default timeline (MEDIUM confidence — community blog, matches official announcements)
-- [DAX Formatter by SQLBI](https://www.daxformatter.com/) — Canonical formatting standard (HIGH confidence)
-- [The 7 Deadly Sins of DAX — Medium 2025](https://medium.com/decoded-by-datacast/the-7-deadly-sins-of-dax-why-your-measures-are-killing-performance-and-how-to-fix-them-in-2025-d416e3bf67d3) — Common slow patterns confirmed (MEDIUM confidence)
+- [SQLBI: Introducing AI and Agentic Development for BI](https://www.sqlbi.com/articles/introducing-ai-and-agentic-development-for-business-intelligence/) — expert analysis of AI assistant failure modes, five building blocks for effective AI workflows
+- [SQLBI: AI in Power BI — Time to Pay Attention](https://www.sqlbi.com/articles/ai-in-power-bi-time-to-pay-attention/) — expert critique of current conversational BI limitations, multi-step reasoning gaps
+- [Sparkco: Deep Dive into AI-Generated DAX Formulas](https://sparkco.ai/blog/deep-dive-into-ai-generated-dax-formulas) — documented accuracy limitations (15% manual adjustment rate), user needs for validation and iterative refinement
+- [Microsoft Learn: Overview of Copilot for Power BI](https://learn.microsoft.com/en-us/power-bi/create-reports/copilot-introduction) — official feature scope, 10,000 character prompt limit, Premium licensing requirement
+- [Microsoft Learn: Write DAX queries with Copilot](https://learn.microsoft.com/en-us/dax/dax-copilot) — official DAX Copilot capability scope
+- [Microsoft Learn: Choose the best visual for your data in Power BI](https://learn.microsoft.com/en-us/power-bi/visuals/power-bi-visualization-decision-guide) — visual type decision framework
+- [Power BI Copilot Best Practices 2026](https://powerbiconsulting.com/blog/power-bi-copilot-best-practices-2026) — lean schema recommendations, model prep requirements for AI accuracy
+- [Power BI Data Modeling Best Practices (CaseWhen)](https://casewhen.co/blog/best-practices-for-for-data-modeling-in-power-bi) — relationship types, cardinality gotchas, date table requirements
+- [DAX Optimizer](https://www.daxoptimizer.com/) — reference for what expert-level model review looks like (out of scope for this skill, but informs what flags to surface)
+- [Tabular Editor 3](https://tabulareditor.com) — reference for Best Practice Analyzer patterns (informs model health flag content)
+- [Power BI Accessibility Best Practices (Microsoft Learn)](https://learn.microsoft.com/en-us/power-bi/create-reports/desktop-accessibility-creating-reports) — 4.5:1 contrast requirement, alt text, keyboard nav — informs polish checklist scope
 
 ---
-*Feature research for: PBI Skill — Claude slash-command system for Power BI PBIP analysts*
-*Researched: 2026-03-12*
+
+*Feature research for: PBI Skill v2 — conversational Power BI assistant (Claude Code skill)*
+*Researched: 2026-03-13*

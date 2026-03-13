@@ -1,216 +1,21 @@
-# Technology Stack
+# Stack Research
 
-**Project:** PBI Skill — Claude slash-command skill system for Power BI PBIP files
-**Researched:** 2026-03-12
-**Confidence:** HIGH (Claude skills format verified against official docs; PBIP/TMDL/PBIR verified against Microsoft Learn; DAX Formatter API MEDIUM due to undocumented HTTP endpoint)
-
----
-
-## How Claude Slash Commands (Skills) Work
-
-This is the most critical piece of infrastructure — understanding this first determines everything else.
-
-### File Format
-
-Claude Code skills are Markdown files with YAML frontmatter. There are two equivalent homes:
-
-| Path | Scope |
-|------|-------|
-| `.claude/commands/pbi.md` | Project-scoped (legacy format, fully supported) |
-| `.claude/skills/pbi/SKILL.md` | Project-scoped (new format, recommended) |
-
-Both are identical in capability. The `skills/` directory format adds an optional directory for supporting files (templates, scripts, reference docs). The `commands/` format is simpler for single-file skills. **Use `commands/` for simple routing skills and `skills/` for complex skills with supporting files.**
-
-Commit `.claude/commands/` and `.claude/skills/` to the repo so all team members get the skills.
-
-### Frontmatter Fields
-
-```yaml
----
-name: pbi                          # becomes /pbi
-description: "Power BI analyst assistant. Helps with DAX optimization, model auditing, git workflow, and PBIP file editing."
-argument-hint: "[command]"         # shown in autocomplete
-disable-model-invocation: true     # require explicit /pbi invocation, never auto-triggered
-allowed-tools:                     # tools available without per-use approval
-  - Read
-  - Write
-  - Edit
-  - Bash
-  - Glob
-  - Grep
----
-```
-
-Key fields for this project:
-
-- `disable-model-invocation: true` — Mandatory for all `/pbi:*` commands. These are analyst-triggered workflows, never auto-invoked.
-- `allowed-tools` — Whitelist `Bash` for git operations. Do not over-restrict; analysts will notice permission prompts.
-- `argument-hint` — Show what sub-commands are available.
-
-### Sub-Command Pattern (Like GSD)
-
-GSD uses a naming convention where files become `namespace:command` paths:
-
-```
-.claude/commands/pbi/               # creates /pbi namespace
-├── pbi.md                          # bare /pbi — routing command
-├── optimize.md                     # /pbi:optimize
-├── explain.md                      # /pbi:explain
-├── format.md                       # /pbi:format
-├── comment.md                      # /pbi:comment
-├── audit.md                        # /pbi:audit
-├── commit.md                       # /pbi:commit
-├── diff.md                         # /pbi:diff
-└── edit.md                         # /pbi:edit
-```
-
-Each file = one skill. The bare `/pbi` acts as a router that asks what the analyst wants and delegates. All sub-commands also work directly.
-
-### Variable Substitutions
-
-Inside skill content, use:
-- `$ARGUMENTS` — everything typed after the command
-- `$ARGUMENTS[0]`, `$0` — first argument
-- `!`bash command`` — runs shell before Claude sees the prompt (inject dynamic context)
-
-Example for `/pbi:diff`:
-```yaml
----
-name: pbi:diff
----
-Show what changed since the last commit in this PBIP repo.
-
-Git log context:
-!`git log --oneline -10`
-
-Git diff summary:
-!`git diff HEAD --stat`
-```
-
-### Skill Directory for Complex Skills
-
-For `/pbi:audit` and `/pbi:edit` which need reference material:
-
-```
-.claude/skills/pbi-audit/
-├── SKILL.md              # main instructions
-├── best-practices.md     # DAX/model best practice rules reference
-└── patterns.md           # what bad patterns look like
-```
-
-Reference supporting files from SKILL.md using relative links.
-
-**Confidence:** HIGH — verified against official Claude Code docs at code.claude.ai/docs/en/skills (updated March 2026)
+**Domain:** Claude Code skill development (slash commands as structured prompt files)
+**Researched:** 2026-03-13
+**Confidence:** HIGH — all findings derived from direct inspection of the GSD reference implementation on this machine, which is the authoritative source for this domain.
 
 ---
 
-## PBIP File Format
+## What "Stack" Means Here
 
-PBIP is a folder-based project format. Understanding the structure is required before reading or writing any files.
+This is not a software stack. There is no npm, no runtime, no compiled artifact. The "stack" for Claude Code skill development is a composition of:
 
-### Top-Level Structure
+1. **File format conventions** — how a skill is structured
+2. **Invocation mechanism** — how Claude discovers and executes it
+3. **Interaction patterns** — how interrogation flows and gates are implemented
+4. **Reference architecture** — the GSD system as the canonical model
 
-```
-MyReport/
-├── MyReport.Report/            # Report definition
-├── MyReport.SemanticModel/     # Semantic model (tables, measures, relationships)
-├── MyReport.pbip               # Shortcut pointer (optional for Git workflows)
-└── .gitignore                  # Auto-generated; ignores cache.abf and localSettings.json
-```
-
-### SemanticModel Folder
-
-Two formats exist. TMDL is the current standard (GA as of 2024, default from March 2026).
-
-**TMSL format (legacy, single file):**
-```
-MyReport.SemanticModel/
-├── model.bim                   # Full model as one JSON file (TMSL/JSON)
-├── definition.pbism            # Required pointer; version 1.0 = TMSL only
-└── .pbi/
-    └── localSettings.json      # User-local, git-ignored
-```
-
-**TMDL format (current standard, separate files per table):**
-```
-MyReport.SemanticModel/
-├── definition/                 # Required for TMDL; replaces model.bim
-│   ├── database.tmdl           # Database-level properties
-│   ├── model.tmdl              # Model settings, culture
-│   ├── relationships.tmdl      # All relationships
-│   ├── expressions.tmdl        # Parameters / named expressions (M queries)
-│   ├── dataSources.tmdl        # Data source connections
-│   ├── tables/
-│   │   ├── Sales.tmdl          # One file per table — includes measures!
-│   │   ├── Calendar.tmdl
-│   │   ├── Customer.tmdl
-│   │   └── Product.tmdl
-│   ├── roles/
-│   │   └── RoleName.tmdl
-│   └── cultures/
-│       └── en-US.tmdl
-├── definition.pbism            # Required; version 4.0+ = TMDL supported
-└── .pbi/
-    ├── localSettings.json      # Git-ignored
-    └── cache.abf               # Git-ignored; local data cache
-```
-
-### Where Measures Live
-
-**This is the most important detail for this project.**
-
-In TMDL, measures live inside their parent table's `.tmdl` file. There are no separate measure files — each table file contains all columns, measures, and partitions for that table.
-
-Example `tables/Sales.tmdl`:
-```tmdl
-table Sales
-
-    measure 'Sales Amount' = SUMX('Sales', [Quantity] * [Net Price])
-        formatString: $ #,##0
-        description: "Total revenue for the period"
-
-    measure 'Sales YTD' =
-            TOTALYTD([Sales Amount], 'Calendar'[Date])
-        formatString: $ #,##0
-
-    column 'Product Key'
-        dataType: int64
-        isHidden
-        sourceColumn: ProductKey
-```
-
-To read all measures: glob `**/*.tmdl`, grep for `    measure ` (4-space indent).
-
-In `model.bim` (TMSL format), measures are nested JSON under `model.tables[].measures[]`.
-
-### Report Folder (PBIR vs PBIR-Legacy)
-
-**PBIR-Legacy (single file, not externally editable):**
-```
-MyReport.Report/
-├── report.json                 # Monolithic report JSON — DO NOT EDIT EXTERNALLY
-└── definition.pbir             # Pointer file
-```
-
-**PBIR (new format, externally editable — becoming default March 2026):**
-```
-MyReport.Report/
-├── definition/
-│   ├── report.json             # Report-level filters, theme
-│   ├── version.json            # Format version
-│   ├── reportExtensions.json   # Report-level measures
-│   └── pages/
-│       └── [pageName]/
-│           ├── page.json       # Page metadata and filters
-│           └── visuals/
-│               └── [visualName]/
-│                   └── visual.json   # Visual config, query, formatting
-└── definition.pbir
-```
-
-For the `/pbi:edit` command, target TMDL files (measures/tables) — these are the safe, publicly documented edit targets. PBIR visual files are also editable. The old `report.json` (PBIR-Legacy) explicitly does not support external editing.
-
-**Confidence:** HIGH — verified against Microsoft Learn (updated 2025-12-15)
+All components are plain Markdown files interpreted at runtime by Claude. The only executable artifact is an optional CLI helper (`gsd-tools.cjs`) that handles state, git commits, and config. For the PBI-SKILL project, no CLI is needed — this is a pure conversational skill.
 
 ---
 
@@ -220,46 +25,124 @@ For the `/pbi:edit` command, target TMDL files (measures/tables) — these are t
 
 | Technology | Version | Purpose | Why Recommended |
 |------------|---------|---------|-----------------|
-| Claude Skills (SKILL.md / commands/) | Current | Slash-command routing and AI logic | The system itself — every `/pbi:*` command is a Markdown skill file, no build step, no runtime dependencies |
-| Bash (via Claude's Bash tool) | Git for Windows bundled | Git operations, file discovery, diff generation | Already available in the Claude Code environment; no install needed on Windows |
-| Node.js / JavaScript | 20 LTS | Helper scripts (DAX API calls, JSON transforms) | Already required by the GSD toolchain; available on the machine |
-| Git | 2.43+ | Version control for PBIP repos | PBIP was designed for git; all `/pbi:commit` and `/pbi:diff` operations use git CLI directly |
+| Claude Code slash command (`.md`) | Current | Skill definition and invocation | The native mechanism. Skills defined as `.md` files in `~/.claude/commands/[namespace]/` are automatically discovered and invocable as `/namespace:skill-name`. No setup required. |
+| YAML frontmatter | — | Skill metadata, tool permissions, argument hints | Controls what tools the skill is allowed to call. Omitting it defaults to no tool access. Required for interactive skills. |
+| XML-tagged sections | — | Structural prompt organization inside the skill | GSD uses `<purpose>`, `<process>`, `<step>`, `<success_criteria>` tags. These create machine-readable structure without requiring any parser. Claude interprets them as logical boundaries. |
+| `AskUserQuestion` tool | — | Structured interrogation with option lists | The correct tool for presenting choices. Enforces option-based UI rather than freeform prompts. Critical for phase-based skills that need to collect decisions before proceeding. |
 
-### DAX Formatting
+### Supporting Patterns
 
-| Technology | Version | Purpose | Why Recommended |
-|------------|---------|---------|-----------------|
-| DAX Formatter HTTP API (SQLBI) | N/A (web service) | Format/prettify DAX expressions | Industry standard; same engine used by DAX Studio, Tabular Editor, Fabric Copilot; free; no install |
-| Claude inline formatting (fallback) | N/A | Format DAX when offline or API unavailable | Zero-dependency fallback; sufficient for most cases |
-
-DAX Formatter endpoint is `https://www.daxformatter.com` with a POST API. The request body sends the raw DAX expression; the response returns formatted DAX. The SQLBI NuGet package (`Dax.Formatter 1.2.0`) wraps this API for .NET callers, but for this project a simple `curl` or `fetch()` from Node.js is sufficient.
-
-```bash
-# Minimal curl call pattern (exact schema from GitHub/DaxFormatter source)
-curl -X POST https://www.daxformatter.com/api/daxformatter/DaxText \
-  -H "Content-Type: application/json" \
-  -d '{"Dax":"CALCULATE(SUM(Sales[Amount]),FILTER(Sales,Sales[Region]=\"West\"))","ListSeparator":",","DecimalSeparator":"."}'
-```
-
-Because the HTTP API does not require authentication and the endpoint is stable (used by the entire Power BI ecosystem), this is LOW risk. If the API is unavailable, Claude can apply formatting rules directly — DAX formatting rules are well-documented and consistent.
-
-**Confidence:** MEDIUM — API existence and usage confirmed; exact endpoint path from source code inspection is uncertain, should be verified empirically at project start.
-
-### Supporting Libraries
-
-| Library | Version | Purpose | When to Use |
-|---------|---------|---------|-------------|
-| `simple-git` (npm) | 3.x | Programmatic git operations | Only if Bash-based git calls become insufficient; not needed for v1 |
-| `@microsoft/vscode-jsonrpc` | N/A | NOT needed | Direct JSON.parse() is sufficient for PBIP files |
-| Node.js `fs` built-in | built-in | Read/write TMDL and JSON files | All PBIP file I/O — no library needed, files are plain text |
+| Pattern | Purpose | When to Use |
+|---------|---------|-------------|
+| Workflow file separation (`workflows/` + `commands/`) | Separates thin invocation stub from full workflow logic | Use when the skill logic exceeds ~50 lines. Command file stays small; workflow file carries the detail. GSD does this universally. |
+| `@path/to/file.md` references in `execution_context` | Loads external files into context at invocation time | Use for shared references (questioning guides, brand standards, templates) that multiple skills share. Avoids duplication. |
+| `<files_to_read>` blocks | Explicit instruction to read files at execution start | Use to load project state (PROJECT.md, REQUIREMENTS.md) before the skill logic runs. More reliable than hoping files are in context. |
+| Named `<step>` blocks with `priority="first"` | Sequential step enforcement | Use to ensure initialization happens before any user interaction. `priority="first"` signals non-negotiable ordering. |
+| Decision gates via AskUserQuestion | Hard stops that require explicit user confirmation before proceeding | Use at phase transitions, before irreversible actions, or when gathered context is sufficient to proceed. Prevents auto-advancement past points requiring human judgment. |
+| Freeform fallback rule | Switches from AskUserQuestion to plain text when user signals they want to explain | Required to avoid trapping users in option lists. See `questioning.md`: if user selects "Let me explain" or gives open-ended reply, stop using AskUserQuestion and ask in plain text. |
 
 ### Development Tools
 
 | Tool | Purpose | Notes |
 |------|---------|-------|
-| VS Code + TMDL extension | Edit TMDL files with syntax highlighting | Install `analysis-services.TMDL` from VS Code marketplace |
-| VS Code + Power BI PBIP schemas | JSON validation for report files | Schemas at `github.com/microsoft/json-schemas/tree/main/fabric` |
-| Git for Windows | All git operations | Use bash syntax; configure `core.autocrlf=true` for Windows |
+| `~/.claude/commands/[namespace]/` directory | Skill registration location | Files dropped here become available as `/namespace:skill-name`. Subdirectory name becomes the namespace. |
+| `~/.claude/get-shit-done/` | Reference implementation directory | Study this. All workflow patterns, template structures, and interrogation conventions are live code here. |
+| `gsd-tools.cjs` | CLI helper for state/git/config | Not needed for PBI-SKILL. Only relevant if the skill needs to persist state across sessions or manage git commits. |
+
+---
+
+## Skill File Format (Definitive)
+
+A Claude Code skill is a `.md` file with this structure:
+
+```markdown
+---
+name: namespace:skill-name
+description: One-line description shown in /help and autocomplete
+argument-hint: "[optional-args]"
+allowed-tools:
+  - Read
+  - AskUserQuestion
+  - Bash
+  - Write
+  - Task
+---
+<context>
+**Flags:** (if any)
+- `--flag` — what it does
+</context>
+
+<objective>
+What this skill produces. What files/artifacts it creates. What the user can do next.
+</objective>
+
+<execution_context>
+@path/to/workflow.md
+@path/to/reference.md
+@path/to/template.md
+</execution_context>
+
+<process>
+Execute the workflow from @path/to/workflow.md end-to-end.
+Preserve all workflow gates (validation, approvals, commits, routing).
+</process>
+```
+
+The command file is the thin wrapper. All actual logic lives in the workflow file it references.
+
+---
+
+## GSD as Reference Implementation — What to Study
+
+GSD is the canonical example of production-quality Claude Code skills. Its patterns are the standard.
+
+### Pattern 1: Thin Command + Deep Workflow
+
+**What it is:** The `commands/gsd/new-project.md` file is 43 lines. The actual logic is in `workflows/new-project.md` (1112 lines). The command file holds: frontmatter metadata, objective, execution_context (file references), and a single instruction to execute the workflow.
+
+**Why it works:** Keeps the invocation stub readable and maintainable. Lets workflow files be updated independently of command registration. The `@path` syntax in `execution_context` loads the workflow into the model's context window automatically.
+
+**Apply to PBI-SKILL:** Create `~/.claude/commands/pbi/skill.md` as the thin wrapper. Put all interrogation logic in a separate workflow file.
+
+### Pattern 2: XML Section Tags as Structural Contracts
+
+**What it is:** GSD wraps every logical unit in named XML tags: `<purpose>`, `<process>`, `<step name="initialize" priority="first">`, `<success_criteria>`, `<failure_handling>`.
+
+**Why it works:** Claude treats these as logical containers. `priority="first"` on a step signals that it must execute before all others — this is how GSD enforces that initialization (running `gsd-tools init`) always precedes user interaction. Named steps create checkpoints Claude can reference in error messages ("see step 'verify_phase_goal'"). It is not formal XML parsing — it is prompt structure that Claude reads as intent.
+
+**Apply to PBI-SKILL:** Use `<step name="interrogate">`, `<step name="model_review">`, `<step name="verify">` to enforce the phase sequence. The interrogation step must have `priority="first"` to prevent any DAX from being written before context is gathered.
+
+### Pattern 3: AskUserQuestion for Structured Interrogation
+
+**What it is:** GSD uses `AskUserQuestion` with `multiSelect: false` or `multiSelect: true` to present concrete options rather than freeform questions. Each call has a `header` (max 12 characters — validation enforces this), a `question`, and `options` with label + description.
+
+**Why it works:** Concrete options prevent vague answers. The user reacts to choices rather than generating responses from scratch. This is faster and produces more structured data for downstream processing. The 12-character header limit is enforced by GSD validation tools — violating it causes the question to fail.
+
+**Apply to PBI-SKILL:** The interrogation phase must use AskUserQuestion for every structured question (table selection, relationship mapping, measure inventory). Only use freeform text when the user explicitly says "let me describe it" — this is the "freeform fallback rule" from `questioning.md`.
+
+### Pattern 4: Decision Gates
+
+**What it is:** GSD uses a "Ready?" gate before advancing from questioning to PROJECT.md creation (new-project.md, Step 3). It presents: "Create PROJECT.md" vs "Keep exploring". The workflow loops until the user confirms readiness.
+
+**Why it works:** Prevents premature advancement. The model cannot exit the interrogation phase unilaterally — it requires explicit user confirmation. This is the mechanism that enforces "never write DAX until context is understood."
+
+**Apply to PBI-SKILL:** After the interrogation phase, gate on: "I have enough context to start the model review. Proceed?" → "Yes, proceed" vs "I have more to share." The skill must not enter the DAX-writing phase without this gate clearing.
+
+### Pattern 5: Phase-Based Execution with Verification
+
+**What it is:** GSD's full workflow is: discuss-phase → plan-phase → execute-phase → verify-phase. Each phase has a stated goal, requirements mapped to it, and a verification step that checks goal achievement (not just task completion). The verifier creates a `VERIFICATION.md` with `passed` / `gaps_found` / `human_needed` status.
+
+**Why it works:** Verification checks whether the phase goal was achieved, not whether tasks ran. If `gaps_found`, the skill routes to gap closure rather than proceeding. This prevents accumulating technical debt where tasks complete but requirements are unmet.
+
+**Apply to PBI-SKILL:** After each phase (model review, measure writing, visual recommendations), verify that the output answers the business question stated at the start. The verification is conversational — ask: "Does this measure answer [the stated question]?" Gate advancement on the answer.
+
+### Pattern 6: Context Carried Forward
+
+**What it is:** GSD's `discuss-phase.md` reads all prior `CONTEXT.md` files before asking any questions. It builds a `<prior_decisions>` block and uses it to skip already-answered questions and annotate new questions with relevant prior decisions.
+
+**Why it works:** Prevents re-asking questions the user already answered. Creates continuity across phases. The user experiences this as "Claude remembers what I said."
+
+**Apply to PBI-SKILL:** After gathering data model state and business question in the interrogation phase, carry those forward into every subsequent phase. A measure-writing phase that has forgotten the table structure or business question is the failure mode PBI-SKILL v1 had.
 
 ---
 
@@ -267,11 +150,10 @@ Because the HTTP API does not require authentication and the endpoint is stable 
 
 | Recommended | Alternative | When to Use Alternative |
 |-------------|-------------|-------------------------|
-| Bash tool for git operations | `simple-git` npm package | Only if complex git workflows require programmatic branching or merge logic (not needed for v1) |
-| Claude inline DAX formatting (fallback) | Tabular Editor CLI (`te3 -S -F`) | If offline formatting quality becomes a user complaint; TE3 is free but requires .NET install on Windows |
-| TMDL parsing via string manipulation (grep/regex) | TOM/AMO .NET library | If you need to write back complex model changes; for v1 read-only parsing is sufficient |
-| Project-scoped `.claude/commands/pbi/` | Global `~/.claude/commands/pbi/` | Use global only if the analyst works on multiple PBIP repos and wants the skill everywhere |
-| PBIR format (new default) | PBIR-Legacy (report.json) | PBIR-Legacy if working on reports created before March 2026; always detect format before editing |
+| Thin command + workflow file | All logic in command file | Only for very short skills (< 40 lines of process). Anything interrogation-based outgrows this quickly. |
+| AskUserQuestion for options | Freeform questions | Only when the answer space is genuinely unbounded. For structured data like table names and measure lists, AskUserQuestion forces specificity. |
+| XML-tagged step blocks | Unstructured numbered list | If the skill has no conditional branches or error handling. Once you need `priority="first"` or step-level failure handling, switch to tagged blocks. |
+| Separate namespace directory (`commands/pbi/`) | Top-level command file | Only valid if there will be exactly one skill with no related commands. A namespace groups PBI-related skills (skill, debug, check) under `/pbi:`. |
 
 ---
 
@@ -279,109 +161,58 @@ Because the HTTP API does not require authentication and the endpoint is stable 
 
 | Avoid | Why | Use Instead |
 |-------|-----|-------------|
-| `report.json` (PBIR-Legacy) for external editing | Microsoft explicitly states this file does not support external editing; changes will be lost or cause errors | PBIR `definition/` folder files for new projects; TMDL files for model/measures |
-| `diagramLayout.json` editing | Not supported during preview; changes silently lost | Leave untouched; not needed for DAX/measure work |
-| `.pbi/cache.abf` | Binary file; git-ignored by design; not human-readable | Read model definition from TMDL or model.bim instead |
-| Python for DAX parsing | No mature Python DAX parser exists; regex approaches break on complex DAX | Use Claude's language understanding + DAX Formatter API for formatting |
-| Regex to parse TMDL measures | TMDL indentation rules are strict but multiline measures span many lines — regex fails on complex expressions | Use Claude to read and interpret TMDL content; use glob+read for discovery |
-| Power BI REST API / Service API | Out of scope for v1; requires Azure AD auth, Service connection, published dataset | Desktop/file-first approach as stated in PROJECT.md |
-| `model.bim` when TMDL is available | model.bim is one large JSON file; harder to parse and diff than per-table TMDL files | Use TMDL `tables/*.tmdl` files for measure access |
+| Freeform "What do you want to build?" as opening | GSD's questioning.md explicitly lists "shallow acceptance" as an anti-pattern. Open questions produce vague context. | Pre-structured interrogation covering: table inventory, relationship map, existing measures, calculated columns, and business question. |
+| Jumping directly to DAX generation | The documented failure mode of PBI-SKILL v1. Every failure (wrong context, missed measures, wrong business question) stems from skipping pre-flight. | Gate all code generation behind a completed interrogation + explicit user confirmation gate. |
+| `Task` spawning for a conversational skill | Task spawns subagents with fresh context windows. Conversational skills need continuous context (the interrogation results must be available when DAX is written). | Run all phases inline within the same skill invocation, using in-memory context. Only use Task for parallel research agents (like GSD's 4 parallel researchers). |
+| Generic educational DAX output | PROJECT.md explicitly marks this as out of scope. Generic tutorials don't use the user's actual model. | Context-driven output only. Every measure references the specific tables, relationships, and existing measures gathered in the interrogation. |
+| YOLO mode without a verification gate | Auto-advancing from interrogation to code generation without asking "does this answer your question?" produces correct-looking but wrong output. | Explicit verification gate after each phase output. |
 
 ---
 
 ## Stack Patterns by Variant
 
-**If the PBIP uses TMDL format (version 4.0+, `definition/` folder exists):**
-- Read measures from `SemanticModel/definition/tables/*.tmdl`
-- Each table file contains all measures for that table
-- Detect with: `test -d "*.SemanticModel/definition"` or check `definition.pbism` version property
-- TMDL is the standard for all new projects from 2024 onward
+**If the skill needs to persist context across sessions (future v2):**
+- Write a `STATE.md` file after interrogation completes
+- Read it at skill start: if STATE.md exists, offer "Resume from last session" vs "Start fresh"
+- This is how GSD handles context compaction — artifacts persist even if the context window is lost
 
-**If the PBIP uses TMSL format (version 1.0, `model.bim` exists):**
-- Read measures from `SemanticModel/model.bim` (JSON path: `model.tables[].measures[]`)
-- Suggest analyst upgrade to TMDL (Power BI Desktop will prompt on next save)
-- Still fully readable; just less ergonomic for diffs
+**If the skill will have multiple related commands (future):**
+- Structure as `commands/pbi/skill.md`, `commands/pbi/debug.md`, `commands/pbi/review.md`
+- All under `/pbi:` namespace
+- Share a common reference file (`references/pbi-interrogation.md`) loaded via `execution_context` in each command
 
-**If the report uses PBIR (definition/ folder in Report folder):**
-- Report-level measures live in `Report/definition/reportExtensions.json`
-- Page metadata in `Report/definition/pages/[name]/page.json`
-- Fully editable externally with schema validation
-
-**If the report uses PBIR-Legacy (report.json):**
-- Do not attempt to edit report.json — unsupported
-- Only model-layer changes (TMDL files) are safe for external editing
-- Inform analyst that report visual layer requires Power BI Desktop
-
-**If Power BI Desktop is open:**
-- Any file edits require Desktop restart to take effect
-- For paste-in workflow: Claude outputs formatted DAX, analyst pastes into Desktop
-- Detect "Desktop likely open" heuristic: check if `cache.abf` exists and is recently modified
-
-**If running git operations on Windows:**
-- Use `git` CLI via Bash tool (Git for Windows is always available in PBIP repos)
-- PBIP uses CRLF line endings (Power BI Desktop saves with CRLF)
-- Configure: `git config core.autocrlf true` — Power BI Desktop creates `.gitignore` with standard entries
-- Avoid `\r\n` issues in diff output by piping through `tr -d '\r'` if needed
+**If the interrogation needs to handle brownfield state (existing reports):**
+- Add a detection step at initialization: does the user have an existing report or are they starting fresh?
+- Brownfield: interrogate the existing model structure first, identify what already exists
+- Greenfield: begin with blank model questions
+- Mirror GSD's brownfield detection in `new-project.md` Step 2
 
 ---
 
 ## Version Compatibility
 
-| Component | Compatible With | Notes |
-|-----------|-----------------|-------|
-| TMDL format | PBIP definition.pbism version 4.0+ | Older projects use version 1.0 (TMSL only); check before reading |
-| PBIR format | PBIP report definition.pbir version 4.0+ | PBIR-Legacy uses version 1.0; becoming default March 2026 |
-| Claude skills `SKILL.md` format | Claude Code current | `.claude/commands/*.md` legacy format also supported; identical capabilities |
-| `disable-model-invocation` frontmatter | Claude Code current | Required for analyst-triggered commands; prevents unexpected auto-invocations |
-| DAX Formatter API | Stable web service | No versioning exposed; SQLBI maintains backward compatibility |
-| Git for Windows | 2.x+ | CRLF handling via `core.autocrlf=true`; set in project `.gitattributes` |
+No versioned dependencies. Claude Code skill files are interpreted by whatever model is running. The `allowed-tools` frontmatter key must use exact tool names supported by the current Claude Code version:
 
----
-
-## PBIP File Reading Cheat Sheet
-
-For each `/pbi:*` command, here is what to read:
-
-| Command | Files to Read | Notes |
-|---------|--------------|-------|
-| `/pbi:optimize`, `/pbi:explain`, `/pbi:format`, `/pbi:comment` | `**/*.tmdl` files (grep for `measure`) OR pasted DAX | Detect mode: file path present vs raw paste |
-| `/pbi:audit` | All `*.tmdl` files + `definition.pbism` + `relationships.tmdl` | Need full model picture |
-| `/pbi:commit` | `git diff HEAD --stat`, `git diff HEAD -- *.tmdl` | Summarise what changed semantically |
-| `/pbi:diff` | `git log --oneline`, `git diff <rev1>..<rev2> -- *.tmdl` | Human-readable summary of DAX/model changes |
-| `/pbi:edit` | Specific table `.tmdl` file | Read → modify → write back; warn about Desktop restart |
-
----
-
-## Installation
-
-No npm packages to install for v1. The entire skill system runs on:
-
-```bash
-# Verify git is available (always true in a PBIP repo on Windows)
-git --version
-
-# Verify Node.js is available (required for DAX Formatter API calls)
-node --version
-
-# No other dependencies for v1
-```
-
-For the DAX Formatter API, use Node.js `fetch()` (native since Node 18) or curl via Bash. No npm package needed.
+| Tool Name | Purpose | Notes |
+|-----------|---------|-------|
+| `AskUserQuestion` | Structured option-based questions | Available in current Claude Code. Header max 12 chars enforced. |
+| `Read` | File reading | Always available |
+| `Write` | File writing | Required if skill creates output files |
+| `Bash` | Shell commands | Required if skill runs CLI tools |
+| `Task` | Subagent spawning | Required only if skill needs parallel agents |
 
 ---
 
 ## Sources
 
-- [Claude Code Skills documentation](https://code.claude.ai/docs/en/skills) — skill file format, frontmatter reference, invocation control (verified March 2026, HIGH confidence)
-- [Power BI Desktop projects overview](https://learn.microsoft.com/en-us/power-bi/developer/projects/projects-overview) — PBIP structure, file roles, external editing rules (updated 2025-12-15, HIGH confidence)
-- [Power BI Desktop project semantic model folder](https://learn.microsoft.com/en-us/power-bi/developer/projects/projects-dataset) — TMDL vs TMSL formats, model.bim vs definition/ folder (updated 2026-01-20, HIGH confidence)
-- [Power BI Desktop project report folder](https://learn.microsoft.com/en-us/power-bi/developer/projects/projects-report) — PBIR vs PBIR-Legacy, report.json editorial restrictions (updated 2026-01-12, HIGH confidence)
-- [TMDL overview](https://learn.microsoft.com/en-us/analysis-services/tmdl/tmdl-overview?view=sql-analysis-services-2025) — full TMDL syntax, measure format, folder structure (updated 2026-02-02, HIGH confidence)
-- [DAX Formatter by SQLBI](https://www.daxformatter.com/) — formatting service, API existence confirmed (MEDIUM confidence — exact endpoint path unverified)
-- [GitHub: sql-bi/DaxFormatter](https://github.com/sql-bi/DaxFormatter) — .NET client library; HTTP API wrapper (MEDIUM confidence)
-- [GSD command file format](C:/Users/DeveshD/.claude/commands/gsd/new-project.md) — frontmatter structure, `@`-file includes, `$ARGUMENTS` pattern (LOCAL, HIGH confidence)
+- Direct inspection of `C:/Users/DeveshD/.claude/commands/gsd/new-project.md` — command file format (HIGH confidence)
+- Direct inspection of `C:/Users/DeveshD/.claude/get-shit-done/workflows/new-project.md` — workflow structure and phase gates (HIGH confidence)
+- Direct inspection of `C:/Users/DeveshD/.claude/get-shit-done/workflows/discuss-phase.md` — interrogation patterns, AskUserQuestion usage, freeform fallback rule (HIGH confidence)
+- Direct inspection of `C:/Users/DeveshD/.claude/get-shit-done/workflows/execute-phase.md` — verification patterns, wave execution, subagent spawning (HIGH confidence)
+- Direct inspection of `C:/Users/DeveshD/.claude/get-shit-done/references/questioning.md` — interrogation philosophy, anti-patterns, decision gate pattern (HIGH confidence)
+- Direct inspection of `C:/Users/DeveshD/.claude/get-shit-done/references/verification-patterns.md` — verification approach, what "done" means (HIGH confidence)
+- Direct inspection of `C:/Users/DeveshD/.planning/PROJECT.md` — PBI-SKILL requirements and constraints (HIGH confidence)
 
 ---
-
-*Stack research for: PBI Skill — Claude slash-command system for Power BI PBIP files*
-*Researched: 2026-03-12*
+*Stack research for: Claude Code skill development (PBI-SKILL v2)*
+*Researched: 2026-03-13*

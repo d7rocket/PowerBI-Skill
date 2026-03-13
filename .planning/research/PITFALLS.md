@@ -1,264 +1,269 @@
 # Pitfalls Research
 
-**Domain:** Power BI PBIP analyst skill / Claude slash-command tool
-**Researched:** 2026-03-12
-**Confidence:** HIGH (critical pitfalls verified against official Microsoft docs, Claude Code docs, and community sources)
+**Domain:** Structured conversational AI skill for Power BI / DAX development
+**Researched:** 2026-03-13
+**Confidence:** HIGH (core pitfalls), MEDIUM (skill-file specifics)
 
 ---
 
 ## Critical Pitfalls
 
-### Pitfall 1: Hardcoding the Model Format as model.bim (TMSL vs TMDL Blindness)
+### Pitfall 1: Jumping to DAX Before the Data Model Is Understood
 
 **What goes wrong:**
-The tool assumes the semantic model is always stored as `model.bim` (TMSL/JSON). In practice, Power BI projects exist in two distinct formats: TMSL (`model.bim` — a single large JSON file) and TMDL (`/definition/` folder — one `.tmdl` file per table/measure). If the tool only knows about `model.bim`, it silently fails or corrupts a TMDL-format project. This is especially dangerous because TMDL is the direction Microsoft is pushing, and the upgrade from TMSL to TMDL is **irreversible** without a backup.
+The skill receives a vague request ("calculate YTD sales") and immediately generates a measure. The measure is syntactically correct but logically wrong — it filters on a dimension column instead of a fact column, ignores an existing date table relationship, or duplicates a measure that already exists under a different name. The user gets plausible-looking DAX that silently returns wrong numbers.
 
 **Why it happens:**
-Most documentation and tutorials were written when TMSL was the only option. TMDL moved to preview in 2023 and is now in broader adoption. Training data for LLMs skews heavily toward TMSL examples. The `definition.pbism` file specifies the version (1.0 = TMSL, 4.0+ = TMDL), but it is easy to miss.
+Without knowing the data model (tables, relationships, existing measures, cardinality), an LLM fills in assumptions from training data. Those assumptions reflect generic Power BI patterns, not the user's actual model. LLM-generated DAX is unreliable beyond simple aggregations when model structure is unknown — the AI produces syntactically valid but semantically incorrect code.
 
 **How to avoid:**
-- At startup, read `definition.pbism` to detect the format version before touching any model files.
-- Implement separate read/write paths for TMSL (`model.bim`) and TMDL (`/definition/` folder).
-- If format is ambiguous, prompt the analyst rather than assuming.
-- Never write `model.bim` into a TMDL project — this creates a corrupt state where both formats exist simultaneously.
-- Reference: `definition.pbism` version property: version 1.0 = TMSL; version 4.0+ = TMDL.
+The skill MUST require the user to describe the data model before any measure is written. Minimum required context: table names, key relationships, whether a dedicated date table exists, and what related measures already exist. These must be explicit gates — the skill should refuse to proceed without them, not treat them as optional context.
 
 **Warning signs:**
-- Commands that work on one analyst's machine fail on another's.
-- DAX edits appear to save but are not reflected when the report is opened.
-- Git shows unexpected large diffs after a supposedly minor change.
+- The skill produces a measure in the first or second response without asking about relationships
+- The skill assumes a standard star schema without verifying
+- The user reports "the numbers look close but not quite right"
+- The generated measure uses `ALL()` or `CALCULATE()` without confirming the filter context intent
 
-**Phase to address:** Foundation / project detection phase (first phase). Must be solved before any read/write functionality is built.
+**Phase to address:** Phase 1 — Pre-flight interrogation gate
 
 ---
 
-### Pitfall 2: Ignoring the "Desktop Must Be Closed" Contract
+### Pitfall 2: Interrogation Questions That Are Too Generic to Extract Useful Context
 
 **What goes wrong:**
-Editing PBIP files on disk while Power BI Desktop has the project open causes silent data loss. Power BI Desktop holds the model in-memory and overwrites project files on save. If the tool writes a measure edit to `model.bim` or a TMDL file while Desktop is open, the analyst's next save in Desktop will overwrite all external changes without any warning.
+The skill asks "Can you describe your data model?" The user gives a vague two-sentence answer. The skill proceeds as if it has enough context. Later, the generated DAX fails because it assumed a direct relationship that doesn't exist, or missed that the model uses a role-playing date table.
 
 **Why it happens:**
-Power BI Desktop has no file-watch or live-reload mechanism for external edits. The architecture is: Desktop loads files on open, holds state in-memory, writes back on save. External tooling that edits files on disk is not observable by Desktop. This is a fundamental constraint of the PBIP format — not a bug that will be fixed.
+Generic open questions allow generic answers. Users don't know what level of detail the skill needs. Without specific, targeted questions ("Does your date table have a direct relationship to the fact table, or do you filter dates through a bridge table?"), the interrogation phase collects noise, not signal. Research confirms that LLMs asking vague follow-up questions receive answers that don't eliminate key ambiguities.
 
 **How to avoid:**
-- Always detect whether Desktop is running before offering file-edit mode. On Windows, check for `PBIDesktop.exe` process.
-- Surface two distinct modes clearly: "file-edit mode (Desktop must be closed)" and "paste-in mode (Desktop is open)".
-- In paste-in mode, produce formatted output the analyst can copy-paste into Desktop's DAX editor — never write to disk.
-- Warn explicitly before any disk write: "This will modify files on disk. Confirm Power BI Desktop is closed."
-- Document in the skill's help text that restart is required after external edits.
+The interrogation phase must use specific, structured questions organized into mandatory and conditional buckets:
+- **Mandatory:** Number of fact tables, relationship direction, whether a date table exists and its name, list of existing measures in the same subject area
+- **Conditional:** If time intelligence is needed — does the date table have a `DateKey` integer column or a `Date` date column? If % of total is needed — does the total live at a parent dimension level or a fixed value?
+
+Questions should be targeted enough that a "yes/no + one detail" answer is sufficient. Avoid questions where any answer is valid.
 
 **Warning signs:**
-- Analyst reports that changes "disappeared" after saving in Desktop.
-- Tool shows success but report still shows old measure definition.
+- The interrogation phase consists of only one or two questions
+- Questions are phrased as "tell me about your model" rather than specific attribute requests
+- The user answers in under 50 words and the skill proceeds without follow-up
+- The skill does not explicitly confirm relationship direction (single vs. bidirectional)
 
-**Phase to address:** Core architecture phase (very early). The two-mode design must be established before any command is built.
+**Phase to address:** Phase 1 — Pre-flight interrogation gate
 
 ---
 
-### Pitfall 3: PBIR Report Format Blindness (report.json vs PBIR per-visual files)
+### Pitfall 3: Verification Gates That Become Rubber Stamps
 
 **What goes wrong:**
-The report layer of a PBIP project also has two format variants: the legacy PBIR-Legacy format stores the report as a single `report.json` file; the new PBIR format stores each page, visual, and bookmark as individual files in a folder structure. As of March 2026, PBIR is the new default for Power BI Desktop. The upgrade is irreversible. A tool that only knows about `report.json` will fail silently on any new PBIR-format project.
+After generating a measure, the skill asks "Does this look right to you?" The user says "looks good" without testing it. The skill moves to the next phase. The error surfaces later when the report is deployed. The verification gate existed but added no actual quality assurance.
 
 **Why it happens:**
-The PBIR format was in preview throughout most of 2024-2025 and only became the default in early 2026. The PBI-SKILL project was conceived during this transition. Most community documentation still references `report.json`.
+Verification questions that rely on the user's impressionistic judgment do not verify correctness. "Does this look right?" invites agreement bias. Without a specific, testable check, the gate is theater — it creates the appearance of verification while adding no defense against bad output.
+
+An additional structural problem: asking one LLM instance to review its own output catches far fewer errors than cross-checking against an independent signal. Research on AI-on-AI review confirms that self-review is weaker than external review.
 
 **How to avoid:**
-- Treat the report layer as a potentially compound format from day one.
-- Check for the presence of a `definition/` folder under the report item versus a `report.json` file.
-- For v1, the tool's scope is DAX and model layer — explicitly document that report-layer editing targets the model (`/SemanticModel/`) only.
-- If the analyst asks about report-layer files, explain the PBIR format situation rather than attempting to parse it.
+Verification gates must require a concrete, observable test result:
+- "Apply this measure to a matrix with [specific dimension] on rows. Does the total match the expected business number for a known period?"
+- "Check whether [Measure Name] returns the same result as [Related Existing Measure] when no filters are applied — they should be equal."
+- "For a single product with known sales, does the measure return [expected value]?"
+
+The gate should also require the user to confirm: what did they test, against what expected value, and did they match? If the user cannot answer these, the gate should surface this explicitly rather than proceeding.
 
 **Warning signs:**
-- `/pbi:audit` or `/pbi:diff` commands that try to parse report.json fail on newer projects.
-- Analyst says "the file doesn't look like what you described."
+- The verification prompt is "does this look good?" or "any questions?"
+- The gate does not specify a test or expected result
+- The user's confirmation is a single word ("yes", "looks fine", "ok")
+- The skill advances to the next phase after any affirmative, regardless of whether a test was performed
 
-**Phase to address:** Foundation phase. Format detection must cover both the model layer (TMSL vs TMDL) and the report layer (PBIR-Legacy vs PBIR).
+**Phase to address:** Phase 2 — Measure verification gate; also Phase 3 — Visual verification
 
 ---
 
-### Pitfall 4: Context Window Saturation from Inlining Large PBIP Files
+### Pitfall 4: Context Loss Across Phases in a Multi-Turn Conversation
 
 **What goes wrong:**
-PBIP model files can be very large. A `model.bim` for a non-trivial model can easily be 500 KB to several MB of JSON. Loading the entire file into the context window in every command response eats the 200K token window quickly and degrades response quality from ~80% fill onward (with a steep coherence loss between 80-95% saturation).
+The skill successfully interrogates the data model in Phase 1. By Phase 3 (visual recommendations), the key constraints established earlier — the bidirectional relationship caveat, the non-standard date table, the existing measure that must be used as a base — are no longer referenced. The phase 3 output contradicts the phase 1 findings.
 
 **Why it happens:**
-The naive implementation of `/pbi:audit` or `/pbi:edit` reads the entire model file and inlines it into the prompt. TMDL format mitigates this somewhat (files are split per table), but a large model can still have many tables with hundreds of measures. Context saturation is invisible — the tool appears to work while giving increasingly degraded output.
+LLMs degrade measurably in multi-turn conversations. Research confirms an average 39% performance drop across generation tasks in multi-turn vs. single-turn interactions for flagship models including Claude 3.7 Sonnet. The root cause is not context window overflow — it is that LLMs make early assumptions, get "lost," and do not recover when new information contradicts those assumptions. Critical facts from the middle of a long conversation are systematically underweighted due to the "lost-in-middle" phenomenon.
 
 **How to avoid:**
-- Never load the full model file by default. Load relevant sections only (e.g., for `/pbi:optimize`, load the specific measure being optimised plus its dependencies).
-- For `/pbi:audit`, implement a streaming/chunked approach: audit one domain at a time (naming conventions, then relationships, then measure quality) rather than loading everything at once.
-- For TMDL format, this is naturally mitigated by the per-file structure — read only the table files relevant to the task.
-- Use sub-agents for context isolation: spawn a sub-agent to read the model and extract only the relevant measures, then return a summary to the parent agent.
-- Set a size threshold: if model.bim > 100 KB, warn the analyst and suggest targeted queries instead of full audit.
+The skill must maintain a structured "context ledger" — a committed summary of established facts that is carried forward into each phase. Before generating any phase output, the skill should explicitly re-state the binding constraints from phase 1:
+- Confirmed model facts (table names, relationships, date table)
+- Confirmed existing measures that must not be duplicated
+- Confirmed business question the report must answer
+
+This summary should be short (bullet points, under 10 lines) and re-injected at the start of each new phase prompt. Do not rely on Claude remembering earlier turns — make the context explicit.
 
 **Warning signs:**
-- Audit output becomes less specific or misses obvious issues on large models.
-- Tool begins hallucinating measure names that don't exist in the model.
-- Long sessions produce increasingly generic advice.
+- Phase 3 output references a relationship type or column that contradicts phase 1 findings
+- The skill generates a new measure for a calculation already covered in a measure listed during phase 1
+- The business question established in phase 1 is no longer referenced by phase 3
+- The conversation is more than 20 turns long without a context refresh
 
-**Phase to address:** Core command implementation phase. Chunk-loading strategy must be designed before `/pbi:audit` and `/pbi:edit` are built.
+**Phase to address:** Phase 2, 3, and 4 — the skill must implement context carry-forward at every phase boundary
 
 ---
 
-### Pitfall 5: DAX Context Transition Mistakes in Optimization Advice
+### Pitfall 5: DAX Generated Without Awareness of Evaluation Context
 
 **What goes wrong:**
-The tool gives DAX optimization advice that is technically wrong because it ignores context transition side effects. The most common error: recommending wrapping a measure reference in `CALCULATE()` to "add filter context" without realising this triggers context transition, which can completely change the result in an iterator. Alternatively, recommending removal of a `CALCULATE()` wrapper as "unnecessary" when it is actually the mechanism providing the correct filter context.
+The skill generates a measure like `CALCULATE([Sales Amount], FILTER(DimProduct, DimProduct[Category] = "Electronics"))`. This works in a simple card visual. It breaks silently when placed in a matrix with Product on rows — the `FILTER` iterates DimProduct and creates a new filter context that conflicts with the visual's own row context. The user sees inconsistent or blank values.
 
 **Why it happens:**
-Context transition in DAX is one of the most counterintuitive concepts in the language. It occurs whenever a measure (which internally contains CALCULATE) is referenced inside an iterator — the row context is automatically converted to a filter context. This is not obvious from reading the formula. LLMs trained on DAX documentation learn the rules but frequently misapply them when the iterator + measure interaction is nested or indirect.
+Filter context and row context interaction is the single most common source of silent DAX errors. Without knowing where the measure will be consumed (card, matrix, table, calculated column), the skill cannot write a correct measure. Generic DAX patterns from training data often omit this consideration. The SQLBI corpus documents this as the most misunderstood area of DAX even for experienced developers.
 
 **How to avoid:**
-- Never recommend removing a `CALCULATE()` wrapper without explicitly reasoning through whether context transition is being relied upon.
-- When analyzing iterator functions (`SUMX`, `AVERAGEX`, etc.), always check whether the expression references other measures, not just column references.
-- For `/pbi:optimize`, flag any measure that uses iterators over measures (not just columns) as "requires manual verification — context transition present."
-- Avoid the blanket rule "SUMX on a single column is always slower than SUM" — this is a widely repeated simplification that is often wrong (SUMX on a single column is internally the same operation as SUM).
-- Reference authoritative sources: SQLBI's "Understanding Context Transition in DAX" is the definitive treatment.
+The interrogation phase must ask "where will this measure be used?" as a required field — not optional context. The answer (card only, matrix with [dimension], table, slicer interaction) determines whether the skill should use `CALCULATE` with table filters, `SELECTEDVALUE`, `HASONEVALUE`, or iterator-based patterns. The measure generation step must include a note on the assumed consumption context and flag if the measure may behave differently in other visuals.
 
 **Warning signs:**
-- Optimization suggestions change a measure's result, not just its performance.
-- Analyst reports that "the optimised measure gives different numbers."
-- The tool recommends `SUM` everywhere as a replacement for `SUMX` without checking the expression body.
+- The skill generates CALCULATE with a table-level FILTER without asking about visual placement
+- The measure uses direct column references inside CALCULATE without checking for row context
+- No mention of where the measure will be placed appears in the skill's output
+- The measure uses `ALL()` on a dimension without confirming whether bidirectional filtering is active
 
-**Phase to address:** DAX analysis commands phase (`/pbi:optimize`, `/pbi:explain`). Must be addressed in the prompt engineering for those commands before they ship.
+**Phase to address:** Phase 1 — interrogation (consumption context) and Phase 2 — measure generation
 
 ---
 
-### Pitfall 6: Treating "dataset" and "semantic model" as Interchangeable in User-Facing Text
+### Pitfall 6: Skill Prompt Becomes a Tutorial Instead of a Workflow Driver
 
 **What goes wrong:**
-Microsoft renamed "dataset" to "semantic model" in late 2023. The tool generates advice, commit messages, or audit output using "dataset" terminology. This confuses analysts working in the modern Power BI Service UI (which shows "semantic model") while still being correct for analysts using older documentation. The REST API still uses "datasets" internally, adding further inconsistency.
+The skill file grows to include explanations of what DAX is, why filter context matters, and background on the Power BI data model. The user reads none of it. Claude reads all of it, consuming context budget on explanations that add no behavior. The skill behaves like an educational assistant rather than a structured workflow executor.
 
 **Why it happens:**
-LLM training data is heavily weighted toward pre-rename documentation. "Dataset" is far more prevalent in training corpora than "semantic model." Without explicit instruction, outputs default to the older term.
+When writing a skill, the temptation is to document all relevant knowledge to make the skill "smarter." But the Anthropic skill authoring guidance is explicit: Claude already knows DAX fundamentals. Every token explaining what CALCULATE does is a token that competes with conversation history and phase context. Verbose skill files degrade performance because relevant phase instructions get diluted by educational content.
 
 **How to avoid:**
-- In all user-facing output, use "semantic model" consistently.
-- In PBIP file path references, use the folder name as-is (which Power BI Desktop names per the project — typically something like `ProjectName.SemanticModel/`).
-- In the skill's CLAUDE.md / system context, explicitly instruct: "Always use 'semantic model', never 'dataset', when referring to the Power BI data model layer."
-- Exception: when discussing the REST API or scripting contexts where the term "dataset" appears in the API surface, use both with explanation.
+The skill file must contain only workflow instructions, phase gates, question templates, and output format requirements. It must NOT contain:
+- Explanations of DAX concepts
+- Background on Power BI architecture
+- Tutorials on evaluation context
+
+Test the file: if a section could be replaced with "Claude already knows this," delete it. The skill file should read like a process playbook, not a knowledge base.
 
 **Warning signs:**
-- Commit messages generated by `/pbi:commit` say "Updated dataset measures" instead of "Updated semantic model measures."
-- Audit output refers to "dataset best practices" in contexts where the current Microsoft guidance uses "semantic model."
+- The SKILL.md file exceeds 200 lines before any phase-specific content
+- The file contains paragraphs starting with "DAX is..." or "Power BI uses..."
+- Phase instructions are buried after three or more paragraphs of background
+- The skill generates educational responses when it should be asking interrogation questions
 
-**Phase to address:** Foundation phase. Establish a terminology glossary in the skill's system context before any command is built.
+**Phase to address:** Phase 1 (skill file authoring) — structure before content
 
 ---
 
 ## Technical Debt Patterns
 
+Shortcuts that seem reasonable but create long-term problems.
+
 | Shortcut | Immediate Benefit | Long-term Cost | When Acceptable |
 |----------|-------------------|----------------|-----------------|
-| Only supporting model.bim (TMSL) initially | Simpler to build, most existing projects use it | Will break on TMDL projects; requires rewrite once TMDL adoption grows | Never — TMDL is the default direction; detect both from day one |
-| Hardcoding file paths (e.g., always look for `model.bim`) | Faster initial development | Silent failures on TMDL projects; hard to debug | Never |
-| Inlining full model files into context | Simpler code, no chunking logic | Context saturation on any non-trivial model | Only in prototyping/testing with tiny models |
-| Single mode (file-edit only, no paste-in) | Half the complexity | Tool is unusable whenever Desktop is open, which is most of the time for active analysts | MVP only, if explicitly scoped — but paste-in is too important to defer long |
-| Skip format detection, ask analyst every time | Avoids detection logic | Poor UX, analyst must know their own format | Acceptable in v1 if detection proves complex, but should auto-detect by v2 |
-| Generic DAX optimization rules without context analysis | Easier to implement | Wrong advice in edge cases; damages trust | Never for optimization; acceptable for formatting/explaining |
+| Skipping the data model confirmation step for "simple" requests | Faster response | Silent errors in measures using wrong relationships | Never — model confirmation takes 2 minutes and prevents rewrites |
+| Single open-ended interrogation question instead of structured prompts | Less friction | Insufficient context, measures that look right but aren't | Never for DAX generation; acceptable for general advice questions |
+| Relying on user to flag errors instead of requiring testable verification | Fewer turns | Bugs surface in deployment, not development | Never for measures that feed key report visuals |
+| Context carried implicitly in conversation history rather than explicit ledger | Shorter prompts | Phase 3+ outputs contradict Phase 1 constraints | Never in conversations expected to exceed 10 turns |
+| Including business logic in visual-layer measures instead of base measures | Fewer measures | Logic is trapped in a single visual, not reusable | Only for one-off exploratory analysis, never for production reports |
 
 ---
 
 ## Integration Gotchas
 
+Common mistakes when connecting to conversational Power BI workflow elements.
+
 | Integration | Common Mistake | Correct Approach |
 |-------------|----------------|------------------|
-| Git + PBIP | Committing `cache.abf` and `localSettings.json` — these change every time Desktop opens, creating constant false diffs | Verify `.gitignore` excludes `.pbi/cache.abf`, `.pbi/localSettings.json`, and `*.abf` before staging |
-| Git + PBIP | Staging the entire project directory including Copilot metadata and TMDLScripts scratch files | Stage only semantic model definition files and report definition files; exclude editor artifacts |
-| TMDL files | Editing TMDL with incorrect whitespace/indentation | TMDL is whitespace-sensitive; malformed indentation causes Desktop to reject the file on open with a parse error |
-| unappliedChanges.json | Overwriting M query edits made in Desktop by writing to the queries section of TMDL externally | Check for the presence of `unappliedChanges.json` before editing Power Query definitions — if present, external edits to queries will be overwritten when the analyst applies pending changes |
-| diagramLayout.json | Treating this file as editable | Microsoft docs explicitly state this file "doesn't support external editing" during preview |
-| PBIR report format | Assuming `report.json` exists in all PBIP report folders | Check for PBIR format (`definition/` subfolder in Report item) before any report-layer operations |
+| Existing measure reuse | Skill generates a new measure that duplicates an existing one under a slightly different name | Interrogation phase must explicitly collect existing measure names and purposes before generation |
+| Date table assumptions | Skill assumes a standard `DateKey` integer surrogate key; model uses a `Date` date column | Ask specifically: "What is the primary key column type and name in your date table?" |
+| Relationship direction | Skill assumes single-direction relationships; model has bidirectional filters for role-playing dimensions | Ask: "Are any relationships set to bidirectional? If so, which ones?" |
+| Visual placement of measures | Skill writes a measure assuming a card visual; it will be used in a matrix | "Where will this measure be displayed?" must be a required interrogation field |
+| Calculated column vs. measure | Skill generates a measure when a calculated column is actually needed (row-level computation) | Ask whether the calculation needs to vary by row or aggregate across rows |
 
 ---
 
 ## Performance Traps
 
+Patterns that work at small scale but fail as usage grows.
+
 | Trap | Symptoms | Prevention | When It Breaks |
 |------|----------|------------|----------------|
-| Loading full model.bim per command | Slow responses, context saturation on models > 50 tables | Load only relevant table/measure files; use TMDL per-file structure | Any model with more than ~30 measures if using TMSL |
-| Running full `/pbi:audit` in a single context window | Audit output becomes generic and misses issues in second half of model | Split audit into domain-specific passes; use sub-agents per audit category | Models with more than ~15 tables or ~50 measures |
-| Git diff parsing on TMSL model.bim | Full JSON diff is unreadable; diff parser returns walls of JSON | Prefer TMDL (per-file diffs are clean); for TMSL, parse the JSON and emit human-readable change summary | Any model change, immediately |
-| Sub-agent spawning for every command | Overhead adds latency; context isolation means sub-agents miss model-wide context | Reserve sub-agents for heavy operations (audit, diff summarisation); use in-context reading for single-measure operations | Not a scale issue — a UX issue from the first use |
+| CALCULATE with table-level FILTER over large dimension | Measure works on small dataset, times out on full model | Use column-level predicates (`DimProduct[Category] = "X"`) instead of `FILTER(DimTable, ...)` | Any fact table over ~1M rows with a large dimension table |
+| Iterator functions over large tables without early filtering | SUMX over entire fact table is slow | Add a CALCULATETABLE or FILTER to scope the iterator before iterating | Fact tables over 5M rows |
+| RELATED() in calculated columns on large tables | Column refresh takes minutes | Pre-join at the model/query level instead | Calculated columns on tables over 500K rows |
+| Bidirectional relationships for convenience filtering | Ambiguous filter paths, unexpected cross-filtering | Use explicit CROSSFILTER() in DAX instead of model-level bidirectionality | Any model with 3+ related tables sharing a filter path |
 
 ---
 
 ## UX Pitfalls
 
+Common user experience mistakes in this domain.
+
 | Pitfall | User Impact | Better Approach |
 |---------|-------------|-----------------|
-| Outputting a rewritten measure without showing the diff | Analyst cannot review what changed; must manually compare old and new | Always show old → new with highlighted changes when rewriting any DAX |
-| Silent file writes with no confirmation | Analyst loses work if Desktop was open; no recovery path | Require explicit confirmation before disk writes; show exactly which files will be changed |
-| Generic "optimisation complete" with no explanation | Analyst learns nothing; cannot review correctness | Explain each change: what the original pattern was, why it was changed, what the new pattern does differently |
-| Paste-in mode output with no copy-ready formatting | Analyst must reformat before pasting into Desktop | Produce output as a clean DAX block, correctly indented, ready to paste directly into the Desktop DAX editor |
-| Commit messages that are technically accurate but business-meaningless | "Updated model.bim" or "Changed measure expression" — tells teammates nothing | Generate commit messages in business terms: "Add YoY Sales Growth % measure; fix CALCULATE filter context in Margin % measure" |
-| Mixing paste-in and file-edit output in the same response | Confuses the analyst about whether files were changed | Clearly label every response: "File-edit mode: changes written to disk" or "Paste-in mode: copy the block below" |
+| Skill produces measures without explaining what the measure does and why the pattern was chosen | User cannot validate correctness, cannot learn | Include a 2-sentence explanation: what it calculates and which pattern was used |
+| Skill asks all interrogation questions in a single massive block | User feels interrogated, provides low-quality answers | Group questions into sets of 3-4, confirm before proceeding |
+| Skill advances phases automatically without explicit user confirmation | User misses phase boundary, loses ability to correct early errors | Each phase must end with an explicit checkpoint: "Phase 1 complete. Confirm the above model facts are correct before we write any measures." |
+| Skill generates multiple measures in one response | User cannot test one at a time | Generate one measure per response, verify before the next |
+| Skill gives a visual recommendation without confirming report audience or output format | Recommendation is wrong for mobile layout, or executive vs. analyst audience | Ask: "Who is the primary audience and where will this report be consumed (desktop, web, mobile)?" |
 
 ---
 
 ## "Looks Done But Isn't" Checklist
 
-- [ ] **Format detection:** Does the tool handle both `model.bim` (TMSL) and `/definition/` folder (TMDL)? Test against a TMDL project before declaring done.
-- [ ] **Desktop-open detection:** Does paste-in mode actually produce clean copy-pasteable DAX, not file paths or JSON? Verify on a measure that includes variables and formatting.
-- [ ] **Git pre-commit check:** Does `/pbi:commit` verify that `.gitignore` correctly excludes `cache.abf` and `localSettings.json` before staging?
-- [ ] **PBIR report format:** Does the tool gracefully handle the absence of `report.json` in PBIR-format projects, rather than throwing an error?
-- [ ] **unappliedChanges.json guard:** Does any command that touches Power Query definitions check for `unappliedChanges.json` first?
-- [ ] **Context transition in DAX:** Does `/pbi:optimize` flag measures using iterators over measure references as "requires manual verification" rather than blindly recommending simplification?
-- [ ] **Terminology consistency:** Does every user-facing output say "semantic model" not "dataset"? Run a grep/search over all command outputs.
-- [ ] **Large model handling:** Does `/pbi:audit` produce sensible output on a model with 100+ measures, or does it degrade silently?
-- [ ] **TMDL whitespace safety:** Does any TMDL write operation preserve indentation exactly? Test by round-tripping a TMDL file through the tool and verifying Desktop still opens it.
-- [ ] **diagramLayout.json:** Is this file explicitly excluded from all write operations?
+Things that appear complete but are missing critical pieces.
+
+- [ ] **Interrogation phase:** Often missing relationship direction confirmation — verify bidirectional flag has been asked about
+- [ ] **Measure generation:** Often missing consumption context (where the measure will be placed) — verify visual placement was confirmed
+- [ ] **Verification gate:** Often missing a testable check — verify the gate specifies what to test, not just "does this look right?"
+- [ ] **Phase context carry-forward:** Often missing an explicit model summary at the start of each new phase — verify phase 2+ prompts re-state confirmed model facts
+- [ ] **Existing measure inventory:** Often missing a check against already-existing measures — verify the interrogation phase collected existing measure names before generating new ones
+- [ ] **DAX explanation:** Often missing the pattern rationale — verify each generated measure includes a 2-sentence explanation of why the pattern was chosen
 
 ---
 
 ## Recovery Strategies
 
+When pitfalls occur despite prevention, how to recover.
+
 | Pitfall | Recovery Cost | Recovery Steps |
 |---------|---------------|----------------|
-| Overwrote TMDL files while Desktop was open | HIGH | Re-open Desktop, save immediately to re-export; if save fails, restore from git last known good commit; if no git, restore from `.pbi/cache.abf` backup |
-| Upgraded TMSL to TMDL without backup (irreversible) | MEDIUM | No rollback available; work from TMDL going forward; if original is needed, re-open from a git commit pre-upgrade or a PBIX backup |
-| Committed `cache.abf` to git — repo bloat | MEDIUM | Add to `.gitignore`, run `git rm --cached` for the file, rewrite history with `git filter-repo` if repo size is a problem |
-| Context saturation produced wrong DAX | LOW | Re-run the specific command in a fresh session with only the relevant measure pasted in; compare output |
-| TMDL parse error after external edit | LOW | Desktop shows error with line number; fix the specific indentation/syntax issue; TMDL errors are local and do not corrupt the whole model |
-| Wrong optimization advice applied (e.g., broke context transition) | MEDIUM | Restore the original measure from git history or the analyst's notes; add a regression test measure to verify results match before/after |
+| DAX generated without model context, now produces wrong numbers | MEDIUM | Run model interrogation retrospectively; ask user to provide table/relationship details; regenerate with corrected context |
+| Verification gate rubber-stamped, error found in production | MEDIUM | Return to measure verification phase; require specific numeric test against known values; re-issue corrected measure |
+| Context lost across phases, Phase 3 contradicts Phase 1 | HIGH | Re-run context ledger: ask user to re-confirm Phase 1 findings; treat current output as draft; regenerate Phase 3 output with explicit constraints |
+| Skill file too verbose, Claude generating educational content instead of workflow | LOW | Audit SKILL.md; delete any paragraph that explains DAX concepts rather than directing behavior; re-test with focused interrogation request |
+| Duplicate measure generated (missed existing measure) | LOW | Ask user to run a search for related measure names in their model; deprecate the new measure if a match is found; consolidate |
 
 ---
 
 ## Pitfall-to-Phase Mapping
 
+How roadmap phases should address these pitfalls.
+
 | Pitfall | Prevention Phase | Verification |
 |---------|------------------|--------------|
-| TMSL vs TMDL format blindness | Phase 1: Foundation / project detection | Test against a TMDL project; `definition.pbism` version correctly detected |
-| Desktop-open file locking | Phase 1: Foundation / dual-mode design | Running PBIDesktop.exe during test; file-edit correctly blocked, paste-in correctly offered |
-| PBIR report format blindness | Phase 1: Foundation / format detection | Test against a March 2026+ project saved with PBIR default |
-| Context window saturation | Phase 2: Core commands (audit, edit) | Benchmark against a 100-measure model; no hallucinated measure names |
-| DAX context transition mistakes | Phase 2: DAX commands (optimize, explain) | Test measures with SUMX over measure references; no incorrect simplification advice |
-| "dataset" terminology | Phase 1: Foundation / skill system context | Grep all user-facing outputs for "dataset" — must be zero |
-| Git noisy diffs / missing .gitignore | Phase 3: Git workflow (commit, diff) | Verify `.gitignore` guards before staging; test on TMDL and TMSL projects |
-| unappliedChanges.json overwrite | Phase 2: Edit command | Test with a project that has pending Power Query changes |
-| TMDL whitespace corruption | Phase 2: Edit command | Round-trip a TMDL file; Desktop opens without error |
-| Commit message business-meaninglessness | Phase 3: Git workflow (commit) | Human review of generated commit messages against a set of test model changes |
+| DAX before model is understood | Phase 1: Mandatory pre-flight gate before any code | No DAX appears in Phase 1 output; Phase 1 ends with confirmed model summary |
+| Vague interrogation questions | Phase 1: Specific question templates with mandatory/conditional buckets | User answers are specific enough to determine relationship direction and measure naming |
+| Rubber-stamp verification gates | Phase 2: Verification gate requires named test and expected value | User confirms what they tested and against what known value |
+| Context loss across phases | Phase 2-4: Explicit context ledger re-injected at each phase boundary | Phase 3 output explicitly references constraints established in Phase 1 |
+| Evaluation context errors | Phase 1: Visual placement question added to interrogation; Phase 2: CALCULATE pattern selection depends on answer | Generated measure notes assumed visual placement |
+| Skill bloat / tutorial content | Phase 1 (skill authoring): Review against conciseness standard | SKILL.md contains no explanatory paragraphs about DAX fundamentals |
 
 ---
 
 ## Sources
 
-- [Power BI Desktop project semantic model folder — Microsoft Learn](https://learn.microsoft.com/en-us/power-bi/developer/projects/projects-dataset) — TMSL vs TMDL format, file structure, `definition.pbism` version property, `unappliedChanges.json` behaviour, `diagramLayout.json` external editing restriction
-- [PBIR will become the default Power BI Report Format — Microsoft Power BI Blog](https://powerbi.microsoft.com/en-us/blog/pbir-will-become-the-default-power-bi-report-format-get-ready-for-the-transition/) — PBIR as default from March 2026, irreversible upgrade, transition timeline
-- [Transitioning to PBIR — nickyvv.com](https://www.nickyvv.com/2026/02/transitioning-to-new-power-bi-enhanced-report-format-pbir.html) — GA timeline (Q3 2026), PBIR-Legacy deprecation
-- [AI agents that work with TMDL files — Tabular Editor Blog](https://tabulareditor.com/blog/ai-agents-that-work-with-tmdl-files) — TMDL whitespace sensitivity, validation without deployment, multi-syntax confusion in AI agents
-- [Understanding context transition in DAX — SQLBI](https://www.sqlbi.com/articles/understanding-context-transition-in-dax/) — Authoritative treatment of context transition pitfalls
-- [Context Transition's Dark Secret: The Performance Cost of Iterators in DAX — Medium](https://medium.com/@sandippalit009/context-transitions-dark-secret-the-performance-cost-of-iterators-in-dax-e246f2bc494a) — Hidden performance costs of context transition in iterators
-- [SUM vs SUMX misunderstanding — Power of BI](https://www.powerofbi.org/2024/03/04/dax-sum-vs-sumx-misunderstanding/) — Debunking the blanket "SUMX is slower" advice
-- [Datasets renamed to semantic models — Microsoft Power BI Blog](https://powerbi.microsoft.com/en-us/blog/datasets-renamed-to-semantic-models/) — Terminology change history; REST API still uses "datasets"
-- [Claude Code Customization: CLAUDE.md, Slash Commands, Skills, and Subagents — alexop.dev](https://alexop.dev/posts/claude-code-customization-guide-claudemd-skills-subagents/) — Skill auto-trigger unreliability, context drift, skills vs slash commands distinction
-- [Context Management with Subagents in Claude Code — RichSnapp.com](https://www.richsnapp.com/article/2025/10-05-context-management-with-subagents-in-claude-code) — Sub-agent context isolation, parallel spawning conflicts
-- [Context Management Common Mistakes — SFEIR Institute](https://institute.sfeir.com/en/claude-code/claude-code-context-management/errors/) — 80% context fill performance degradation, context amnesia
-- [.gitignore for Power BI Projects — jihwanpowerbifabric.wixsite.com](https://jihwanpowerbifabric.wixsite.com/supplychainflow/post/gitignore-for-power-bi-projects-a-simple-guide-for-the-modern-bi-developer) — Auto-generated files that create noisy diffs
-- [The Good, the Bad, and the PBIP — Medium, Feb 2026](https://medium.com/@malharpawar/the-good-the-bad-and-the-pbip-mastering-power-bi-version-control-9bbb77ee53a5) — Real-world PBIP version control issues
-- [Power BI Desktop projects (PBIP) — Microsoft Learn](https://learn.microsoft.com/en-us/power-bi/developer/projects/projects-overview) — Canonical PBIP format documentation
+- [SQLBI: Introducing AI and agentic development for Business Intelligence](https://www.sqlbi.com/articles/introducing-ai-and-agentic-development-for-business-intelligence/) — primary source on AI DAX generation failure modes; confirms AI needs rich, specific model context to avoid wrong filter patterns
+- [Anthropic: Skill authoring best practices](https://platform.claude.com/docs/en/agents-and-tools/agent-skills/best-practices) — authoritative source on skill file design, progressive disclosure, avoiding verbosity, and verification loop patterns
+- [arXiv: LLMs Get Lost In Multi-Turn Conversation (2505.06120)](https://arxiv.org/abs/2505.06120) — research confirming 39% average accuracy drop in multi-turn conversations; root cause is premature assumption-making, not context overflow
+- [PromptHub: Why LLMs Fail in Multi-Turn Conversations](https://www.prompthub.us/blog/why-llms-fail-in-multi-turn-conversations-and-how-to-fix-it) — documents four specific failure mechanisms including lost-in-middle and verbosity inflation
+- [SQLBI: Row Context and Filter Context in DAX](https://www.sqlbi.com/articles/row-context-and-filter-context-in-dax/) — authoritative source on evaluation context as the primary DAX correctness hazard
+- [SQLBI: Solving errors in CALCULATE filter arguments](https://www.sqlbi.com/articles/solving-errors-in-calculate-filter-arguments/) — specific patterns for CALCULATE filter argument errors
+- [Medium: Building an AI Chat Assistant for Power BI Reports](https://medium.com/@michael.hannecke/building-an-ai-chat-assistant-for-power-bi-reports-architecture-and-trade-offs-74200ee608dc) — documents LLM DAX unreliability beyond simple aggregations
+- [Tabular Editor: Power BI for intermediates: 7 mistakes you don't want to make](https://tabulareditor.com/blog/power-bi-for-intermediates-7-mistakes-you-dont-want-to-make) — domain-level intermediate mistakes that AI assistants are likely to reproduce
+- [Chroma Research: Context Rot — How Increasing Input Tokens Impacts LLM Performance](https://research.trychroma.com/context-rot) — performance degradation with longer context windows
 
 ---
-*Pitfalls research for: Power BI PBIP analyst skill (Claude slash-command tool)*
-*Researched: 2026-03-12*
+*Pitfalls research for: PBI Skill v2 — structured Power BI / DAX conversational skill*
+*Researched: 2026-03-13*

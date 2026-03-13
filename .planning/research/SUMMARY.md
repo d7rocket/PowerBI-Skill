@@ -1,17 +1,17 @@
 # Project Research Summary
 
-**Project:** PBI Skill — Claude slash-command skill system for Power BI PBIP files
-**Domain:** Developer tooling / analyst productivity — Claude Code skill suite for Power BI PBIP file-layer operations
-**Researched:** 2026-03-12
-**Confidence:** HIGH (primary sources are official Claude Code docs and Microsoft Learn; two medium-confidence gaps noted below)
+**Project:** PBI-SKILL v2 — Conversational Power BI / DAX assistant (Claude Code skill)
+**Domain:** Structured conversational AI skill for Power BI development
+**Researched:** 2026-03-13
+**Confidence:** HIGH
 
 ## Executive Summary
 
-PBI Skill is a Claude Code slash-command suite that delivers DAX intelligence, model governance, and Git workflow tooling directly at the PBIP file layer — no live Power BI connection, no GUI install, no build step. The product fills a genuine gap: DAX Studio requires a live connection, Tabular Editor requires a GUI install, DAX Formatter is a web paste-in with no model context, and Power BI Copilot is locked to the Fabric Service. This skill uniquely combines all three pillars (DAX quality, model auditing, Git workflow) in a terminal-native, slash-command interface that analysts can invoke during any session. The recommended implementation is a colon-namespaced Claude skill suite under `.claude/skills/pbi/` using separate SKILL.md files per command, supporting two operating modes from day one: paste-in mode (always available, works while Desktop is open) and PBIP file mode (available when Desktop is closed and a `.SemanticModel/` directory is present).
+PBI-SKILL v2 is a Claude Code slash command: a structured `.md` prompt file that drives a phase-gated conversational workflow for Power BI report development. The product is not a software application — it is a prompt architecture that enforces structured interrogation, phased execution, and verification before any DAX is written. The GSD system on this machine is the canonical reference implementation; all architectural patterns, file format conventions, and interaction mechanisms are derived directly from it. There is no runtime dependency, no compiled artifact, and no external API integration required.
 
-The highest-value entry point is the four paste-in DAX commands (`/pbi:explain`, `/pbi:format`, `/pbi:optimize`, `/pbi:comment`), which deliver daily value with zero setup — no PBIP repo required. These commands work for every analyst immediately, even those who have not adopted the PBIP format. The PBIP-dependent commands (`/pbi:audit`, `/pbi:commit`, `/pbi:diff`, `/pbi:edit`) deliver deeper value once a file-mode context is established. The architecture research confirms a clear build order: start with paste-in DAX commands, add context detection and file I/O next, then model-wide audit, then Git integration, then general-purpose editing.
+The recommended approach is to build the skill as a thin command wrapper (`~/.claude/commands/pbi/skill.md`) that loads a deeper workflow file. The workflow enforces four phases — model review, measures (DAX), visuals, and polish — each preceded by an interrogation phase and followed by a verification gate. The interrogation phase is the differentiator: it extracts business question, data model structure, existing measures, and visual consumption context before any code is generated. This is the direct inversion of the v1 failure mode (DAX generated without model context) and the mechanism that distinguishes the skill from Microsoft Copilot and generic LLM prompting.
 
-The three non-negotiable constraints that must be addressed before the first command ships: (1) format detection — the tool must distinguish TMSL (`model.bim`) from TMDL (`definition/` folder) at startup by reading `definition.pbism`, because the two formats require completely different read/write paths; (2) Desktop-open safety — any file-write path must be guarded by explicit confirmation that Power BI Desktop is closed, defaulting to paste-in output otherwise; and (3) terminology — all user-facing output must use "semantic model," never "dataset." These are not polish items; they are trust-breaking failures if missed.
+The primary risk is not technical — it is workflow discipline. Research confirms that LLMs lose 39% accuracy across multi-turn conversations and that verification gates which don't require specific testable results degrade into rubber stamps. Both risks have known mitigations: explicit context carry-forward at every phase boundary and verification gates that require named tests with expected values, not impressionistic "does this look right?" prompts. All anti-patterns are documented in GSD's reference implementation and can be applied directly.
 
 ---
 
@@ -19,177 +19,139 @@ The three non-negotiable constraints that must be addressed before the first com
 
 ### Recommended Stack
 
-The skill system requires no npm installs, no external dependencies, and no build step for v1. Every `/pbi:*` command is a Markdown skill file with YAML frontmatter — Claude's own tool execution handles all runtime behaviour. The one medium-confidence dependency is the DAX Formatter HTTP API (`https://www.daxformatter.com`), which is used by DAX Studio, Tabular Editor, and Fabric Copilot and is highly stable, but the exact endpoint path should be verified empirically at project start. If unavailable, Claude can apply SQLBI formatting rules inline as a fallback.
+This skill requires no software stack in the conventional sense. The "stack" is a composition of file format conventions, invocation mechanisms, and interaction patterns — all interpreted at runtime by Claude. Skill files are `.md` files registered in `~/.claude/commands/pbi/` and become available as `/pbi:skill`. No npm, no runtime, no build step.
+
+The GSD reference implementation at `~/.claude/get-shit-done/` is the authoritative source for every pattern used in this skill. All findings are derived from direct inspection of production GSD files (HIGH confidence). No external library or version dependency is required.
 
 **Core technologies:**
-- Claude Skills (`.claude/skills/pbi/` directory): The entire skill suite — each command is one SKILL.md file, no runtime required.
-- Bash tool (via Claude): All Git operations (`git diff`, `git add`, `git commit`); all PBIP file discovery (`find`, `glob`). Git for Windows is always present in any PBIP repository on Windows.
-- Node.js 20 LTS (native `fetch()`): DAX Formatter API calls. Already required by the GSD toolchain; no install needed.
-- Git 2.43+: PBIP was designed for Git; CRLF handling via `core.autocrlf=true`; `.gitignore` auto-generated by Desktop.
-
-**What NOT to use:**
-- `report.json` (PBIR-Legacy) for external editing — Microsoft explicitly unsupported.
-- Python for DAX parsing — no mature parser exists.
-- Regex to parse multi-line TMDL measures — fails on complex expressions.
-- `model.bim` when TMDL `definition/` folder exists — use per-table TMDL files instead.
-- Power BI REST API — out of scope for v1 (requires Azure AD auth).
+- Claude Code slash command (`.md`): Skill definition and invocation — the native mechanism; files in `~/.claude/commands/[namespace]/` are auto-discovered and invocable
+- YAML frontmatter: Skill metadata and tool permissions — required; omitting it blocks tool access including `AskUserQuestion`
+- XML-tagged sections (`<purpose>`, `<step>`, `<success_criteria>`): Structural prompt organization — creates machine-readable logical boundaries Claude treats as execution contracts
+- `AskUserQuestion` tool: Structured interrogation with option lists — enforces option-based UI over freeform prompts; header max 12 characters enforced
+- Thin command + deep workflow separation: Command file (~40 lines) loads a workflow file (~300-500 lines) via `@path` reference — keeps invocation stub maintainable while concentrating logic
 
 ### Expected Features
 
-**Must have — table stakes (v1 launch):**
-- `/pbi:explain` — plain-English DAX explanation; highest-frequency analyst task (paste-in, always available)
-- `/pbi:format` — SQLBI-style DAX formatting; industry-standard output analysts already expect
-- `/pbi:optimize` — detect top-5 slow patterns, rewrite with rationale explaining SE/FE split
-- `/pbi:comment` — inline `//` DAX comments plus auto-populated `description` field value (two artefacts from one command)
-- `/pbi:audit` — naming conventions + relationship health + date table detection + hidden column hygiene + measure quality (requires PBIP file access)
-- Context detection — PBIP file mode vs paste-in mode; gate all file-write commands on Desktop being closed
-- `/pbi` bare router — orient new users, route to the right subcommand
+The skill's feature set follows a strict dependency chain: interrogation gates everything downstream. Features that bypass this chain conflict with the skill's core value and are explicitly excluded.
 
-**Should have — differentiators (v1.x after validation):**
-- `/pbi:commit` — stage PBIP changes, generate business-language commit messages from PBIP diff
-- `/pbi:diff` — human-readable changelog between commits: "3 measures modified, 1 relationship removed"
-- `/pbi:edit` — direct TMDL/model.bim writes for audit-suggested fixes (Desktop must be closed)
-- Adaptive skill-level responses — infer analyst expertise from their DAX and adjust explanation register
+**Must have (table stakes — P1):**
+- Pre-flight interrogation protocol (business question, grain, model topology, existing measures, visual placement) — this IS the differentiator; without it the skill is just another DAX assistant
+- Data model state intake (tables, relationships, date table name and key type, cardinality) — all DAX correctness depends on this context
+- Existing measures audit before writing new ones — prevents duplicate measure sprawl, the most common waste in Power BI projects
+- Context-aware DAX output (uses user's actual table and column names, not placeholders) — the most common complaint about AI-generated DAX; non-context-aware output is immediately unusable
+- Phase-gated workflow: model review → measures → visuals → polish — structure prevents the v1 failure mode; phases gate each other
+- Verification gate at end of each phase (requires named test and expected value, not "does this look right?") — prevents bad output from propagating across phases
+- Visual type recommendation tied to data shape and business question — completes the phase scope at low implementation cost
+- Report polish checklist (high-signal items: missing titles, color-only encoding, 3D charts, slicer overload) — closes the workflow loop
 
-**Defer to v2+:**
-- `/pbi:new` — scaffold new measures with correct naming, format string, display folder, description
-- M query audit support — different language, different engine, different failure modes
-- PBIR visual layer (report page/visual editing) — PBIR format stabilising; GA expected Q3 2026
-- Batch measure operations — apply formatting/commenting across all measures at once
+**Should have (competitive differentiators — P2, add after v1 validation):**
+- Duplicate measure detection heuristic — conversational check against user-described existing measures before generation
+- Model health flags during intake — surface M:M relationships, missing date table, bidirectional filters, high-cardinality columns proactively
+- Visual anti-pattern warnings (pie charts > 8 slices, KPI cards without context, slicers that contradict measure assumptions) — one-sentence callouts, high signal-to-noise
 
-**Anti-features (deliberately not building):**
-- Interactive query runner / VertiPaq viewer — DAX Studio does this better and needs a live connection
-- Full report creation from scratch — different product category; visual layer requires immature PBIR JSON
-- Power BI Service / REST API integration — out of scope per PROJECT.md for v1
-- Real-time model monitoring — requires persistent process, not a slash-command pattern
+**Defer (v2+):**
+- DAX pattern selection (pattern-first generation against a curated pattern library) — high value but requires pattern library and classification logic; needs v1 to prove base workflow first
+- Phase completion confirmation with explicit rollback gate — risk of over-engineering before basic phase discipline is validated
+- Business question traceability as persistent inline annotation throughout all phases — UX refinement for v2
+
+**Anti-features (deliberately excluded):**
+- DAX tutorial generation — conflicts with phase discipline; shifts skill to educational mode
+- Generic report templates — false sense of progress without model context
+- Power BI API / `.pbix` file operations — this is a conversational `.md` prompt; no file system or service connector access
+- Free-form "ask me anything" mode — destroys structured workflow; use parking-lot pattern instead ("noted — we'll address that in phase X")
 
 ### Architecture Approach
 
-The system follows the colon-namespaced Claude Code skill pattern exactly: one SKILL.md per command under `.claude/skills/pbi/commands/`, a thin bare `/pbi` router at the root, and a `knowledge/` directory for heavy reference content (DAX anti-pattern library, audit rules, PBIP schema reference) loaded only when needed by specific commands. This keeps every command file under the 2% context budget and keeps commands independently testable and maintainable. Two shared concerns are handled inline in each command rather than as shared services: context detection (check for `.SemanticModel/` in CWD) and argument resolution (file path vs pasted DAX vs blank input prompting).
+The skill architecture is a layered pipeline: preamble → interrogation → phased execution → verification gates. The skill `.md` file IS the architecture; its sections define the components and execution flows linearly through them. There is no runtime environment — Claude reads the file as instructions and executes conversationally. The interrogation layer is the highest-leverage component: it produces a context object (four mandatory facts) that all subsequent phases depend on. Each execution phase consumes from this context object and produces phase-specific output, which is then evaluated by a co-located verification gate before the next phase begins.
 
 **Major components:**
-1. `/pbi` bare router — thin SKILL.md that presents options and redirects; built last (after all commands exist)
-2. DAX commands group (`explain`, `format`, `optimize`, `comment`) — paste-in mode only for v1; no PBIP file I/O required; highest daily-use value
-3. Context detection — inline `find . -name "definition.pbism"` preamble in every command; branches to PBIP mode vs paste-in mode
-4. Model read layer — detects TMSL vs TMDL via `definition.pbism` version field; separate read paths for `model.bim` JSON vs per-table `.tmdl` files
-5. `/pbi:audit` — model-wide read; loads `knowledge/audit-rules.md`; produces structured severity-graded output
-6. Git commands group (`commit`, `diff`) — Bash-tool git operations; diff summarisation logic interprets JSON/TMDL diffs as business-language changelogs
-7. `/pbi:edit` — read + modify + write TMDL or model.bim; most open-ended command; gated on Desktop-closed confirmation
+1. **Preamble** (`<purpose>`, `<required_reading>`) — declares intent and forces context load before any user interaction; top position is non-negotiable
+2. **Interrogation Layer** — extracts four mandatory facts (business question, data model structure, existing measures, visual consumption context) using freeform open question followed by `AskUserQuestion` threads; exits only via decision gate with explicit user readiness signal; never exits on question count or timer
+3. **Context Object** — structured summary of interrogation findings carried forward explicitly (not implicitly via conversation history) into every phase; mitigates the documented 39% multi-turn accuracy drop
+4. **Execution Phases (1-4)** — scoped, sequential; each opens by restating binding context constraints from interrogation; no phase may reference or generate content from a later phase
+5. **Verification Gates** — co-located with each phase; require a specific named test and expected value; branch on explicit user approval (advance) or explicit issue description (re-work phase); never advance on impressionistic "looks good"
+6. **Anti-Patterns Block** — hard constraints placed at end of skill file; active throughout execution as background rails
 
-**Key patterns to follow:**
-- Colon-namespaced independent skill files — never a monolithic SKILL.md with branching
-- Two-mode design enforced from day one — paste-in output is the safe default; file-writes require explicit confirmation
-- Format detection before any file read — read `definition.pbism` version before touching model files
-- Late-loaded knowledge files — heavy reference content referenced explicitly, not auto-injected
+**Build order (dependency-driven):**
+1. Interrogation layer first — everything depends on its quality
+2. Verification gate definitions second — define pass/fail before writing phases
+3. Phase 1 (Model Review) third — narrow scope, no DAX, establishes context carry-forward
+4. Phase 2 (Measures) fourth — hardest phase; constrained by Phase 1 findings
+5. Phases 3-4 (Visuals, Polish) last — downstream of the hard work
 
 ### Critical Pitfalls
 
-1. **TMSL vs TMDL format blindness** — Read `definition.pbism` version field first in every PBIP command. Version 1.0 = TMSL (`model.bim`); version 4.0+ = TMDL (`definition/` folder). Never hardcode `model.bim`. This must be in the foundation phase; silent failures on TMDL projects break analyst trust immediately.
+1. **DAX generated before data model is understood** — Hard gate in the skill: no DAX appears until pre-flight checklist is complete and Phase 1 verification gate passes. Any measure in Phase 1 output is a failure signal.
 
-2. **Writing files while Power BI Desktop is open** — Desktop overwrites external changes on next save with no warning. Detect `PBIDesktop.exe` process, or require analyst confirmation, before any disk write. Default to paste-in output. This is architecturally non-negotiable — paste-in mode must be the default path, not an afterthought.
+2. **Vague interrogation questions that produce vague context** — Questions must be specific enough that "yes/no + one detail" is a sufficient answer. Mandatory buckets: relationship direction (single vs. bidirectional), date table key type and name, existing measure names and purpose. Conditional buckets: date key type (for time intelligence), parent level (for % of total).
 
-3. **Context window saturation on large models** — `model.bim` for a non-trivial model can exceed 500 KB. Loading the full file degrades output quality from ~80% context fill onward. For `/pbi:audit`, chunk by domain (naming pass, then relationships pass, then measure quality pass). For `/pbi:edit`, load only the target table file. TMDL's per-table file structure naturally mitigates this — prefer TMDL reads wherever possible.
+3. **Verification gates that become rubber stamps** — Gates must specify what to test and what the expected value is. "Does this look right?" is an anti-pattern. Correct form: "Apply this measure to a matrix with [dimension] on rows. For [known period], does the result match [expected value]?"
 
-4. **DAX context transition mistakes in optimization advice** — Recommending removal of `CALCULATE()` wrappers or blanket replacement of `SUMX` with `SUM` without reasoning through context transition is the highest-trust-damage failure mode. In `/pbi:optimize`, flag any measure using iterators over measure references as "requires manual verification — context transition present." Never apply the "SUMX on a single column is slower than SUM" simplification.
+4. **Context loss across phases (documented: 39% accuracy drop in multi-turn conversations)** — Explicit context ledger injected at the start of every phase. Phases 2-4 must open with: confirmed table names, confirmed relationships, confirmed existing measures, confirmed business question. Relying on Claude remembering earlier turns is the failure mode.
 
-5. **PBIR report format blindness** — As of March 2026, PBIR is the default report format. New projects have no `report.json`; they have a `definition/` folder under the Report item. Any command that touches the report layer must check for PBIR vs PBIR-Legacy before proceeding. For v1, stay on the semantic model layer only and document this scope explicitly.
+5. **DAX written without awareness of visual consumption context** — "Where will this measure be used?" is a required interrogation field, not optional context. The answer determines whether `CALCULATE` with table filter, `SELECTEDVALUE`, `HASONEVALUE`, or iterator patterns is correct. The generated measure must note its assumed consumption context.
 
-6. **Terminology drift** — LLM defaults to "dataset" (the pre-2023 term). All user-facing output must use "semantic model." Establish this in the skill's system context before any command is built; verify with grep on all output templates.
+6. **Skill file becomes a tutorial** — The skill file must contain only workflow instructions, phase gates, question templates, and output format requirements. No DAX concept explanations, no Power BI background paragraphs. Test: if a section could be replaced with "Claude already knows this," delete it.
 
 ---
 
 ## Implications for Roadmap
 
-Based on combined research, a 5-phase build order is recommended. The architecture research and pitfall-to-phase mapping converge on the same ordering, which increases confidence in this structure.
+Research points to a 4-phase delivery structure with a foundational interrogation layer built first. Phase order is dictated by the dependency chain in FEATURES.md and the build order derived from ARCHITECTURE.md.
 
-### Phase 1: Foundation and Paste-in DAX Commands
+### Phase 1: Interrogation Foundation
+**Rationale:** The interrogation layer is the highest-leverage component. Everything else depends on it. Building it first also validates the core differentiator before any DAX logic is written. This is the direct response to the v1 failure mode.
+**Delivers:** A working pre-flight interrogation that extracts all four mandatory context facts (business question, data model structure, existing measures, visual consumption context) and exits through a decision gate requiring explicit user readiness signal
+**Addresses:** Pre-flight interrogation protocol, data model state intake, existing measures audit (table stakes P1 features)
+**Avoids:** Pitfall 1 (DAX before model understood), Pitfall 2 (vague interrogation), Pitfall 4 (context loss — establishes what the context object must contain)
+**Research flag:** Well-documented patterns (GSD `questioning.md`, `new-project.md` decision gate). Skip `/gsd:research-phase` — apply GSD patterns directly.
 
-**Rationale:** Four commands (`explain`, `format`, `optimize`, `comment`) require zero PBIP setup and zero file I/O. They deliver immediate daily value to any analyst. This validates the slash-command concept and DAX knowledge base before adding file complexity. It also surfaces trust-breaking failures in DAX reasoning (context transition mistakes) before they affect the more consequential file-write commands.
+### Phase 2: Verification Gate Architecture
+**Rationale:** Define what pass/fail looks like for each gate before writing phase logic. This prevents writing phases that produce unverifiable output. ARCHITECTURE.md recommends this explicitly as step 2 of the build order.
+**Delivers:** Checkpoint box pattern for each phase (model review, measures, visuals, polish), each with a specific test requirement and explicit branch logic (advance vs. re-work)
+**Addresses:** Verification gate (table stakes P1), phase-gated workflow structure (P1)
+**Avoids:** Pitfall 3 (rubber-stamp verification), Pitfall 4 (context loss — gates are the mechanism that surfaces context drift before it propagates)
+**Research flag:** Standard patterns available (GSD `ui-brand.md` checkpoint box format). Skip `/gsd:research-phase`.
 
-**Delivers:** `/pbi:explain`, `/pbi:format`, `/pbi:optimize`, `/pbi:comment` — all in paste-in mode only.
+### Phase 3: Phase 1 — Model Review
+**Rationale:** Narrow scope (no DAX, just a structured model summary), makes it the safest first execution phase to build. Establishes the context carry-forward pattern that Phases 2-4 inherit. Cannot be built before interrogation and gate architecture are stable.
+**Delivers:** Model review phase that takes interrogation context and produces a structured, human-readable summary of the data model (tables, relationships, health flags), with a verification gate requiring confirmation before any measure writing begins
+**Addresses:** Data model state intake (completes P1), model health flags (P2 — partial; surface M:M, missing date table, bidirectionality during model review)
+**Avoids:** Pitfall 1 (hard gate: no DAX in this phase), Pitfall 3 (gate is defined in Phase 2), Pitfall 5 (visual context already captured in interrogation)
+**Research flag:** Standard patterns. Skip `/gsd:research-phase`.
 
-**Addresses:** All P1 paste-in features from FEATURES.md; establishes the argument resolution pattern (`$ARGUMENTS` as paste, file path, or prompt).
+### Phase 4: Phase 2 — Measures (DAX)
+**Rationale:** Hardest phase; requires interrogation, gate architecture, and model review to all be stable before attempting it. Must enforce no-duplicate rule, respect grain, tie every measure to the business question, and select correct patterns based on visual consumption context.
+**Delivers:** Context-aware DAX generation (uses actual table/column names), one measure per response, 2-sentence pattern rationale with each measure, consumption-context note, verification gate requiring a named test against an expected value
+**Addresses:** Context-aware DAX output (P1), verification gate — measures phase (P1), duplicate measure detection (P2 — integrated as pre-generation check), DAX evaluation context awareness (critical pitfall)
+**Avoids:** Pitfall 1 (gated behind Phase 3), Pitfall 3 (specific testable gate), Pitfall 4 (context ledger re-injected at phase open), Pitfall 5 (consumption context from interrogation drives pattern selection)
+**Research flag:** May benefit from `/gsd:research-phase` for DAX pattern selection if adding P3 feature (pattern-first generation). Skip for v1 scope.
 
-**Must establish:** "semantic model" terminology; DAX context transition caution in `/pbi:optimize` prompt engineering; clean paste-ready code block output format.
-
-**Research flag:** Standard patterns — no phase research needed. DAX formatting rules and optimization patterns are well-documented (SQLBI, Microsoft Learn).
-
----
-
-### Phase 2: Context Detection and PBIP File I/O
-
-**Rationale:** Context detection is the shared foundation for all subsequent PBIP-dependent commands. `/pbi:comment` in PBIP file mode is the lowest-stakes first write-back (modifying one measure's description vs. reading the entire model), making it the right command to establish the two-mode design and TMSL/TMDL format detection before the higher-stakes audit and edit commands.
-
-**Delivers:** Context detection utility (inline `find definition.pbism` preamble); TMSL vs TMDL format detection logic; `/pbi:comment` in full PBIP file mode (reads target table file, writes back description field and inline comments).
-
-**Addresses:** Context detection P1 feature from FEATURES.md; TMDL vs TMSL format blindness pitfall; Desktop-open safety pitfall.
-
-**Must establish:** `definition.pbism` version check before every PBIP file operation; explicit Desktop-closed confirmation before any disk write; graceful fallback to paste-in when PBIP is absent.
-
-**Research flag:** Standard patterns — format detection logic is fully documented in Microsoft Learn. No phase research needed.
-
----
-
-### Phase 3: Model-Wide Audit
-
-**Rationale:** `/pbi:audit` depends on reliable PBIP parsing (established in Phase 2) and benefits from reading the full model — but must be chunked to avoid context saturation. Implementing audit as a read-only command before adding any audit write-back features provides a safe validation step for the model-reading infrastructure.
-
-**Delivers:** `/pbi:audit` — naming conventions check, relationship health (bidirectional flags), date table detection, hidden column hygiene, measure quality (blank `formatString`, empty `description`, nested `CALCULATE`). Structured severity output: CRITICAL / WARN / INFO with location and recommendation.
-
-**Addresses:** Full model audit P1 feature; context window saturation pitfall (chunked domain passes); PBIR report format blindness (document that audit scope is semantic model layer only).
-
-**Must establish:** `knowledge/audit-rules.md` with Tabular Editor BPA-aligned rule set; chunked audit strategy (one domain per pass, not full model in one context window); size threshold warning for models > 100 KB.
-
-**Research flag:** May benefit from `/gsd:research-phase` on the BPA rule set to ensure the knowledge/audit-rules.md covers the canonical community rules accurately. The TabularEditor/BestPracticeRules GitHub repo is the definitive reference.
-
----
-
-### Phase 4: Git Workflow Integration
-
-**Rationale:** Git commands (`diff`, `commit`) depend on a working PBIP project with git history and on reliable PBIP parsing (established in Phases 2-3). Building `/pbi:diff` before `/pbi:commit` validates the diff parsing and business-language summarisation logic before wiring it into an actual commit operation.
-
-**Delivers:** `/pbi:diff` — human-readable changelog from git diff of PBIP files; `/pbi:commit` — stage PBIP changes, generate business-language commit message, confirm and execute.
-
-**Addresses:** Git commit message generation and human-readable diff P2 features from FEATURES.md; Git noisy diff / missing .gitignore gotcha (verify `.gitignore` guards before staging); TMDL-preferred diff parsing (per-file diffs are clean vs. TMSL JSON wall).
-
-**Must establish:** `.gitignore` guard check before any staging operation (verify `cache.abf` and `localSettings.json` are excluded); business-language commit message format (table/measure names, not JSON key paths).
-
-**Research flag:** Standard patterns — Git operations via Bash tool are well-documented. No phase research needed.
-
----
-
-### Phase 5: Direct PBIP File Editing and Router Polish
-
-**Rationale:** `/pbi:edit` is the most open-ended command and must be built last because it requires deep understanding of which files are safe to write (established in Phases 2-3) and relies on audit output as a preceding step. The bare `/pbi` router is also deferred to this phase because it can only route to commands that already exist.
-
-**Delivers:** `/pbi:edit` — general-purpose read/write of TMDL or `model.bim` files, targeted at applying audit-suggested fixes without reopening Desktop; `/pbi` bare router — presents all available commands, orients new users.
-
-**Addresses:** Direct PBIP file editing P2 feature; TMDL whitespace sensitivity pitfall (round-trip testing required); `unappliedChanges.json` guard for Power Query definitions.
-
-**Must establish:** Pre-write checklist: Desktop-closed confirmation, `unappliedChanges.json` check, `diagramLayout.json` exclusion, TMDL indentation preservation on write-back.
-
-**Research flag:** Standard patterns — TMDL write rules are documented. No phase research needed, but the "looks done but isn't" checklist from PITFALLS.md should be run as a verification gate before this phase is marked complete.
-
----
+### Phase 5: Phases 3 and 4 — Visuals and Polish
+**Rationale:** Downstream of the hardest work. Low complexity, high perceived value. Build after Phases 1-2 (model review and measures) are stable, since visual recommendations must reference actual measure names from Phase 4.
+**Delivers:** Visual type recommendations grounded in data shape and business question; report polish checklist (missing titles, color-only encoding, 3D charts, slicer overload); final verification gate
+**Addresses:** Visual type recommendation (P1), report polish checklist (P1), visual anti-pattern warnings (P2 — integrate into polish phase), audience/output format question (confirmed in interrogation)
+**Avoids:** Pitfall 4 (context ledger re-injected, Phase 3 output references Phase 4 measure names explicitly)
+**Research flag:** Standard patterns. Skip `/gsd:research-phase`.
 
 ### Phase Ordering Rationale
 
-- **Paste-in before file I/O:** The four paste-in commands work without any PBIP infrastructure and validate DAX knowledge quality before file complexity is added. Analysts with Desktop open get value from day one.
-- **Context detection before any PBIP command:** Every PBIP-dependent command requires the two-mode design and format detection. Establishing this in Phase 2 with a low-stakes command (`comment`) prevents rework across all subsequent phases.
-- **Audit before edit:** Read-only audit validates the model-reading infrastructure. Direct edits are only built once the reading layer is proven reliable.
-- **Diff before commit:** Parsing and summarising a diff is lower-stakes than executing a commit. Validating the summarisation logic before wiring it to `git commit` avoids bad commit messages being executed.
-- **Router last:** The routing command can only be written after all routable commands exist. Deferring it to Phase 5 prevents it from becoming a maintenance burden during earlier phases.
+- **Interrogation before everything:** The dependency chain in FEATURES.md is explicit — business question gates model intake, which gates measures audit, which gates DAX generation. No phase can produce correct output without the one before it.
+- **Gates before phases:** Defining verification criteria before writing phases prevents the failure mode where phases produce output that can't be meaningfully evaluated. ARCHITECTURE.md recommends this order explicitly.
+- **Model review before measures:** Phase 1 (model review) discovers facts (existing measures, relationship direction, grain) that directly constrain what Phase 2 (measures) is allowed to write. Building Phase 2 without Phase 1 findings in place produces the context-drift anti-pattern.
+- **Visuals and polish last:** Both depend on measure names and structure from Phase 2. Building them in parallel with measures creates inconsistency.
+- **Single skill file, not a directory:** For v1, all logic lives in one workflow file loaded by a thin command wrapper. No session state file needed — the skill is single-session. Add `STATE.md` persistence in v2 if context compaction across sessions becomes a user need.
 
 ### Research Flags
 
-**Phases needing deeper research during planning:**
-- **Phase 3 (Audit):** Consider `/gsd:research-phase` to enumerate the full Tabular Editor BestPracticeRules rule catalogue and produce a structured `knowledge/audit-rules.md`. The rule set is community-standard but not summarised in a single concise form for embedding in a knowledge file.
+Phases with well-documented patterns (skip `/gsd:research-phase`):
+- **Phase 1 (Interrogation):** GSD `questioning.md` and `new-project.md` decision gate are direct source. Apply patterns verbatim.
+- **Phase 2 (Verification Gates):** GSD `ui-brand.md` checkpoint box format is the standard. No research needed.
+- **Phase 3 (Model Review):** Narrow scope with no DAX. Standard GSD phase pattern applies.
+- **Phase 5 (Visuals, Polish):** Low complexity, standard recommendation patterns.
 
-**Phases with standard patterns (skip research-phase):**
-- **Phase 1 (Paste-in DAX):** DAX formatting rules and optimization patterns are thoroughly documented by SQLBI. Claude's own DAX knowledge is strong for explanation and formatting tasks.
-- **Phase 2 (Context detection/file I/O):** Format detection logic is fully specified by Microsoft Learn. TMSL and TMDL schemas are documented.
-- **Phase 4 (Git workflow):** Bash Git operations are standard. PBIP git patterns are documented.
-- **Phase 5 (Edit/router):** TMDL write rules and safe-file-edit table are documented in Microsoft Learn.
+Phases that may benefit from deeper research during planning:
+- **Phase 4 (Measures / DAX):** If DAX pattern selection (P3 feature) is pulled into v1 scope, a pattern library and classification logic will need design. Current v1 scope (context-aware generation without pattern-first classification) does not require research. Flag for v2 planning.
 
 ---
 
@@ -197,54 +159,49 @@ Based on combined research, a 5-phase build order is recommended. The architectu
 
 | Area | Confidence | Notes |
 |------|------------|-------|
-| Stack | HIGH | Claude Code skill format verified against official docs (March 2026); PBIP/TMDL/PBIR format verified against Microsoft Learn (updated Jan-Feb 2026); Node.js native fetch confirmed. One MEDIUM item: DAX Formatter API endpoint path needs empirical verification at project start. |
-| Features | HIGH | Pain points confirmed across multiple community and official sources; competitor tool landscape well-mapped; feature gap analysis is solid. Feature prioritisation matrix is opinionated and defensible. |
-| Architecture | HIGH | Colon-namespaced skill pattern verified against official Claude Code docs; PBIP JSON schemas verified against Microsoft Learn and official TMSL schema; GSD command pattern used as verified local reference. |
-| Pitfalls | HIGH | Critical pitfalls verified against official Microsoft docs, SQLBI authoritative articles, and Claude Code community guides. DAX context transition pitfall is backed by multiple independent sources. |
+| Stack | HIGH | All findings from direct inspection of GSD reference implementation on this machine — the authoritative source |
+| Features | HIGH (core), MEDIUM (polish/differentiators) | Core P1 features grounded in SQLBI expert sources and Microsoft Learn; P2/P3 features grounded in community sources and domain inference |
+| Architecture | HIGH | Derived directly from GSD production workflow files (`new-project.md`, `questioning.md`, `ui-brand.md`) — no inference required |
+| Pitfalls | HIGH (critical pitfalls), MEDIUM (skill-file specifics) | Critical pitfalls grounded in peer-reviewed research (arXiv multi-turn study) and authoritative domain sources (SQLBI); skill-file specifics from Anthropic best practices |
 
 **Overall confidence:** HIGH
 
 ### Gaps to Address
 
-- **DAX Formatter API endpoint path (MEDIUM confidence):** The API existence and usage are confirmed, but the exact POST endpoint path was inferred from source code inspection rather than official documentation. Verify empirically with a test `curl` call at project start before wiring it into `/pbi:format` or `/pbi:optimize`. Fallback to Claude inline formatting is available and sufficient if the API is unreachable.
+- **DAX pattern classification (v2):** The research identifies DAX pattern-first generation as a high-value v2 differentiator but does not define the pattern library structure. When pulled into scope, a separate research step is needed to define the pattern taxonomy (ratio, running total, period comparison, ranking, conditional accumulation) and the classification logic that maps interrogation answers to pattern categories.
 
-- **TMDL write round-trip safety:** TMDL is whitespace-sensitive. The "looks done but isn't" checklist item — round-tripping a TMDL file through the Edit tool and verifying Desktop opens it without parse errors — should be a formal gate criterion for Phase 5 sign-off, not assumed to work.
+- **Brownfield model handling:** The skill design assumes the user is describing their model conversationally. For users with complex existing models (10+ tables, 30+ measures), the interrogation may need a structured capture format (written model summary the user fills in). This is not a v1 blocker — the interrogation phase can handle it conversationally — but it is a known scaling pressure point. No dedicated research has been done; handle during Phase 1 (Interrogation) implementation with a fallback option: "If you have a complex model, paste your table list and I'll work through it with you."
 
-- **Audit rule completeness:** The `knowledge/audit-rules.md` reference file needs to be populated from the TabularEditor/BestPracticeRules GitHub repo before Phase 3 ships. The research documents that this repo is the authoritative source but does not enumerate all rules. Phase 3 planning should include a research step for this file.
-
-- **`unappliedChanges.json` behaviour:** The pitfall is documented and the guard is specified, but the exact conditions under which this file appears and what happens when it is present during an external edit have not been tested. Phase 5 implementation should treat this as an unknown-risk item requiring hands-on verification.
+- **Session state persistence:** STACK.md documents a v2 pattern (write `STATE.md` after interrogation, offer "Resume from last session" at skill start). This is not needed for v1 — all context lives in the conversation. No research done; defer to v2 planning.
 
 ---
 
 ## Sources
 
 ### Primary (HIGH confidence)
-
-- [Claude Code Skills documentation — code.claude.ai/docs/en/skills](https://code.claude.ai/docs/en/skills) — skill file format, frontmatter fields, subcommand naming, `disable-model-invocation`, context budget (verified March 2026)
-- [Power BI Desktop projects overview — Microsoft Learn](https://learn.microsoft.com/en-us/power-bi/developer/projects/projects-overview) — PBIP structure, file roles, external editing rules (updated 2025-12-15)
-- [Power BI Desktop project semantic model folder — Microsoft Learn](https://learn.microsoft.com/en-us/power-bi/developer/projects/projects-dataset) — TMDL vs TMSL formats, `definition.pbism` version property, `unappliedChanges.json`, `diagramLayout.json` restriction (updated 2026-01-20)
-- [Power BI Desktop project report folder — Microsoft Learn](https://learn.microsoft.com/en-us/power-bi/developer/projects/projects-report) — PBIR vs PBIR-Legacy, `report.json` external editing restriction (updated 2026-01-12)
-- [TMDL overview — Microsoft Learn](https://learn.microsoft.com/en-us/analysis-services/tmdl/tmdl-overview?view=sql-analysis-services-2025) — full TMDL syntax, measure format, indentation rules (updated 2026-02-02)
-- [Tables object (TMSL) — Microsoft Learn / Analysis Services](https://learn.microsoft.com/en-us/analysis-services/tmsl/tables-object-tmsl?view=asallproducts-allversions) — official TMSL measure schema (name, description, expression, formatString, annotations)
-- [TabularEditor/BestPracticeRules — GitHub](https://github.com/TabularEditor/BestPracticeRules) — official BPA rule categories used as audit-rules.md source
-- [Understanding context transition in DAX — SQLBI](https://www.sqlbi.com/articles/understanding-context-transition-in-dax/) — definitive treatment of context transition pitfall
-- [Datasets renamed to semantic models — Microsoft Power BI Blog](https://powerbi.microsoft.com/en-us/blog/datasets-renamed-to-semantic-models/) — terminology change history
+- `C:/Users/DeveshD/.claude/get-shit-done/workflows/new-project.md` — command file format, decision gate pattern, phase structure
+- `C:/Users/DeveshD/.claude/get-shit-done/workflows/discuss-phase.md` — interrogation patterns, AskUserQuestion usage, freeform fallback rule
+- `C:/Users/DeveshD/.claude/get-shit-done/references/questioning.md` — interrogation philosophy, anti-patterns, decision gate
+- `C:/Users/DeveshD/.claude/get-shit-done/references/ui-brand.md` — checkpoint box pattern, stage banners, status symbols
+- `C:/Users/DeveshD/.claude/get-shit-done/references/verification-patterns.md` — verification approach, phase pass/fail criteria
+- `C:/Users/DeveshD/.planning/PROJECT.md` — PBI-SKILL v2 requirements and constraints
+- [arXiv: LLMs Get Lost In Multi-Turn Conversation (2505.06120)](https://arxiv.org/abs/2505.06120) — 39% accuracy drop in multi-turn conversations, root cause analysis
+- [SQLBI: Introducing AI and Agentic Development for BI](https://www.sqlbi.com/articles/introducing-ai-and-agentic-development-for-business-intelligence/) — AI DAX failure modes, five building blocks for effective workflows
+- [SQLBI: Row Context and Filter Context in DAX](https://www.sqlbi.com/articles/row-context-and-filter-context-in-dax/) — evaluation context as primary DAX correctness hazard
 
 ### Secondary (MEDIUM confidence)
+- [Sparkco: Deep Dive into AI-Generated DAX Formulas](https://sparkco.ai/blog/deep-dive-into-ai-generated-dax-formulas) — 15% manual adjustment rate for AI-generated DAX, iterative refinement needs
+- [Microsoft Learn: Overview of Copilot for Power BI](https://learn.microsoft.com/en-us/power-bi/create-reports/copilot-introduction) — official Copilot scope, Premium licensing requirement, 10,000 character limit
+- [Anthropic: Skill authoring best practices](https://platform.claude.com/docs/en/agents-and-tools/agent-skills/best-practices) — skill file design, progressive disclosure, verification loop patterns
+- [Power BI Copilot Best Practices 2026](https://powerbiconsulting.com/blog/power-bi-copilot-best-practices-2026) — lean schema recommendations, model prep for AI accuracy
+- [Tabular Editor: Power BI intermediate mistakes](https://tabulareditor.com/blog/power-bi-for-intermediates-7-mistakes-you-dont-want-to-make) — domain-level errors AI assistants are likely to reproduce
 
-- [DAX Formatter by SQLBI — daxformatter.com](https://www.daxformatter.com/) — formatting standard and API existence confirmed
-- [GitHub: sql-bi/DaxFormatter](https://github.com/sql-bi/DaxFormatter) — .NET client library; HTTP API endpoint path inferred (needs empirical verification)
-- [PBIR will become the default — Microsoft Power BI Blog](https://powerbi.microsoft.com/en-us/blog/pbir-will-become-the-default-power-bi-report-format-get-ready-for-the-transition/) — PBIR as default from March 2026
-- [LLMs and DAX: Where Things Stand Today — pbidax.wordpress.com (May 2025)](https://pbidax.wordpress.com/2025/05/14/llms-and-dax-where-things-stand-today/) — LLM DAX capability assessment (single-author technical blog)
-- [AI agents that work with TMDL files — Tabular Editor Blog](https://tabulareditor.com/blog/ai-agents-that-work-with-tmdl-files) — TMDL whitespace sensitivity in AI agent context
-- [Context Management Common Mistakes — SFEIR Institute](https://institute.sfeir.com/en/claude-code/claude-code-context-management/errors/) — 80% context fill degradation threshold
-
-### Tertiary (LOW confidence)
-
-- [The 7 Deadly Sins of DAX — Medium 2025](https://medium.com/decoded-by-datacast/the-7-deadly-sins-of-dax-why-your-measures-are-killing-performance-and-how-to-fix-them-in-2025-d416e3bf67d3) — common slow patterns (single author, but consistent with SQLBI guidance)
-- [The Good, the Bad, and the PBIP — Medium, Feb 2026](https://medium.com/@malharpawar/the-good-the-bad-and-the-pbip-mastering-power-bi-version-control-9bbb77ee53a5) — real-world PBIP version control issues
+### Tertiary (supporting)
+- [PromptHub: Why LLMs Fail in Multi-Turn Conversations](https://www.prompthub.us/blog/why-llms-fail-in-multi-turn-conversations-and-how-to-fix-it) — four failure mechanisms including lost-in-middle
+- [Chroma Research: Context Rot](https://research.trychroma.com/context-rot) — performance degradation with longer context
+- [Microsoft Learn: Choose the best visual](https://learn.microsoft.com/en-us/power-bi/visuals/power-bi-visualization-decision-guide) — visual type decision framework
+- [Power BI Accessibility Best Practices](https://learn.microsoft.com/en-us/power-bi/create-reports/desktop-accessibility-creating-reports) — 4.5:1 contrast, alt text, keyboard nav (informs polish checklist scope)
 
 ---
-
-*Research completed: 2026-03-12*
+*Research completed: 2026-03-13*
 *Ready for roadmap: yes*

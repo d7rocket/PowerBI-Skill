@@ -1,490 +1,394 @@
 # Architecture Research
 
-**Domain:** Claude skill system for Power BI PBIP analyst tooling
-**Researched:** 2026-03-12
-**Confidence:** HIGH (skill system architecture verified against official Claude Code docs; PBIP file format verified against Microsoft Learn official docs)
+**Domain:** Claude Code skill prompt — gate-based interrogation with phased execution
+**Researched:** 2026-03-13
+**Confidence:** HIGH (derived directly from GSD reference implementation in `new-project.md`, `questioning.md`, and `ui-brand.md`)
+
+---
 
 ## Standard Architecture
 
 ### System Overview
 
+A GSD-style skill `.md` file is a layered pipeline. The skill file IS the architecture: its sections define the components, and execution flows linearly through them. There is no runtime environment — Claude reads the file as instructions and executes it conversationally.
+
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                    INVOCATION LAYER                              │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────────────┐  │
-│  │  /pbi        │  │ /pbi:optimize│  │ /pbi:audit  (etc.)   │  │
-│  │ (bare router)│  │ (direct cmd) │  │                      │  │
-│  └──────┬───────┘  └──────┬───────┘  └──────────┬───────────┘  │
-│         │                 │                      │              │
-├─────────┴─────────────────┴──────────────────────┴──────────────┤
-│                    CONTEXT DETECTION LAYER                       │
-│  ┌────────────────────────────────────────────────────────────┐  │
-│  │  Mode: PBIP file access  OR  Paste-in (no file access)     │  │
-│  │  "Is .SemanticModel/ present in cwd?"                      │  │
-│  └────────────────────────────────────────────────────────────┘  │
-├─────────────────────────────────────────────────────────────────┤
-│                    CORE COMMAND LAYER                            │
-│  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────────────┐   │
-│  │ DAX cmds │ │Model cmds│ │Git cmds  │ │Edit cmds         │   │
-│  │ optimize │ │ audit    │ │ commit   │ │ edit             │   │
-│  │ explain  │ │          │ │ diff     │ │                  │   │
-│  │ format   │ │          │ │          │ │                  │   │
-│  │ comment  │ │          │ │          │ │                  │   │
-│  └────┬─────┘ └────┬─────┘ └────┬─────┘ └────────┬─────────┘   │
-│       │            │            │                 │              │
-├───────┴────────────┴────────────┴─────────────────┴──────────────┤
-│                    FILE SYSTEM LAYER                             │
-│  ┌───────────────────────────┐  ┌───────────────────────────┐    │
-│  │  SemanticModel/           │  │  Report/                  │    │
-│  │  ├─ model.bim (TMSL)      │  │  ├─ definition.pbir       │    │
-│  │  │  OR                    │  │  ├─ definition/ (PBIR)    │    │
-│  │  ├─ definition/ (TMDL)   │  │  │  ├─ pages/             │    │
-│  │  ├─ definition.pbism      │  │  │  ├─ bookmarks/         │    │
-│  │  └─ .pbi/                 │  │  │  └─ report.json        │    │
-│  └───────────────────────────┘  └───────────────────────────┘    │
-└─────────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────┐
+│                   LAYER 1: PREAMBLE                          │
+│   <purpose>  |  <required_reading>  |  <auto_mode>          │
+│   Declares intent. Forces context load before any action.   │
+└─────────────────────────────────────────────────────────────┘
+                              ↓
+┌─────────────────────────────────────────────────────────────┐
+│                 LAYER 2: INTERROGATION                       │
+│   Deep Questioning → Context Accumulation → Decision Gate   │
+│   Inputs:  None (user conversation)                         │
+│   Outputs: Resolved context object (mental model)           │
+│   Gate:    "Ready to proceed?" — explicit user signal        │
+└─────────────────────────────────────────────────────────────┘
+                              ↓
+                  [Context passes to all phases]
+                              ↓
+┌─────────────────────────────────────────────────────────────┐
+│              LAYER 3: EXECUTION PHASES                       │
+│                                                             │
+│   ┌────────────┐  ┌────────────┐  ┌──────────┐  ┌────────┐ │
+│   │  Phase 1   │  │  Phase 2   │  │ Phase 3  │  │Phase 4 │ │
+│   │   Model    │→ │  Measures  │→ │ Visuals  │→ │ Polish │ │
+│   │  Review    │  │  (DAX)     │  │          │  │        │ │
+│   └─────┬──────┘  └─────┬──────┘  └────┬─────┘  └───┬────┘ │
+│         ↓               ↓              ↓             ↓      │
+│   [Verification]  [Verification] [Verification] [Final OK]  │
+└─────────────────────────────────────────────────────────────┘
+                              ↓
+┌─────────────────────────────────────────────────────────────┐
+│              LAYER 4: VERIFICATION GATES                     │
+│   After each phase: Does this answer the business question?  │
+│   Pass → next phase                                         │
+│   Fail → return to phase, address gap                       │
+└─────────────────────────────────────────────────────────────┘
 ```
 
 ### Component Responsibilities
 
-| Component | Responsibility | Implementation |
-|-----------|----------------|----------------|
-| `/pbi` bare router | Ask what the analyst wants; route to the right subcommand | `SKILL.md` with routing logic, mirrors GSD `/gsd:help` pattern |
-| `/pbi:optimize` | Receive DAX (file or paste), detect slow patterns, rewrite | Skill with DAX knowledge in SKILL.md |
-| `/pbi:explain` | Produce plain-English explanation of DAX | Skill with DAX knowledge |
-| `/pbi:format` | Prettify DAX (indentation, caps, line breaks) | Skill with DAX formatting rules |
-| `/pbi:comment` | Add inline `//` comments + populate `description` field | Skill; in PBIP mode also writes model.bim/TMDL |
-| `/pbi:audit` | Read model files, check naming, relationships, dates, hidden cols | Skill with Read + Grep + Bash tools |
-| `/pbi:commit` | Stage PBIP changes, generate human-readable commit message | Skill with Bash (git) tool; reads git diff |
-| `/pbi:diff` | Parse git diff of PBIP files, produce plain English changelog | Skill with Bash (git diff) + JSON parsing |
-| `/pbi:edit` | Read and write PBIP JSON files directly | Skill with Read + Write + Edit tools |
-| Context detector | Determine file mode vs paste-in mode at command start | Inline logic in each command checking for `.SemanticModel/` |
+| Component | Responsibility | Typical Implementation |
+|-----------|----------------|------------------------|
+| Preamble | Declare intent, force context load | `<purpose>`, `<required_reading>` tags; mandatory file reads before user interaction |
+| Interrogation Layer | Extract data model state, business question, existing measures | Freeform open question → AskUserQuestion follow-ups → background checklist → decision gate |
+| Context Object | Carry gathered facts across all phases | Assembled in Claude's context window from questioning; referenced explicitly in each phase |
+| Execution Phase | Perform scoped work (model / measures / visuals / polish) | Stage banner → scoped instructions → outputs → hand-off to verification |
+| Verification Gate | Confirm phase output answers the business question | Checkpoint box → explicit user signal (approve / describe issues) → conditional advance or re-work |
+| Success Criteria | Define what completion means for the entire skill run | `<success_criteria>` block; each item is observable and checkable |
 
-## Recommended Project Structure
+---
+
+## Recommended File Structure
+
+A single `.md` prompt file — not a directory. Internal sections ARE the structure.
 
 ```
-C:/Users/DeveshD/Documents/PBI-SKILL/
-├── .claude/
-│   └── skills/
-│       └── pbi/
-│           ├── SKILL.md              # Bare /pbi router entry point
-│           ├── commands/
-│           │   ├── optimize.md       # DAX rewrite logic
-│           │   ├── explain.md        # Plain-English explanation
-│           │   ├── format.md         # DAX prettifier
-│           │   ├── comment.md        # Inline comments + description
-│           │   ├── audit.md          # Full model audit
-│           │   ├── commit.md         # Git commit workflow
-│           │   ├── diff.md           # Git diff → plain English
-│           │   └── edit.md           # Direct PBIP file editing
-│           ├── knowledge/
-│           │   ├── dax-patterns.md   # DAX anti-patterns reference
-│           │   ├── audit-rules.md    # Model health rules
-│           │   └── pbip-schema.md    # PBIP JSON path reference
-│           └── scripts/
-│               └── detect-context.sh # PBIP presence check
-├── .planning/
-│   ├── PROJECT.md
-│   ├── config.json
-│   ├── research/
-│   │   └── ARCHITECTURE.md (this file)
-│   ├── REQUIREMENTS.md
-│   └── ROADMAP.md
+pbi-skill.md
+├── <purpose>                        # what the skill does and its value
+├── <required_reading>               # files Claude must read before acting
+│   └── (none needed — self-contained)
+│
+├── <interrogation_phase>            # Layer 2
+│   ├── stage banner                 # GSD ► INTERROGATING
+│   ├── opening question             # freeform "What are we building?"
+│   ├── follow-up threads            # AskUserQuestion on vague answers
+│   ├── pre-flight checklist         # 4 mandatory facts (background, not spoken)
+│   └── decision gate                # "Ready to proceed?"
+│
+├── <phase_1_model_review>           # Layer 3 — first execution phase
+│   ├── stage banner                 # GSD ► MODEL REVIEW
+│   ├── scoped instructions          # what to do with gathered context
+│   ├── outputs                      # what Claude produces
+│   └── verification gate            # GSD ► VERIFYING + checkpoint box
+│
+├── <phase_2_measures>               # Layer 3 — second execution phase
+│   ├── stage banner                 # GSD ► MEASURES
+│   ├── scoped instructions          # DAX writing with context-awareness rules
+│   ├── outputs
+│   └── verification gate
+│
+├── <phase_3_visuals>                # Layer 3 — third execution phase
+│   ├── stage banner
+│   ├── scoped instructions
+│   ├── outputs
+│   └── verification gate
+│
+├── <phase_4_polish>                 # Layer 3 — fourth execution phase
+│   ├── stage banner
+│   ├── scoped instructions
+│   ├── outputs
+│   └── final verification gate      # full report review
+│
+├── <anti_patterns>                  # What Claude must never do
+│   ├── no DAX before interrogation completes
+│   ├── no duplicate measures
+│   └── no skipping verification gates
+│
+└── <success_criteria>               # Observable outcomes for whole run
 ```
 
 ### Structure Rationale
 
-- **.claude/skills/pbi/**: Single skill directory; `SKILL.md` at root creates `/pbi` bare command; subcommands live in `commands/` as referenced files loaded by each command.
-- **knowledge/**: Supporting reference files loaded into context only when needed. Keeps `SKILL.md` under 500 lines per the skills spec. `dax-patterns.md` loaded by optimize/audit; `audit-rules.md` loaded by audit; `pbip-schema.md` loaded by edit/comment/audit.
-- **commands/*.md**: Each becomes a logical subcommand referenced from the root SKILL.md via the `/pbi:name` naming convention (directory name becomes the colon-prefixed subcommand).
-- **scripts/**: Bash helpers executed via `!` dynamic context injection, not loaded as text.
+- **`<purpose>` first:** Claude reads top-to-bottom; framing before instructions prevents misinterpretation of later sections.
+- **`<required_reading>` before `<interrogation_phase>`:** Mandatory pre-load ensures context is available before any conversation begins. In GSD `new-project.md` this is the MANDATORY FIRST STEP.
+- **Interrogation before all phases:** This is the core architectural constraint from PROJECT.md — "never write a line of DAX until business question, data model state, and existing measures are understood."
+- **Verification gates co-located with phases:** Each phase section contains its own gate, not a separate global section. This mirrors GSD's verifier-per-phase pattern and prevents Claude from drifting past a failed gate.
+- **`<anti_patterns>` and `<success_criteria>` at the end:** These serve as constraint rails. Claude will have read the full context by the time it acts, so they function as background rules during execution.
+
+---
 
 ## Architectural Patterns
 
-### Pattern 1: Colon-Namespaced Subcommands
+### Pattern 1: Mandatory Pre-Flight Check
 
-**What:** Place individual command files in `.claude/skills/pbi/commands/` and name each skill `pbi:optimize`, `pbi:explain`, etc., via the `name` field in frontmatter. The root `pbi` skill handles bare invocation only.
+**What:** The skill opens with a read of mandatory inputs before the first user interaction. For PBI-SKILL, this means establishing the four pre-flight facts before generating anything: (1) business question, (2) data model structure, (3) existing measures, (4) intended output format.
 
-**When to use:** Always — this is the canonical Claude Code skill architecture for multi-command suites. It matches the GSD pattern exactly: `/gsd` for routing, `/gsd:plan-phase` for direct action.
+**When to use:** Any skill where later outputs depend on facts that must be gathered upfront. Absence of pre-flight is the exact failure mode described in PROJECT.md ("jumps to DAX without understanding context").
 
-**Trade-offs:** Each command is independent, can have its own `allowed-tools` and `disable-model-invocation` flags. No coupling between commands. The cost is more files, but each stays focused.
+**Trade-offs:** Adds conversation turns at the start; user might feel it's slow. Eliminates all downstream rework from wrong assumptions — the cost is front-loaded and visible, not hidden in bad output.
 
-**Example frontmatter for `/pbi:optimize`:**
-```yaml
----
-name: pbi:optimize
-description: Rewrite DAX measure for performance. Use when asked to optimize, speed up, or fix slow DAX.
-argument-hint: "[measure name or paste DAX]"
-disable-model-invocation: true
-allowed-tools: Read, Write, Edit, Glob, Grep, Bash
----
+**Example structure in .md:**
+```
+## Pre-Flight
+
+Before any analysis or DAX, gather:
+
+- [ ] Business question: what decision does this report support?
+- [ ] Tables in scope (names, grain, relationships)
+- [ ] Existing calculated columns and measures (names + what they compute)
+- [ ] Desired output (single number, trend, comparison, breakdown)
+
+Do not proceed to Phase 1 until all four are established.
 ```
 
-### Pattern 2: Two-Mode Context Detection
+---
 
-**What:** Every command starts by checking whether a `.SemanticModel/` folder exists in the working directory (or any parent within the project root). Branch on that result.
+### Pattern 2: Staged Context Injection
 
-**When to use:** Every command that touches DAX or model content. The analyst may or may not have a PBIP project open.
+**What:** Context gathered in interrogation is explicitly restated at the start of each phase. Claude's context window is long but it can drift; restating "given that the business question is X and existing measures are Y..." anchors each phase to the gathered facts.
 
-**Trade-offs:** Adds a short preamble to every command. Avoids silent failures when the analyst pastes DAX but no PBIP exists.
+**When to use:** Multi-phase skills where context from Phase 1 must inform Phase 3 or 4. Without explicit restatement, later phases can produce outputs inconsistent with early findings.
 
-**Example preamble in a command SKILL.md:**
-```markdown
-## Step 1: Detect context
+**Trade-offs:** Adds verbosity to the skill file. Eliminates the failure mode where Phase 3 forgets what was established in interrogation.
 
-Check for PBIP presence:
-!`find . -name "definition.pbism" -maxdepth 4 2>/dev/null | head -1`
+**Example:**
+```
+## Phase 2: Measures
 
-If a path is returned → PBIP mode: read model files, offer to write back.
-If empty → Paste-in mode: work with what the analyst provides, output
-formatted DAX for manual copy-paste.
+Using the context gathered in Pre-Flight:
+- Business question: [recalled from interrogation]
+- Existing measures: [recalled — do not duplicate these]
+- Model structure: [recalled — respect grain and relationships]
+
+Now write measures that...
 ```
 
-### Pattern 3: Supporting Knowledge Files (Late-Loaded Reference)
+---
 
-**What:** Heavy reference content (DAX anti-pattern library, audit rule catalogue, PBIP JSON path cheatsheet) lives in `knowledge/*.md`. Commands reference these files explicitly: "For optimization patterns, see [dax-patterns.md](../knowledge/dax-patterns.md)." Claude only loads them when the command is active, not globally.
+### Pattern 3: Checkpoint Box Verification Gate
 
-**When to use:** Any reference content over ~200 lines. Keeps the primary SKILL.md fast to load and focused on instructions.
+**What:** After each phase, pause with a formal checkpoint using GSD's checkpoint box pattern. Present what was produced, ask whether it answers the business question, and branch on the response: advance (pass) or re-work the phase (fail).
 
-**Trade-offs:** Requires explicit references so Claude knows to load the file. Slightly more setup, but prevents blowing the skills character budget (default: 2% of context window).
+**When to use:** After every execution phase in the skill. This is the core verification mechanism from PROJECT.md requirement: "verification gate after each phase: confirm output answers the business question."
+
+**Trade-offs:** Interrupts flow; user must actively respond. The interruption is the feature — it prevents cascading errors where a wrong Phase 1 output silently breaks Phases 2-4.
+
+**Example:**
+```
+╔══════════════════════════════════════════════════════════════╗
+║  CHECKPOINT: Verification Required                           ║
+╚══════════════════════════════════════════════════════════════╝
+
+Model review complete. Findings:
+- [finding 1]
+- [finding 2]
+
+Does this accurately reflect your data model?
+
+──────────────────────────────────────────────────────────────
+→ Type "approved" to proceed to measures, or describe what's wrong
+──────────────────────────────────────────────────────────────
+```
+
+---
+
+### Pattern 4: Decision Gate (Interrogation Exit)
+
+**What:** The interrogation phase does not exit on a timer or question count — it exits when Claude has enough context to proceed AND the user signals readiness. This mirrors GSD's questioning decision gate exactly.
+
+**When to use:** End of the interrogation phase only. Do not use mid-phase.
+
+**Trade-offs:** Can extend the questioning turn count if the user is vague. That is correct behavior — it is preferable to over-question than to under-question and produce wrong DAX.
+
+**Example:**
+```
+When you could accurately describe the business question, model structure,
+and existing measures to a third party, offer to proceed:
+
+"I think I have what I need. Ready to start with model review?"
+
+If user says yes → proceed to Phase 1.
+If user says no or wants to add more → continue questioning.
+```
+
+---
 
 ## Data Flow
 
-### DAX Command Flow (e.g., `/pbi:optimize`)
+### Interrogation → Execution Flow
 
 ```
-Analyst invokes /pbi:optimize [measure or file reference]
+User opens skill
+    ↓
+Interrogation Phase (freeform + AskUserQuestion threads)
+    ↓
+Context Object assembled (4 mandatory facts + any additional)
     |
-    v
-Context detection: PBIP present? YES / NO
-    |                               |
-    v                               v
-PBIP mode:                    Paste-in mode:
-Read model.bim or             Work from analyst's
-definition/ folder            pasted DAX expression
-    |                               |
-    +----------+--------------------+
-               |
-               v
-Load DAX knowledge (dax-patterns.md)
-               |
-               v
-Analyse: detect slow patterns
-(FILTER on large table, row context leakage,
- CALCULATE iterator misuse, unnecessary SUMX)
-               |
-               v
-Produce rewritten DAX + explanation of changes
-               |
-    +----------+--------------------+
-    |                               |
-    v                               v
-PBIP mode:                    Paste-in mode:
-Offer to write back to         Output formatted DAX
-model file (Edit tool)        for manual copy-paste
-(requires Desktop closed)
+    ├──→ Business Question
+    ├──→ Data Model State (tables, relationships, grain)
+    ├──→ Existing Measures (names, what they compute)
+    └──→ Desired Output Format
+    ↓
+Phase 1: Model Review
+    ↓   (uses: Data Model State + Business Question)
+Verification Gate 1
+    ↓ (approved)
+Phase 2: Measures
+    ↓   (uses: all 4 context facts + Phase 1 findings)
+Verification Gate 2
+    ↓ (approved)
+Phase 3: Visuals
+    ↓   (uses: Business Question + Phase 2 measure names)
+Verification Gate 3
+    ↓ (approved)
+Phase 4: Polish
+    ↓   (uses: all prior phase outputs)
+Final Verification Gate
+    ↓ (approved)
+Done
 ```
 
-### Audit Flow (`/pbi:audit`)
+### Verification Branch Flow
 
 ```
-/pbi:audit invoked
-    |
-    v
-Locate .SemanticModel/ → read model.bim or definition/ folder
-    |
-    v
-Parse all tables → columns → measures → relationships
-    |
-    v
-Load audit-rules.md
-    |
-    v
-Run checks in parallel (conceptually):
-  - Naming conventions (PascalCase measures, no spaces in table names)
-  - Bi-directional relationships (flag each one)
-  - Missing date/calendar table
-  - Hidden column hygiene (unused columns still visible)
-  - Measure quality (blank formatString, empty description, nested CALCULATE)
-    |
-    v
-Produce structured audit report: severity (CRITICAL / WARN / INFO), location,
-recommendation
-```
-
-### Git Command Flow (`/pbi:commit`)
-
-```
-/pbi:commit invoked
-    |
-    v
-!`git diff --staged --stat` + !`git diff HEAD -- "*.bim" "*.tmdl" "*.json"`
-    |
-    v
-Parse diff: what tables/measures/columns changed?
-(model.bim: traverse tables[].measures[], tables[].columns[]
- TMDL definition/: file names map directly to objects)
-    |
-    v
-Generate human-readable summary:
-  "Added measure [Total Revenue] to Sales table
-   Modified measure [Gross Margin %]: expression changed
-   Added column [Category Code] to Products table"
-    |
-    v
-Propose commit message → analyst confirms or edits → Bash git commit
+Phase N completes
+    ↓
+Checkpoint Box presented
+    ↓
+User response
+    ├── "approved" / "yes" / positive signal
+    │       ↓
+    │   Advance to Phase N+1
+    │
+    └── describes issue / negative signal
+            ↓
+        Re-enter Phase N with correction context
+            ↓
+        Repeat until approved
 ```
 
 ### Key Data Flows
 
-1. **DAX in, DAX out (paste-in mode):** Analyst pastes → command processes in context → formatted/rewritten DAX returned as code block for manual copy.
-2. **PBIP read-modify-write:** Command reads model file → parses JSON/TMDL → edits specific nodes (measure expression, description) → writes back with Edit tool → analyst restarts Power BI Desktop.
-3. **Git diff summarisation:** Bash produces raw JSON diff → command interprets JSON path changes → produces English changelog.
+1. **Pre-flight → Phase 1:** Data model structure flows from interrogation into model review. Phase 1 cannot run without it — the skill must block if model facts are incomplete.
+2. **Phase 1 findings → Phase 2:** Model review findings (e.g., "table X is at day grain", "measure Y already exists") constrain what DAX Phase 2 is allowed to write. Explicit pass-through prevents duplication.
+3. **Phase 2 measure names → Phase 3:** Visual recommendations in Phase 3 must reference the actual measure names produced in Phase 2, not hypothetical ones.
+4. **Business question → all gates:** Every verification gate asks a variant of "does this answer the business question?" The business question extracted in interrogation must be restated at every gate to anchor the check.
 
-## PBIP File Format Reference
+---
 
-### Project Root Structure
+## Scaling Considerations
 
-```
-MyReport/
-├── MyReport.SemanticModel/      # Semantic model (DAX, tables, relationships)
-│   ├── definition.pbism         # Required: format version + settings
-│   ├── model.bim                # TMSL format (one big JSON file) — OR —
-│   ├── definition/              # TMDL format (one file per object)
-│   │   ├── database.tmdl
-│   │   ├── tables/
-│   │   │   ├── Sales.tmdl       # All measures + columns for Sales table
-│   │   │   └── Date.tmdl
-│   │   └── relationships.tmdl
-│   ├── diagramLayout.json       # Read-only during preview
-│   └── .pbi/
-│       ├── localSettings.json   # Gitignored (user-specific)
-│       └── cache.abf            # Gitignored (binary data cache)
-├── MyReport.Report/             # Report (pages, visuals, bookmarks)
-│   ├── definition.pbir          # Required: format version + semantic model ref
-│   ├── report.json              # PBIR-Legacy (single file, no external edit) — OR —
-│   ├── definition/              # PBIR format (one file per object)
-│   │   ├── report.json          # Report-level filters + theme
-│   │   ├── pages/
-│   │   │   └── [pageName]/
-│   │   │       ├── page.json    # Page filters + formatting
-│   │   │       └── visuals/
-│   │   │           └── [visualName]/
-│   │   │               └── visual.json
-│   │   └── bookmarks/
-│   └── .pbi/
-│       └── localSettings.json   # Gitignored
-├── .gitignore                   # Auto-generated by Power BI Desktop
-└── MyReport.pbip                # Entry point pointer (optional shortcut)
-```
+This is a conversational skill file, not a software service. "Scale" means complexity of the Power BI project being discussed, not user load.
 
-### model.bim Measure Schema (TMSL)
+| Project Complexity | Architecture Adjustments |
+|--------------------|--------------------------|
+| Simple report (1-2 tables, <10 measures) | Interrogation can be brief; Phase 1 will be short; skill runs quickly |
+| Medium report (5-10 tables, 10-30 measures) | Full interrogation needed; Phase 2 may produce multiple DAX iterations within one phase run |
+| Complex model (10+ tables, 30+ measures, multiple fact tables) | Interrogation must capture full relationship map; Phase 1 should produce a written summary Claude reads back; Phase 2 may need to be split by subject area |
 
-The `model.bim` is a single JSON file. The JSON path to measures is:
-`$.model.tables[?(@.name == "TableName")].measures[?(@.name == "MeasureName")]`
+### Scaling Priorities
 
-A measure object has these properties (all from official TMSL schema):
+1. **First bottleneck:** Interrogation quality. If the user gives thin answers, all four phases produce bad output. The skill must probe aggressively and block advancement until context is solid.
+2. **Second bottleneck:** Phase 2 scope creep. Complex models tempt Claude to write every possible measure rather than scoped ones. The skill's anti-patterns section must explicitly prohibit writing measures not tied to the stated business question.
 
-```json
-{
-  "name": "Total Revenue",
-  "description": "Sum of all revenue lines including adjustments",
-  "expression": "SUMX(Sales, Sales[Quantity] * Sales[Unit Price])",
-  "formatString": "#,##0.00",
-  "isHidden": false,
-  "displayFolder": "Revenue",
-  "annotations": [
-    {
-      "name": "PBI_FormatHint",
-      "value": "{\"isGeneralNumber\":true}"
-    }
-  ]
-}
-```
-
-Key fields for PBI skill commands:
-- `expression` — the DAX to read/write for optimize, explain, format, comment
-- `description` — populated by `/pbi:comment` command
-- `formatString` — checked by `/pbi:audit` (blank = audit warning)
-- `annotations[PBI_FormatHint]` — Power BI Desktop metadata; preserve on write
-
-### TMDL Format (Per-Object Files)
-
-When TMDL is enabled, `definition/tables/Sales.tmdl` contains:
-
-```
-table Sales
-    measure 'Total Revenue' = SUMX(Sales, Sales[Quantity] * Sales[Unit Price])
-        description = "Sum of all revenue lines"
-        formatString: #,##0.00
-        displayFolder: Revenue
-```
-
-TMDL is more diff-friendly (one file per table, human-readable syntax) but requires TMDL-aware parsing. For the skill system, treat TMDL files as text with known line syntax rather than JSON parsing.
-
-**Version detection:** Read `definition.pbism` → check `"version"` field:
-- Version `"1.0"` → TMSL format, parse `model.bim`
-- Version `"4.0"` or higher + `definition/` folder exists → TMDL format, parse `.tmdl` files
-
-### Files the Skill Can Edit vs. Read-Only
-
-| File | Edit? | Notes |
-|------|-------|-------|
-| `model.bim` | YES | Full read/write; Desktop must be closed |
-| `definition/*.tmdl` | YES | Full read/write; Desktop must be closed |
-| `definition.pbism` | Read-only | Do not modify; version + settings |
-| `diagramLayout.json` | Read-only | Explicitly unsupported during preview |
-| `report.json` (PBIR-Legacy) | Read-only | Explicitly unsupported during preview |
-| `definition/report.json` (PBIR) | YES | Supported with public JSON schema |
-| `definition/pages/*/page.json` | YES | Supported with public JSON schema |
-| `definition/pages/*/visuals/*/visual.json` | YES | Supported; used by potential future commands |
-| `.pbi/localSettings.json` | NO | User-specific, gitignored |
-| `.pbi/cache.abf` | NO | Binary, gitignored |
-
-## Command Routing Architecture
-
-### Bare `/pbi` vs. Specific `/pbi:optimize`
-
-Following the GSD pattern exactly:
-
-| Invocation | Behaviour |
-|------------|-----------|
-| `/pbi` (no arguments) | Router: presents a question "What do you want to do?" with options. Routes to the right command. |
-| `/pbi:optimize [args]` | Goes straight to work. No preamble. |
-| `/pbi:optimize` (no args) | Prompts for DAX input (paste or file reference). |
-
-The bare `/pbi` SKILL.md uses `disable-model-invocation: true` so Claude doesn't trigger it automatically. Each subcommand also uses `disable-model-invocation: true` — these are explicit analyst actions, not things Claude should trigger on its own.
-
-### Argument Handling
-
-Commands support both file references and pasted content via `$ARGUMENTS`:
-
-```markdown
-## Input resolution
-
-Arguments: $ARGUMENTS
-
-If $ARGUMENTS contains a file path (starts with ./ or contains .bim/.tmdl):
-  → Read that file using the Read tool
-If $ARGUMENTS is blank:
-  → Check for PBIP context; if present, prompt which measure to target
-  → If paste-in mode, ask analyst to paste the DAX
-Otherwise:
-  → Treat $ARGUMENTS as the pasted DAX expression
-```
-
-## Suggested Build Order
-
-Based on component dependencies and risk:
-
-```
-Phase 1: Foundation — Core DAX commands (no file I/O required)
-  /pbi:explain    (pure text: read DAX, produce explanation)
-  /pbi:format     (pure text: read DAX, reformat)
-  /pbi:optimize   (pure text: read DAX, rewrite)
-  Rationale: These work in paste-in mode only. No PBIP file parsing needed.
-  Validates the core DAX knowledge base before adding file complexity.
-
-Phase 2: Context detection + File I/O
-  Context detector (shared utility used by all subsequent commands)
-  /pbi:comment    (first command to write back to model.bim/TMDL)
-  Rationale: Establishes the two-mode pattern. comment is lower-stakes
-  than audit (modifying one measure vs. reading entire model).
-
-Phase 3: Model-wide read commands
-  /pbi:audit      (reads all tables, measures, relationships)
-  Rationale: Depends on reliable PBIP parsing. Easier to validate
-  read-only before adding audit write-back features.
-
-Phase 4: Git integration
-  /pbi:diff       (reads git diff, produces changelog)
-  /pbi:commit     (reads diff, proposes message, runs git commit)
-  Rationale: Depends on a working PBIP project with git history.
-  diff before commit: validate diff parsing before wiring commit.
-
-Phase 5: Direct file editing
-  /pbi:edit       (general-purpose PBIP file read/write)
-  Rationale: Most open-ended command. Built last because it requires
-  deep understanding of which files are safe to edit (established
-  in Phase 2-3).
-
-Phase 6: Bare router + polish
-  /pbi            (routes to all above; can only be built after commands exist)
-  Knowledge base refinement (dax-patterns.md, audit-rules.md)
-```
+---
 
 ## Anti-Patterns
 
-### Anti-Pattern 1: Single Monolithic SKILL.md
+### Anti-Pattern 1: Premature DAX Generation
 
-**What people do:** Put all command logic into one large `SKILL.md` file with conditional branching for each subcommand.
+**What people do:** Accept a vague request ("help me with a measure for sales") and immediately write DAX.
 
-**Why it's wrong:** The skills character budget (2% of context window, ~16k chars default) is consumed by the full monolith every session. Claude loads all instructions even for a simple `/pbi:format` call. Harder to maintain and test each command independently.
+**Why it's wrong:** The exact failure mode PROJECT.md was built to fix. Generated DAX may duplicate existing measures, violate model grain, or answer a question the user never asked.
 
-**Do this instead:** One SKILL.md per command in `.claude/skills/pbi/commands/`. Each loads its own knowledge references. The bare `/pbi` router is a thin file that just prompts and redirects.
+**Do this instead:** Block DAX generation with a hard rule in the skill: "Do not write any DAX until Phase 2 begins. Phase 2 cannot begin until the Pre-Flight checklist is complete and Verification Gate 1 is passed."
 
-### Anti-Pattern 2: Attempting to Edit Files While Desktop is Open
+---
 
-**What people do:** Use the Edit tool to modify `model.bim` or `.tmdl` files while the analyst has the report open in Power BI Desktop.
+### Anti-Pattern 2: Implicit Gate Passing
 
-**Why it's wrong:** Power BI Desktop is not aware of external file changes. The analyst will see no change, or worse, Desktop will overwrite the edits when they save. This is explicitly documented by Microsoft.
+**What people do:** Claude completes a phase, briefly mentions the output, and continues to the next phase without an explicit user approval.
 
-**Do this instead:** Every command that writes to PBIP files must warn the analyst: "Power BI Desktop must be closed for these changes to take effect. After writing, restart Desktop." Default to outputting formatted DAX as a code block (paste-in output) unless the analyst explicitly confirms Desktop is closed.
+**Why it's wrong:** Verification gates that don't stop are not gates. The user never confirms that the model review was accurate; Claude silently carries a wrong assumption forward.
 
-### Anti-Pattern 3: Parsing report.json (PBIR-Legacy) for Measure References
+**Do this instead:** Use the checkpoint box pattern. The visual weight of the box signals "this is a hard stop, not a summary." Require explicit text response before advancing.
 
-**What people do:** Read `report.json` to find which measures are used on which pages, expecting structured JSON.
+---
 
-**Why it's wrong:** `report.json` is PBIR-Legacy format and Microsoft explicitly states it does not support external editing. Its schema is not publicly documented during preview. The file is brittle to parse and subject to change.
+### Anti-Pattern 3: Stateless Phases
 
-**Do this instead:** For measure usage tracking, read only the new PBIR `definition/` folder (where each visual.json has a public schema), or rely on the model file alone for measure operations. If PBIR-Legacy is the only format present, note the limitation to the analyst.
+**What people do:** Each phase operates independently without referencing what was gathered in interrogation or discovered in prior phases.
 
-### Anti-Pattern 4: Assuming TMSL — Not Checking Format First
+**Why it's wrong:** Phases become disconnected. Phase 3 visual recommendations don't match Phase 2 measure names. Phase 2 DAX duplicates measures found in Phase 1.
 
-**What people do:** Hard-code JSON parsing paths assuming `model.bim` always exists.
+**Do this instead:** Begin each phase with an explicit "Using context from interrogation: [facts]" section. This forces continuity and makes the context-awareness requirement visible.
 
-**Why it's wrong:** Projects saved with TMDL Preview enabled use `definition/*.tmdl` files instead. `model.bim` will not exist. A command that assumes TMSL silently fails on any TMDL project.
+---
 
-**Do this instead:** Always read `definition.pbism` first. Check `"version"`: if `"4.0"` or higher AND `definition/` folder exists, use TMDL path. Otherwise use TMSL path. Build this check into the context detector utility.
+### Anti-Pattern 4: Checklist-Walking Interrogation
+
+**What people do (from questioning.md):** Work through a domain list regardless of what the user said. "What tables do you have? What is your grain? What are your existing measures?" — fired as a script.
+
+**Why it's wrong:** Users disengage. Critical context that didn't fit the script gets missed. The conversation feels like a form, not a thinking partnership.
+
+**Do this instead:** Open with "What are you trying to figure out?" Follow their answer. The four pre-flight facts must be gathered by the end of interrogation, but the path to them should follow the user's thread, not a preset order.
+
+---
 
 ## Integration Points
 
 ### External Services
 
+None. The skill is conversational-only. PROJECT.md explicitly excludes Power BI API integration. Claude cannot read `.pbix` files — all model knowledge comes from user-described context during interrogation.
+
 | Service | Integration Pattern | Notes |
 |---------|---------------------|-------|
-| Power BI Desktop | None (file-based) | Desktop must be closed for writes; restart required to see external changes |
-| Git | Bash (`git diff`, `git add`, `git commit`) | Only for `/pbi:commit` and `/pbi:diff`; no special library needed |
-| TMDL VS Code extension | Not integrated | Analyst uses separately; skill operates on raw files |
+| Power BI Desktop | None — conversational only | User describes model; Claude never reads files |
+| Power BI Service | None | Out of scope per PROJECT.md |
+| DAX Studio | None | User may paste query results as text input during interrogation |
 
 ### Internal Boundaries
 
 | Boundary | Communication | Notes |
 |----------|---------------|-------|
-| Context detector ↔ Each command | Inline check within each command's SKILL.md | Not a separate service; duplicated short check is fine at this scale |
-| Knowledge files ↔ Commands | Explicit markdown references in SKILL.md | Claude loads on demand; not auto-injected |
-| DAX commands ↔ Git commands | None | Completely independent command groups |
-| `/pbi` router ↔ Subcommands | User is redirected; router does not programmatically call subcommands | Router displays options; analyst invokes the specific command |
+| Interrogation → Phase 1 | Context window only | No file written; facts live in conversation history |
+| Phase N → Gate N | Sequential in same conversation turn | Phase output and gate are in one response block |
+| Gate N → Phase N+1 | User approval triggers continuation | Gate is the only mechanism that allows phase advance |
+| Any phase → Interrogation | Return path for unresolved ambiguity | If Phase 2 reveals a missing fact, skill should surface it and ask, not guess |
 
-## Scaling Considerations
+---
 
-| Scale | Architecture Adjustments |
-|-------|--------------------------|
-| 1 analyst, 1 project | Current flat structure is fine |
-| Team of analysts, multiple PBIP projects | Add project-level `.claude/skills/pbi/` override per project for project-specific audit rules |
-| Large models (100+ measures) | `/pbi:audit` may need to paginate Read calls; batch by table rather than loading model.bim in one pass |
-| TMDL adoption increases | If TMDL becomes the default (currently in preview), TMSL fallback can be simplified or removed |
+## Build Order Implications
+
+The skill must be built in dependency order. Each layer depends on the one before it being correct.
+
+**Build order for PBI-SKILL v2:**
+
+1. **Interrogation layer first.** This is the highest-leverage component. Get the pre-flight checklist right, the question threads right, and the decision gate right. Everything else depends on interrogation quality.
+
+2. **Verification gates second.** Before writing phase logic, define what "pass" and "fail" look like for each gate. This prevents writing phases that produce output that can't be verified.
+
+3. **Phase 1 (Model Review) third.** Scope is narrow: take interrogation context, produce a structured summary of the model. No DAX. Verify the summary is accurate before proceeding.
+
+4. **Phase 2 (Measures) fourth.** Hardest phase. Must enforce: no duplicates, respect grain, tie every measure to the business question. Write last to ensure interrogation and Phase 1 are solid enough to constrain it properly.
+
+5. **Phases 3 and 4 (Visuals, Polish) last.** These are downstream of the hardest work. Build them after Phases 1-2 are stable.
+
+6. **Anti-patterns and success criteria woven in throughout.** These are not a separate step — they are written as constraints inside each phase and gate as the phases are built.
+
+---
 
 ## Sources
 
-- [Power BI Desktop projects overview — Microsoft Learn](https://learn.microsoft.com/en-us/power-bi/developer/projects/projects-overview) (verified 2026-03-12, doc updated 2025-12-15)
-- [Power BI Desktop project semantic model folder — Microsoft Learn](https://learn.microsoft.com/en-us/power-bi/developer/projects/projects-dataset) (verified 2026-03-12, doc updated 2026-01-20)
-- [Power BI Desktop project report folder — Microsoft Learn](https://learn.microsoft.com/en-us/power-bi/developer/projects/projects-report) (verified 2026-03-12, doc updated 2026-01-12)
-- [Tables object (TMSL) — Microsoft Learn / Analysis Services](https://learn.microsoft.com/en-us/analysis-services/tmsl/tables-object-tmsl?view=asallproducts-allversions) (official TMSL measure schema)
-- [Extend Claude with skills — Claude Code official docs](https://code.claude.com/docs/en/skills) (skill system architecture, frontmatter reference, verified 2026-03-12)
-- GSD workflow reference: `C:/Users/DeveshD/.claude/get-shit-done/workflows/new-project.md` (command routing pattern)
-- GSD command examples: `C:/Users/DeveshD/.claude/commands/gsd/*.md` (frontmatter pattern, subcommand naming)
+- `C:/Users/DeveshD/.claude/get-shit-done/workflows/new-project.md` — GSD reference implementation; stage banners, decision gate pattern, agent spawning structure, `<required_reading>` pre-flight pattern (HIGH confidence — direct source)
+- `C:/Users/DeveshD/.claude/get-shit-done/references/questioning.md` — Interrogation philosophy, question types, context checklist, decision gate, anti-patterns (HIGH confidence — direct source)
+- `C:/Users/DeveshD/.claude/get-shit-done/references/ui-brand.md` — Stage banner format, checkpoint box pattern, status symbols (HIGH confidence — direct source)
+- `C:/Users/DeveshD/.planning/PROJECT.md` — Requirements and constraints for PBI-SKILL v2 (HIGH confidence — direct source)
 
 ---
-*Architecture research for: Claude skill system for Power BI PBIP analyst tooling*
-*Researched: 2026-03-12*
+*Architecture research for: Claude Code skill prompt (gate-based interrogation + phased execution)*
+*Researched: 2026-03-13*
