@@ -112,12 +112,15 @@ When no keyword matches (catch-all route), this handler runs.
 
 2. **Deliver the answer.** Output the DAX or guidance. Let the user react.
 
-3. **Escalation trigger.** Escalation fires ONLY when the user responds with explicit failure language:
+3. **Escalation trigger.** Track failure signals in-session (counter resets on `/clear`). Escalation fires ONLY after the user signals failure **twice**:
    - Negative signals: "that's wrong", "not what I meant", "still broken", "doesn't work", "incorrect", "nope", "try again", "that's not right"
    - Normal follow-ups ("can you also...", "what about...", "and then...") are NOT failure signals — handle them as new requests.
    - Refinement requests ("make it a percentage", "add a filter for...") are NOT failure signals — just refine the answer.
+   - **Counter is in-session only.** Do NOT write it to disk — it resets on `/clear`.
 
-4. **On failure signal — diagnose the gap.** Read the user's failure description to determine which context is missing:
+3.5. **On FIRST failure signal — retry silently.** Increment the counter to 1. Do NOT ask any questions. Attempt a different approach or interpretation immediately — no announcement, just a revised solution. Wait for the user's reaction.
+
+4. **On SECOND failure signal — diagnose the gap.** Increment the counter to 2 and escalate. Read the user's failure description to determine which context is missing:
    - "Calculating the wrong thing" / "not what I asked for" → missing **business question** clarity
    - "Wrong columns" / "table doesn't exist" / "relationship issue" → missing **data model state**
    - "We already have that" / "duplicates an existing measure" → missing **existing measures** knowledge
