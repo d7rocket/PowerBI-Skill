@@ -85,30 +85,33 @@ These scenarios verify the core behavior change: free-text requests get an immed
 
 These scenarios verify that escalation fires only on explicit failure signals, targets the correct gap, and retries automatically after the user answers.
 
+**Two-step escalation flow:** The skill silently retries on the **first** failure signal (no questions asked). Escalation (targeted question) fires only on the **second** failure signal. This is by design.
+
 ---
 
-### Scenario S2-01: Failure signal triggers escalation — business question gap
+### Scenario S2-01: First failure signal triggers silent retry — business question gap
 
 **Covers:** PROG-02, INTR-01
 
 **Preconditions:**
-- Skill just answered a DAX request
+- Skill just answered a DAX request (e.g., complete S1-01 first)
 
 **Steps:**
 
 | # | User action | Expected skill response |
 |---|-------------|------------------------|
-| 1 | Type `that's not what I meant, I need something different` | Skill outputs "Let me get more context." followed by ONE question about the business question (e.g., "What business question should this measure answer?") |
+| 1 | Type `that's not what I meant, I need something different` | Skill outputs a **revised solution** using a different approach. No questions asked. No "Let me get more context." |
+| 2 | Type `still not right` | Skill outputs "Let me get more context." followed by ONE question about the business question (e.g., "What business question should this measure answer?") |
 
 **Pass criteria:**
-- Response begins with "Let me get more context." (or similar brief acknowledgment)
-- Exactly ONE question is asked, about the business question
-- No checklist of multiple questions
-- No question about data model or existing measures
+- Step 1: Revised DAX appears with **no question asked** — the skill retried silently
+- Step 2: Response begins with "Let me get more context." (or similar brief acknowledgment)
+- Step 2: Exactly ONE question is asked, about the business question
+- No checklist of multiple questions at any point
 
 ---
 
-### Scenario S2-02: Failure signal triggers escalation — data model gap
+### Scenario S2-02: First failure triggers silent retry — data model gap
 
 **Covers:** PROG-02, INTR-02
 
@@ -119,17 +122,17 @@ These scenarios verify that escalation fires only on explicit failure signals, t
 
 | # | User action | Expected skill response |
 |---|-------------|------------------------|
-| 1 | Type `wrong columns, that table doesn't exist in my model` | Skill outputs "Let me get more context." followed by ONE question about data model state (tables, relationships) |
+| 1 | Type `wrong columns, that table doesn't exist in my model` | Skill outputs a **revised solution** attempting a different table/column assumption. No questions asked. |
+| 2 | Type `still wrong columns` | Skill asks ONE question about data model state (tables, columns, relationships) |
 
 **Pass criteria:**
-- Response begins with acknowledgment
-- Question is specifically about the data model (tables, columns, relationships)
-- NOT about business question or existing measures
-- Exactly one question
+- Step 1: No question asked — silent retry with different assumption
+- Step 2: Question is specifically about the data model (tables, columns, relationships)
+- Step 2: NOT about business question or existing measures — exactly one question
 
 ---
 
-### Scenario S2-03: Failure signal triggers escalation — existing measures gap
+### Scenario S2-03: First failure triggers silent retry — existing measures gap
 
 **Covers:** PROG-02, INTR-03
 
@@ -140,12 +143,13 @@ These scenarios verify that escalation fires only on explicit failure signals, t
 
 | # | User action | Expected skill response |
 |---|-------------|------------------------|
-| 1 | Type `we already have that measure` | Skill asks about existing measures |
+| 1 | Type `we already have that measure` | Skill outputs a **revised solution** with a different measure name or variant. No questions asked. |
+| 2 | Type `still duplicates an existing one` | Skill asks ONE question about existing measures |
 
 **Pass criteria:**
-- Question is specifically about existing measures (what's already built, measure names)
-- NOT about business question or data model
-- Exactly one question
+- Step 1: No question asked — silent retry
+- Step 2: Question is specifically about existing measures (what's already built, measure names)
+- Step 2: NOT about business question or data model — exactly one question
 
 ---
 
@@ -174,17 +178,19 @@ These scenarios verify that escalation fires only on explicit failure signals, t
 **Covers:** PROG-02, PROG-03, INTR-02
 
 **Preconditions:**
-- S2-04 completed — skill retried after business question escalation
-- User signals failure again
+- S2-04 completed — skill retried after business question escalation and user answered
+- Counter reset after escalation was answered; skill is on a new attempt
 
 **Steps:**
 
 | # | User action | Expected skill response |
 |---|-------------|------------------------|
-| 1 | Type `still wrong, the columns don't match my model` | Skill asks about data model state (NOT about business question again) |
+| 1 | Type `still wrong, the columns don't match my model` | Skill outputs a **revised solution** (silent retry — this is the first failure signal in the new cycle) |
+| 2 | Type `still wrong` | Skill asks about data model state (NOT about business question again) |
 
 **Pass criteria:**
-- Question is about data model (tables, columns, relationships)
+- Step 1: Silent retry (no question) — counter reset after previous escalation
+- Step 2: Question is about data model (tables, columns, relationships)
 - Business question is NOT re-asked (already answered in S2-04)
 - One question only
 
