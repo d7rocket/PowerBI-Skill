@@ -13,7 +13,7 @@ The skill is built in three delivery phases. Phase 1 ships the working skill wit
 Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Skill Core + Escalation** - Working skill file with solve-first default and targeted escalation after 2-3 failed attempts
-- [ ] **Phase 2: Context-Aware DAX** - Measures output uses actual model context, checks for duplicates, warns on filter exposure
+- [x] **Phase 2: Context-Aware DAX** - Measures output uses actual model context, checks for duplicates, warns on filter exposure (completed 2026-03-14)
 - [ ] **Phase 3: Deep Mode + Verification** - On-demand structured workflow with model review phase, phase gates, and context re-injection
 
 ## Phase Details
@@ -71,5 +71,5 @@ Phases execute in numeric order: 1 → 2 → 3
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Skill Core + Escalation | 2/2 | Complete    | 2026-03-13 |
-| 2. Context-Aware DAX | 0/5 | Not started | - |
+| 2. Context-Aware DAX | 5/5 | Complete   | 2026-03-14 |
 | 3. Deep Mode + Verification | 0/TBD | Not started | - |
