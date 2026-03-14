@@ -251,12 +251,11 @@ If no Flags apply, omit the Flags section entirely.
 After producing output, update `.pbi-context.md` using Read then Write:
 
 1. Read the current `.pbi-context.md`
-2. Update the **Last Command** section:
-   - Command: `/pbi optimise`
+2. Update the **Last Command** section with these four lines in this exact order:
+   - Command: /pbi optimise
+   - Timestamp: [current UTC ISO 8601]
    - Measure: [measure name]
-   - Rules applied: [list of rule numbers applied, e.g. Rule 1, Rule 2]
-   - Flags raised: [list flags raised, or "None"]
-   - Timestamp: [current date/time]
+   - Outcome: Optimised — [list of rule numbers applied, e.g. Rule 1, Rule 2]; Flags: [flags raised, or "None"]
 3. Append a new row to **Command History**. Keep history to the last 20 rows. If there are already 20 rows, remove the oldest before appending.
    - Format: `| [timestamp] | /pbi optimise | [measure name] | Optimised — [rules applied] |`
 4. Do not modify the **Analyst-Reported Failures** section.
