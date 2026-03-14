@@ -27,6 +27,11 @@ Never block a data analyst — solve immediately, interrogate only when stuck or
 
 ### Active
 
+**v1.1 Complete:**
+
+- [ ] **DEBT-01**: pbi-edit writes `Entity:` not `Measure:` to `## Last Command` — fix field name
+- [ ] **DEBT-02**: pbi-diff and pbi-commit omit `Measure:` field — add consistent field writes
+- [ ] **DEBT-03**: pbi-optimise Command History row format wrong column order — align with schema
 - [ ] **PHASE-01**: Model review phase — analyze described model, flag health issues (M:M, missing date table, bidirectional filters), outputs findings before any DAX
 - [ ] **VERF-01**: Phase gates — hard checkpoints between phases in deep mode, user must confirm before advancing
 - [ ] **VERF-02**: Business question gate — final check that output answers the question stated at the start
@@ -71,5 +76,16 @@ Phase 2 grounded all DAX commands in model context. Every subcommand now checks 
 | Measures gate fires only on analyst completion signal | Per-measure gating would be disruptive; end-of-session review is less friction | ✓ Good — confirmed in Phase 2 smoke tests |
 | Model after GSD structure | User explicitly identified GSD as the reference for quality | — Pending (Phase 3 will complete this) |
 
+## Current Milestone: v1.1 Complete
+
+**Goal:** Ship a clean, debt-free final version — fix all context-field bugs and deliver Deep Mode with model review, phase gates, and context re-injection.
+
+**Target features:**
+- Fix 3 cross-phase `.pbi-context.md` field consistency bugs (pbi-edit, pbi-diff/commit, pbi-optimise)
+- Model review phase in deep mode (health flag analysis before any DAX)
+- Hard phase gates between all deep-mode phases
+- Business question gate at session end
+- Context re-injection at each phase start
+
 ---
-*Last updated: 2026-03-14 after v1.0 milestone*
+*Last updated: 2026-03-14 after v1.1 milestone start*
