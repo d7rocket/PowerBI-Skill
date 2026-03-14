@@ -42,19 +42,19 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| DEBT-01 | — | Pending |
-| DEBT-02 | — | Pending |
-| DEBT-03 | — | Pending |
-| PHASE-01 | — | Pending |
-| VERF-01 | — | Pending |
-| VERF-02 | — | Pending |
-| VERF-03 | — | Pending |
+| DEBT-01 | Phase 3 | Pending |
+| DEBT-02 | Phase 3 | Pending |
+| DEBT-03 | Phase 3 | Pending |
+| PHASE-01 | Phase 4 | Pending |
+| VERF-01 | Phase 4 | Pending |
+| VERF-02 | Phase 4 | Pending |
+| VERF-03 | Phase 4 | Pending |
 
 **Coverage:**
 - v1.1 requirements: 7 total
-- Mapped to phases: 0
-- Unmapped: 7 ⚠️ (roadmap pending)
+- Mapped to phases: 7
+- Unmapped: 0 ✓
 
 ---
 *Requirements defined: 2026-03-14*
-*Last updated: 2026-03-14 after initial definition*
+*Last updated: 2026-03-14 after v1.1 roadmap creation*

@@ -3,11 +3,11 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Complete
 status: planning
-stopped_at: "Defining requirements for v1.1"
+stopped_at: "Roadmap created for v1.1 — ready to plan Phase 3"
 last_updated: "2026-03-14T00:00:00.000Z"
-last_activity: 2026-03-14 — Milestone v1.1 started
+last_activity: 2026-03-14 — v1.1 roadmap created (Phases 3-4)
 progress:
-  total_phases: 0
+  total_phases: 2
   completed_phases: 0
   total_plans: 0
   completed_plans: 0
@@ -17,17 +17,19 @@ progress:
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-03-14 after v1.0 milestone)
+See: .planning/PROJECT.md (updated 2026-03-14 after v1.1 milestone start)
 
 **Core value:** Never block a data analyst — solve immediately, interrogate only when stuck or asked
-**Current focus:** Defining requirements for v1.1 Complete
+**Current focus:** Phase 3 — Context Field Fixes
 
 ## Current Position
 
-Phase: Not started (defining requirements)
-Plan: —
-Status: Defining requirements
-Last activity: 2026-03-14 — Milestone v1.1 started
+Phase: 3 of 4 (Context Field Fixes)
+Plan: — (not yet planned)
+Status: Ready to plan
+Last activity: 2026-03-14 — v1.1 roadmap created, Phase 3 is next
+
+Progress: [░░░░░░░░░░] 0%
 
 ## Performance Metrics
 
@@ -62,13 +64,10 @@ None.
 
 ### Blockers/Concerns
 
-**Tech debt (v1.0 known gaps — address in v1.1):**
-1. pbi-edit writes `Entity:` not `Measure:` to `## Last Command` — breaks pbi-error ERR-02 correlation after edit sessions
-2. pbi-diff / pbi-commit omit `Measure:` field — leaves stale value, pbi-error correlates wrong measure
-3. pbi-optimise Command History row format: wrong column order (`command | measure | rules | timestamp` vs schema `timestamp | command | measure | outcome`)
+None (tech debt from v1.0 is now captured as Phase 3 requirements DEBT-01/02/03).
 
 ## Session Continuity
 
 Last session: 2026-03-14T12:00:00.000Z
-Stopped at: v1.0 milestone archived
+Stopped at: v1.1 roadmap created — Phase 3 ready to plan
 Resume file: None
