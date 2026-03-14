@@ -3,11 +3,27 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Complete
 status: planning
+stopped_at: Completed 03-context-field-fixes 03-01-PLAN.md
+last_updated: "2026-03-14T07:59:28.756Z"
+last_activity: 2026-03-14 — v1.1 roadmap created, Phase 3 is next
+progress:
+  total_phases: 3
+  completed_phases: 2
+  total_plans: 8
+  completed_plans: 7
+  percent: 96
+---
+
+---
+gsd_state_version: 1.0
+milestone: v1.1
+milestone_name: Complete
+status: planning
 stopped_at: "Roadmap created for v1.1 — ready to plan Phase 3"
 last_updated: "2026-03-14T00:00:00.000Z"
 last_activity: 2026-03-14 — v1.1 roadmap created (Phases 3-4)
 progress:
-  total_phases: 2
+  [██████████] 96%
   completed_phases: 0
   total_plans: 0
   completed_plans: 0
@@ -44,6 +60,7 @@ Progress: [░░░░░░░░░░] 0%
 |-------|-------|----------|
 | 01-skill-core-escalation | 2 | ~20 min |
 | 02-context-aware-dax | 5 | ~6 min |
+| Phase 03-context-field-fixes P01 | 1 | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -57,6 +74,8 @@ Progress: [░░░░░░░░░░] 0%
 - Duplication check always-on (not opt-in)
 - Filter-sensitive keyword list includes natural language phrases (not just DAX function names)
 - Measures gate fires only on analyst completion signal (end-of-session review, not per-measure)
+- [Phase 03-context-field-fixes]: Use explicit '- Field:' bullet syntax in Last Command instructions to prevent Claude from using wrong field names (Entity: vs Measure:)
+- [Phase 03-context-field-fixes]: Fold Rules applied and Flags raised into Outcome field value to eliminate non-schema fields from ## Last Command in optimise.md
 
 ### Pending Todos
 
@@ -68,6 +87,6 @@ None (tech debt from v1.0 is now captured as Phase 3 requirements DEBT-01/02/03)
 
 ## Session Continuity
 
-Last session: 2026-03-14T12:00:00.000Z
-Stopped at: v1.1 roadmap created — Phase 3 ready to plan
+Last session: 2026-03-14T07:59:28.754Z
+Stopped at: Completed 03-context-field-fixes 03-01-PLAN.md
 Resume file: None
