@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v4.0
 milestone_name: milestone
 status: in-progress
-stopped_at: Completed 02-02-PLAN.md
-last_updated: "2026-03-14T07:14:54.465Z"
+stopped_at: "Checkpoint: 02-05 Task 2 human-verify (Phase 2 smoke tests)"
+last_updated: "2026-03-14T07:17:50.543Z"
 last_activity: 2026-03-13 — Completed plan 01-02 (acceptance test scenarios, human verification approved)
 progress:
   total_phases: 5
-  completed_phases: 4
+  completed_phases: 5
   total_plans: 19
-  completed_plans: 18
+  completed_plans: 19
 ---
 
 ---
@@ -90,6 +90,8 @@ Recent decisions affecting current work:
 - [Phase 02-context-aware-dax]: Duplication check (Step 2) is always-on — fires before every generation regardless of context state
 - [Phase 02-context-aware-dax]: Filter-sensitive keyword list includes both DAX function names and natural language phrases for maximum coverage
 - [Phase 02-context-aware-dax]: Phase 2 acceptance scenarios organized by behavior group (4 groups) matching requirement boundaries for traceability
+- [Phase 02-context-aware-dax]: Measures gate fires only on analyst completion signal -- never after each /pbi new call
+- [Phase 02-context-aware-dax]: Gate blocks session close when business question check returns no -- prompts to continue generating
 
 ### Pending Todos
 
@@ -101,6 +103,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-14T07:14:54.463Z
-Stopped at: Completed 02-02-PLAN.md
+Last session: 2026-03-14T07:17:46.832Z
+Stopped at: Checkpoint: 02-05 Task 2 human-verify (Phase 2 smoke tests)
 Resume file: None
