@@ -46,7 +46,7 @@ Plans:
 **Plans**: 5 plans
 
 Plans:
-- [ ] 02-01-PLAN.md — Phase 2 acceptance test scenarios (14 scenarios, Wave 0)
+- [x] 02-01-PLAN.md — Phase 2 acceptance test scenarios (14 scenarios, Wave 0) (completed 2026-03-14)
 - [ ] 02-02-PLAN.md — new.md: Step 0.5 (context intake), Step 2 (duplication check), Step 2.5 (filter-sensitive gate)
 - [ ] 02-03-PLAN.md — explain.md, format.md, optimise.md: Step 0.5 (context intake)
 - [ ] 02-04-PLAN.md — comment.md, error.md: Step 0.5 (context intake)
@@ -71,5 +71,5 @@ Phases execute in numeric order: 1 → 2 → 3
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Skill Core + Escalation | 2/2 | Complete    | 2026-03-13 |
-| 2. Context-Aware DAX | 5/5 | Complete   | 2026-03-14 |
+| 2. Context-Aware DAX | 5/5 | Complete    | 2026-03-14 |
 | 3. Deep Mode + Verification | 0/TBD | Not started | - |
