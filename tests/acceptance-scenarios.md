@@ -389,3 +389,196 @@ These scenarios verify that the v4.0 changes didn't break existing subcommand ro
 - Group 2 scenarios must be run in sequence (S2-01 through S2-06) as they share state
 - Group 3 requires a clean `.pbi-context.md` for S3-01 — create a temp copy if needed
 - `.pbi-context.md` lives in the root of the open project (or wherever Claude is running from)
+
+---
+
+## Group 5: Deep Mode Phase Gates (PHASE-01, VERF-01, VERF-02, VERF-03)
+
+These scenarios verify the Phase 4 deep mode behaviors: model review phase, hard phase gates, context re-injection, and the hardened final verification gate.
+
+**Prerequisite:** Run S3-01 through S3-02 first to establish deep mode intake behavior. Group 5 builds on top of the intake flow.
+
+---
+
+### Scenario S5-01: Model review fires before DAX on a model with issues
+
+**Covers:** PHASE-01
+
+**Preconditions:**
+- `.pbi-context.md` is empty (fresh session)
+
+**Steps:**
+
+| # | User action | Expected skill response |
+|---|-------------|------------------------|
+| 1 | Type `/pbi deep` | Skill asks about business question (Phase A intake begins) |
+| 2 | Answer business question (e.g., "Track regional sales vs target") | Skill asks about data model |
+| 3 | Answer model description: "Sales fact table with bidirectional filter to Region dimension. No date table." | Skill asks about existing measures |
+| 4 | Answer existing measures (e.g., "none yet") | Skill writes context then outputs Gate A→B prompt: "**--- Gate: Model Review ---**" |
+| 5 | Type `continue` | Skill outputs context summary block, then outputs **Model Review** section. CRITICAL: bidirectional filter. WARN: no date table. No DAX is generated. |
+
+**Pass criteria:**
+- Model Review section appears with CRITICAL (bidirectional) and WARN (no date table) findings
+- No DAX measure is generated in this response
+- Gate A→B appears before the model review (not skipped)
+- After model review, Gate B→C appears: "**--- Gate: DAX Development ---**"
+
+---
+
+### Scenario S5-02: Model review passes cleanly with no issues
+
+**Covers:** PHASE-01
+
+**Preconditions:**
+- `.pbi-context.md` is empty (fresh session)
+
+**Steps:**
+
+| # | User action | Expected skill response |
+|---|-------------|------------------------|
+| 1 | Type `/pbi deep` and complete intake with model: "Sales fact → Date (one-to-many), Sales fact → Product (one-to-many). Single-directional filters only." | Phase A completes, Gate A→B appears |
+| 2 | Type `continue` | Context summary block appears, then Model Review outputs: "No structural issues detected in your described model." Gate B→C appears. |
+
+**Pass criteria:**
+- "No structural issues detected" message appears
+- No false positives — gate still appears and holds
+- No DAX generated before Gate B→C is confirmed
+
+---
+
+### Scenario S5-03: Gate holds on vague input — does not advance
+
+**Covers:** VERF-01
+
+**Preconditions:**
+- S5-01 completed through Step 4 (Gate A→B is displayed)
+
+**Steps:**
+
+| # | User action | Expected skill response |
+|---|-------------|------------------------|
+| 1 | Type `ok` | Gate A→B prompt is re-output exactly. Skill does NOT advance to Phase B. |
+| 2 | Type `sounds good` | Gate A→B prompt is re-output again. Still no advance. |
+| 3 | Type `yes` | Gate A→B prompt is re-output again. Still no advance. |
+| 4 | Type `continue` | Skill advances to Phase B (model review begins). |
+
+**Pass criteria:**
+- "ok", "sounds good", and "yes" each cause the gate to re-output — none advance the session
+- "continue" (Step 4) is the only input that advances
+- Re-output is the full gate prompt, not just an error message
+
+---
+
+### Scenario S5-04: Gate advances on "continue" and "CONTINUE" (case-insensitive)
+
+**Covers:** VERF-01
+
+**Preconditions:**
+- Gate B→C is displayed (run through S5-01 or S5-02 to this point)
+
+**Steps:**
+
+| # | User action | Expected skill response |
+|---|-------------|------------------------|
+| 1 | Type `CONTINUE` | Skill advances to Phase C (DAX Development begins with context summary block) |
+
+**Pass criteria:**
+- "CONTINUE" (uppercase) is accepted and advances the gate
+- Phase C context summary block appears
+- "What would you like to work on first?" prompt appears
+
+---
+
+### Scenario S5-05: Final verification gate restates verbatim business question
+
+**Covers:** VERF-02
+
+**Preconditions:**
+- Full deep mode session in progress: intake complete, model review done, at least one /pbi new measure created
+- Business question on file: "Track regional sales vs target" (from S5-01 or explicit /pbi deep intake)
+
+**Steps:**
+
+| # | User action | Expected skill response |
+|---|-------------|------------------------|
+| 1 | Type `done` | Phase D activates. Context summary block appears. Then: **Final verification** section outputs the verbatim business question exactly as written to .pbi-context.md. Lists all measures created via /pbi new in this session. Asks "Do these measures answer the stated business question? (yes / no)" |
+
+**Pass criteria:**
+- Business question is output verbatim (character-for-character match to what was stated in intake)
+- Measures list is populated from /pbi new rows in Command History (not synthesized)
+- Question "Do these measures answer the stated business question?" appears
+
+---
+
+### Scenario S5-06: Final gate holds on "no" and resumes Phase C
+
+**Covers:** VERF-02
+
+**Preconditions:**
+- S5-05 completed — final verification gate displayed
+
+**Steps:**
+
+| # | User action | Expected skill response |
+|---|-------------|------------------------|
+| 1 | Type `no` | Skill outputs "What's missing? Continue with /pbi new." Does NOT close the session. |
+| 2 | Type `/pbi new Revenue vs Target measure` | Skill generates the new measure (Phase C resumed) |
+| 3 | Type `done` | Final verification gate fires again with updated measures list |
+
+**Pass criteria:**
+- "no" response does not close the session
+- "What's missing? Continue with /pbi new." is output
+- Phase C state is resumed (another /pbi new works)
+- Second "done" triggers the gate again with the updated measures list
+
+---
+
+### Scenario S5-07: Context summary block appears at Phase B start
+
+**Covers:** VERF-03
+
+**Preconditions:**
+- S5-01 completed through Step 5 (Gate A→B confirmed with "continue")
+
+**Steps:**
+
+| # | User action | Expected skill response |
+|---|-------------|------------------------|
+| 1 | (Observe Phase B response from S5-01 Step 5) | Response contains "**Current session context:**" block BEFORE the "**Model Review:**" section. Block shows business question, model summary, and existing measures. |
+
+**Pass criteria:**
+- "**Current session context:**" block appears before "**Model Review:**" heading
+- Block contains business question, model summary, and existing measures values (not "(not set)")
+- Block is drawn from .pbi-context.md values, not re-asked
+
+---
+
+### Scenario S5-08: Context summary block appears at Phase C and Phase D start
+
+**Covers:** VERF-03
+
+**Preconditions:**
+- Gate B→C confirmed (run through S5-04)
+- Phase D reachable (type "done" after S5-04)
+
+**Steps:**
+
+| # | User action | Expected skill response |
+|---|-------------|------------------------|
+| 1 | (Observe Phase C response after typing `continue` at Gate B→C) | Phase C response contains "**Current session context:**" block before "What would you like to work on first?" |
+| 2 | Type `done` to trigger Phase D | Phase D response contains "**Current session context:**" block before "**Final verification:**" section |
+
+**Pass criteria:**
+- Context block appears at Phase C start (Step 1)
+- Context block appears at Phase D start (Step 2)
+- Context block values are consistent across all three phases (B, C, D) — same business question, same model summary
+
+---
+
+## Verification Notes (Phase 4)
+
+- Run S5-03 first — it is the fastest confirmation that hard gates work (the critical VERF-01 behavior)
+- S5-01 is the primary PHASE-01 smoke test — covers the most common entry path
+- Group 5 scenarios S5-01 through S5-04 must be run in sequence as they share session state
+- Group 5 scenarios S5-05 and S5-06 require a live /pbi new measure to have been created (run /pbi new after Gate B→C in S5-04)
+- All Group 5 tests are manual-only — behaviors are conversational Claude responses with no automated runner
