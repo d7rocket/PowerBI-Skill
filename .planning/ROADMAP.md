@@ -21,7 +21,7 @@ Full phase details: `.planning/milestones/v1.0-ROADMAP.md`
 
 **Milestone Goal:** Ship a clean, debt-free final version — fix all context-field bugs and deliver Deep Mode with model review, phase gates, and context re-injection.
 
-- [x] **Phase 3: Context Field Fixes** - Fix all .pbi-context.md schema inconsistencies across pbi-edit, pbi-diff, pbi-commit, and pbi-optimise (completed 2026-03-14)
+- [x] **Phase 3: Context Field Fixes** - Fix all .pbi-context.md schema inconsistencies across pbi-edit, pbi-diff, pbi-commit, and pbi-optimise (completed 2026-03-14)
 - [ ] **Phase 4: Deep Mode Complete** - Deliver model review phase, hard phase gates, context re-injection, and business question gate in deep mode
 
 ## Phase Details
@@ -51,7 +51,11 @@ Plans:
   3. Context (tables, relationships, existing measures, business question) is restated at the start of each deep-mode phase
   4. At session end, a final gate checks that the output answers the business question stated at the start of the session
   5. A user who skips confirmation at any gate cannot proceed — the gate holds until confirmed
-**Plans**: TBD
+**Plans**: 2 plans
+
+Plans:
+- [ ] 04-01-PLAN.md — Rewrite deep.md with four-phase structure, hard gates, model review, and context re-injection
+- [ ] 04-02-PLAN.md — Append Phase 4 acceptance scenarios to tests/acceptance-scenarios.md
 
 ## Progress
 
@@ -60,4 +64,4 @@ Plans:
 | 1. Skill Core + Escalation | v1.0 | 2/2 | Complete | 2026-03-13 |
 | 2. Context-Aware DAX | v1.0 | 5/5 | Complete | 2026-03-14 |
 | 3. Context Field Fixes | 2/2 | Complete   | 2026-03-14 | - |
-| 4. Deep Mode Complete | v1.1 | 0/TBD | Not started | - |
+| 4. Deep Mode Complete | v1.1 | 0/2 | Not started | - |
