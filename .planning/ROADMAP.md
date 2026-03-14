@@ -64,4 +64,4 @@ Plans:
 | 1. Skill Core + Escalation | v1.0 | 2/2 | Complete | 2026-03-13 |
 | 2. Context-Aware DAX | v1.0 | 5/5 | Complete | 2026-03-14 |
 | 3. Context Field Fixes | 2/2 | Complete   | 2026-03-14 | - |
-| 4. Deep Mode Complete | v1.1 | 0/2 | Not started | - |
+| 4. Deep Mode Complete | 1/2 | In Progress|  | - |

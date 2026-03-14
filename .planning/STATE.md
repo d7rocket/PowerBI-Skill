@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Complete
 status: planning
-stopped_at: Completed 03-context-field-fixes 03-02-PLAN.md
-last_updated: "2026-03-14T08:05:57.047Z"
+stopped_at: Completed 04-deep-mode-complete 04-01-PLAN.md
+last_updated: "2026-03-14T08:55:54.426Z"
 last_activity: 2026-03-14 — v1.1 roadmap created, Phase 3 is next
 progress:
-  total_phases: 3
+  total_phases: 4
   completed_phases: 3
-  total_plans: 8
-  completed_plans: 8
+  total_plans: 10
+  completed_plans: 9
   percent: 96
 ---
 
@@ -62,6 +62,7 @@ Progress: [░░░░░░░░░░] 0%
 | 02-context-aware-dax | 5 | ~6 min |
 | Phase 03-context-field-fixes P01 | 1 | 2 tasks | 2 files |
 | Phase 03-context-field-fixes P02 | 68s | 2 tasks | 2 files |
+| Phase 04-deep-mode-complete P01 | 2 | 1 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -78,6 +79,9 @@ Progress: [░░░░░░░░░░] 0%
 - [Phase 03-context-field-fixes]: Use explicit '- Field:' bullet syntax in Last Command instructions to prevent Claude from using wrong field names (Entity: vs Measure:)
 - [Phase 03-context-field-fixes]: Fold Rules applied and Flags raised into Outcome field value to eliminate non-schema fields from ## Last Command in optimise.md
 - [Phase 03-context-field-fixes]: diff.md and commit.md Step 5 use explicit four-line Last Command format — Measure: field contains parsed measure names instead of (git operation) placeholder
+- [Phase 04-deep-mode-complete]: Hard gate three-branch logic (continue/cancel/re-output) for phase boundaries — 'ok' or 'sounds good' re-outputs the gate
+- [Phase 04-deep-mode-complete]: Gate tokens: 'continue'/'cancel' for mid-session gates A→B and B→C; 'confirm'/'cancel' preserved for terminal Phase D close gate
+- [Phase 04-deep-mode-complete]: Phase B model review: conversational only against described ## Model Context — no .SemanticModel file reads; direct users to /pbi audit for file-level analysis
 
 ### Pending Todos
 
@@ -89,6 +93,6 @@ None (tech debt from v1.0 is now captured as Phase 3 requirements DEBT-01/02/03)
 
 ## Session Continuity
 
-Last session: 2026-03-14T08:02:46.153Z
-Stopped at: Completed 03-context-field-fixes 03-02-PLAN.md
+Last session: 2026-03-14T08:55:54.424Z
+Stopped at: Completed 04-deep-mode-complete 04-01-PLAN.md
 Resume file: None

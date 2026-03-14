@@ -18,10 +18,10 @@ Context-field consistency bugs in `.pbi-context.md` writes that cause cross-comm
 
 On-demand structured workflow with model review, phase discipline, and context carry-forward.
 
-- [ ] **PHASE-01**: User entering deep mode sees a model review phase that analyzes their described model and surfaces health issues (M:M relationships, missing date table, bidirectional filters) before any DAX is written
-- [ ] **VERF-01**: User in deep mode must confirm at each phase boundary before the session advances to the next phase (hard gate — no auto-advance)
-- [ ] **VERF-02**: User completing deep mode sees a final gate that checks the output answers the business question stated at the start of the session
-- [ ] **VERF-03**: User at the start of each deep-mode phase sees an explicit context summary (tables, relationships, existing measures, business question) restated to prevent drift
+- [x] **PHASE-01**: User entering deep mode sees a model review phase that analyzes their described model and surfaces health issues (M:M relationships, missing date table, bidirectional filters) before any DAX is written
+- [x] **VERF-01**: User in deep mode must confirm at each phase boundary before the session advances to the next phase (hard gate — no auto-advance)
+- [x] **VERF-02**: User completing deep mode sees a final gate that checks the output answers the business question stated at the start of the session
+- [x] **VERF-03**: User at the start of each deep-mode phase sees an explicit context summary (tables, relationships, existing measures, business question) restated to prevent drift
 
 ## v2 Requirements
 
@@ -45,10 +45,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 | DEBT-01 | Phase 3 | Complete |
 | DEBT-02 | Phase 3 | Complete |
 | DEBT-03 | Phase 3 | Complete |
-| PHASE-01 | Phase 4 | Pending |
-| VERF-01 | Phase 4 | Pending |
-| VERF-02 | Phase 4 | Pending |
-| VERF-03 | Phase 4 | Pending |
+| PHASE-01 | Phase 4 | Complete |
+| VERF-01 | Phase 4 | Complete |
+| VERF-02 | Phase 4 | Complete |
+| VERF-03 | Phase 4 | Complete |
 
 **Coverage:**
 - v1.1 requirements: 7 total
