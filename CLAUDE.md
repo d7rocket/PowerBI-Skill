@@ -13,12 +13,14 @@ All commands are accessed via `/pbi [subcommand]` (e.g., `/pbi explain`, `/pbi a
 ### Subcommand types
 
 - **Paste-in** (work anywhere): explain, format, optimise, comment, error, new
-- **PBIP** (require `.SemanticModel/` directory): load, audit, diff, commit, edit, undo, comment-batch, changelog
+- **PBIP** (require `.SemanticModel/` directory): load, audit, diff, commit, edit, undo, comment-batch, changelog, extract
+- **Utility** (work anywhere): help
 
 ### Model selection
 
-- **Sonnet** (default): DAX reasoning subcommands — explain, format, optimise, comment, error, new, edit, comment-batch, audit
-- **Haiku** (via Agent spawn): file/git-heavy subcommands — load, diff, commit, undo, changelog
+- **Sonnet** (default): DAX reasoning subcommands — explain, format, optimise, comment, error, new, edit, comment-batch, audit, help
+- **Haiku** (via Agent spawn): file/git-heavy subcommands — load, diff, commit, undo, changelog; also extract simple tier
+- **Opus** (via Agent spawn): extract detailed tier (high token usage, deep analysis)
 
 ### Detection
 
@@ -64,6 +66,8 @@ Desktop detection (`tasklist`) has been removed — file-mode commands always wr
     undo.md             ← revert last auto-commit (haiku)
     comment-batch.md    ← batch commenting (sonnet)
     changelog.md        ← changelog generation (haiku)
+    extract.md          ← project extraction (haiku/sonnet/opus by tier)
+    help.md             ← command reference (sonnet)
   shared/
     api-notes.md        ← DAX Formatter API reference
 ```
@@ -85,4 +89,4 @@ Test fixtures are in `tests/fixtures/`:
 
 ## Version
 
-Current: 3.0.0 (set in `pbi/SKILL.md` frontmatter)
+Current: 4.0.0 (set in `pbi/SKILL.md` frontmatter)

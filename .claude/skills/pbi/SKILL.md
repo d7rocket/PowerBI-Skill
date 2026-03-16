@@ -5,7 +5,7 @@ version: 4.0.0
 disable-model-invocation: true
 model: sonnet
 allowed-tools: Read, Write, Bash, Agent
-argument-hint: "[explain|format|optimise|comment|error|new|load|audit|diff|commit|edit|undo|comment-batch|changelog|deep]"
+argument-hint: "[explain|format|optimise|comment|error|new|load|audit|diff|commit|edit|undo|comment-batch|changelog|deep|extract|help]"
 ---
 
 ## Detection Blocks (run once, shared by all subcommands)
@@ -46,6 +46,8 @@ Parse `$ARGUMENTS` first word/keyword to determine the subcommand. Match against
 | undo, revert, "go back" | commands/undo.md | haiku Agent |
 | changelog, "release notes", history, "what shipped" | commands/changelog.md | haiku Agent |
 | deep | commands/deep.md | sonnet direct |
+| extract, "project summary", "model summary", "export model" | commands/extract.md | sonnet direct |
+| help, commands, "what can you do", "list commands" | commands/help.md | sonnet direct |
 | (no keyword match — free-text) | Solve-first handler (inline below) | sonnet direct |
 
 If intent is ambiguous between two commands: pick the most specific match and note it — "Routing to /pbi edit (you can also use /pbi comment if you only need to add comments)."
@@ -86,7 +88,13 @@ What would you like to do?
 **E — Deep mode**
   Full structured workflow with upfront context gathering
 
-Type A, B, C, D, or E — or describe what you need and I'll route you directly.
+**F — Extract project summary**
+  extract (overview · standard · deep-dive)
+
+**? — Help**
+  List all commands
+
+Type A, B, C, D, E, F, or ? — or describe what you need and I'll route you directly.
 
 ---
 
@@ -97,8 +105,10 @@ On analyst response:
 - "C": Ask — "Which command? **diff** — see what changed · **commit** — save a snapshot · **undo** — revert the last commit · **changelog** — generate release notes" — then route.
 - "D": Ask — "Which command? **edit** — change a specific entity · **comment-batch** — comment all measures at once" — then route.
 - "E": Route to `/pbi deep`.
+- "F": Route to `/pbi extract`.
+- "?": Route to `/pbi help`.
 - Free-text response: Apply the keyword matching from the Routing table above. If no keyword matches, route to **Solve-First Default** handler and treat the text as the request.
-- Any response that does not match A/B/C/D/E or a recognisable keyword: Output "I didn't catch that — type A, B, C, D, or E, or describe what you need."
+- Any response that does not match A/B/C/D/E/F/? or a recognisable keyword: Output "I didn't catch that — type A, B, C, D, E, F, or ? — or describe what you need."
 
 ## Solve-First Default
 
