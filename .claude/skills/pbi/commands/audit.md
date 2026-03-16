@@ -1,6 +1,6 @@
 # /pbi audit
 
-> Detection context (PBIP_MODE, PBIP_FORMAT, File Index, PBIR Detection, Session Context) is provided by the router.
+> Detection context (PBIP_MODE, PBIP_FORMAT, PBIP_DIR, File Index, PBIR Detection, Session Context) is provided by the router.
 
 ## Instructions
 
@@ -8,7 +8,7 @@
 
 **If PBIP_MODE=paste:** output exactly this message and stop:
 
-> No PBIP project found in this directory. Run /pbi audit from a directory containing .SemanticModel/.
+> No PBIP project found in this directory. Run /pbi audit from a directory containing a *.SemanticModel/ folder.
 
 **If PBIP_MODE=file:** output:
 
@@ -28,7 +28,7 @@ The File Index has already listed all `.tmdl` file paths.
 
 Use the Read tool to read every `.tmdl` file path returned by the File Index.
 
-Use the Read tool to read `.SemanticModel/definition/relationships.tmdl` — if not found, treat as "no relationships defined".
+Use the Read tool to read `$PBIP_DIR/definition/relationships.tmdl` — if not found, treat as "no relationships defined".
 
 From each table `.tmdl` file extract:
 
@@ -45,7 +45,7 @@ From `relationships.tmdl` extract: for each `relationship` block, the fromTable,
 
 **For TMSL (PBIP_FORMAT=tmsl):**
 
-Read `.SemanticModel/model.bim`. If model.bim is >2000 lines, use offset/limit parameters.
+Read `$PBIP_DIR/model.bim`. If model.bim is >2000 lines, use offset/limit parameters.
 
 Extract:
 - `model.tables[]`: table name, dataCategory, measures array, columns array
@@ -180,7 +180,7 @@ Output:
 
 ```
 # PBI Model Audit Report
-**Project:** .SemanticModel
+**Project:** $PBIP_DIR
 **Format:** [TMDL or TMSL (model.bim)]
 **Date:** [current UTC date and time, format: YYYY-MM-DD HH:MM UTC]
 **Findings:** [N_critical] CRITICAL · [N_warn] WARN · [N_info] INFO
@@ -269,7 +269,7 @@ Output for each fix: `Fixed: [rule] — [subject] — [action taken]`
 ```bash
 GIT_STATUS=$(git rev-parse --is-inside-work-tree 2>/dev/null && echo "yes" || echo "no")
 if [ "$GIT_STATUS" = "yes" ]; then
-  git add ".SemanticModel/" 2>/dev/null
+  git add "$PBIP_DIR/" 2>/dev/null
   git commit -m "fix: auto-fix [N] audit findings (R-01, H-01, H-02)" 2>/dev/null && echo "AUTO_COMMIT=ok" || echo "AUTO_COMMIT=fail"
 else
   echo "AUTO_COMMIT=skip_no_repo"

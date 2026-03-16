@@ -10,20 +10,41 @@ argument-hint: "[explain|format|optimise|comment|error|new|load|audit|diff|commi
 
 ## Detection Blocks (run once, shared by all subcommands)
 
+**IMPORTANT:** All detection commands below MUST run from the user's current working directory (`$PWD`), NOT from the skill file's directory. Use the Bash tool (which runs from the user's CWD) to execute these commands. The user's CWD is their project folder.
+
+**Folder naming:** Real PBIP projects use `<ProjectName>.SemanticModel` and `<ReportName>.Report` (e.g., `Sales.SemanticModel`, `Sales.Report`). Test fixtures may use `.SemanticModel`. Detection must match both patterns using glob: `*.SemanticModel` and `*.Report`.
+
 ### PBIP Detection
-!`if [ -d ".SemanticModel" ]; then if [ -f ".SemanticModel/model.bim" ]; then echo "PBIP_MODE=file PBIP_FORMAT=tmsl"; elif [ -d ".SemanticModel/definition/tables" ]; then echo "PBIP_MODE=file PBIP_FORMAT=tmdl"; else echo "PBIP_MODE=file PBIP_FORMAT=tmdl"; fi; else echo "PBIP_MODE=paste"; fi`
+Run this Bash command from the user's CWD:
+```bash
+SM_DIR=$(ls -d *.SemanticModel .SemanticModel 2>/dev/null | head -1); if [ -n "$SM_DIR" ]; then if [ -f "$SM_DIR/model.bim" ]; then echo "PBIP_MODE=file PBIP_FORMAT=tmsl PBIP_DIR=$SM_DIR"; elif [ -d "$SM_DIR/definition/tables" ]; then echo "PBIP_MODE=file PBIP_FORMAT=tmdl PBIP_DIR=$SM_DIR"; else echo "PBIP_MODE=file PBIP_FORMAT=tmdl PBIP_DIR=$SM_DIR"; fi; else echo "PBIP_MODE=paste"; fi
+```
+
+Save the `PBIP_DIR` value from the output — all subsequent commands must use it instead of a hardcoded `.SemanticModel`.
 
 ### File Index
-!`if [ -d ".SemanticModel/definition/tables" ]; then find ".SemanticModel/definition/tables/" -name "*.tmdl" 2>/dev/null; elif [ -f ".SemanticModel/model.bim" ]; then echo "tmsl:.SemanticModel/model.bim"; fi`
+Run this Bash command from the user's CWD (substitute `$SM_DIR` with the PBIP_DIR value from above):
+```bash
+SM_DIR="<PBIP_DIR from above>"; if [ -d "$SM_DIR/definition/tables" ]; then find "$SM_DIR/definition/tables/" -name "*.tmdl" 2>/dev/null; elif [ -f "$SM_DIR/model.bim" ]; then echo "tmsl:$SM_DIR/model.bim"; fi
+```
 
 ### PBIR Detection
-!`if [ -d ".Report" ]; then find ".Report/" -name "*.json" -not -name "item.config.json" -not -name "item.metadata.json" 2>/dev/null | head -20 && echo "PBIR=yes"; else echo "PBIR=no"; fi`
+Run this Bash command from the user's CWD:
+```bash
+RPT_DIR=$(ls -d *.Report .Report 2>/dev/null | head -1); if [ -n "$RPT_DIR" ]; then find "$RPT_DIR/" -name "*.json" -not -name "item.config.json" -not -name "item.metadata.json" 2>/dev/null | head -20 && echo "PBIR=yes PBIR_DIR=$RPT_DIR"; else echo "PBIR=no"; fi
+```
 
 ### Git State
-!`git rev-parse --is-inside-work-tree 2>/dev/null && echo "GIT=yes" || echo "GIT=no"; git rev-parse HEAD 2>/dev/null && echo "HAS_COMMITS=yes" || echo "HAS_COMMITS=no"`
+Run this Bash command from the user's CWD:
+```bash
+git rev-parse --is-inside-work-tree 2>/dev/null && echo "GIT=yes" || echo "GIT=no"; git rev-parse HEAD 2>/dev/null && echo "HAS_COMMITS=yes" || echo "HAS_COMMITS=no"
+```
 
 ### Session Context
-!`cat ".pbi-context.md" 2>/dev/null | tail -80 || echo "No prior context found."`
+Run this Bash command from the user's CWD:
+```bash
+cat ".pbi-context.md" 2>/dev/null | tail -80 || echo "No prior context found."
+```
 
 ## Routing
 
@@ -54,12 +75,13 @@ If intent is ambiguous between two commands: pick the most specific match and no
 
 ### Execution
 
-**For sonnet subcommands** (explain, format, optimise, comment, error, new, edit, comment-batch, audit, deep):
-1. Use the Read tool to load the command file from `commands/[cmd].md` (relative to this skill file's directory).
-2. Execute the loaded instructions directly in the current context. Pass through the detection block outputs above and any remaining `$ARGUMENTS` after the subcommand keyword.
+**For sonnet subcommands** (explain, format, optimise, comment, error, new, edit, comment-batch, audit, deep, extract, help):
+1. Determine the skill directory: find where this SKILL.md file is located (typically `.claude/skills/pbi/` relative to the project root). Use the Glob tool to find the skill directory if needed: `**/.claude/skills/pbi/commands/[cmd].md`.
+2. Use the Read tool to load the command file at that path (e.g., `.claude/skills/pbi/commands/explain.md`).
+3. Execute the loaded instructions directly in the current context. Pass through the detection block outputs above and any remaining `$ARGUMENTS` after the subcommand keyword. **All file operations (Read, Write, Bash) must target the user's CWD (their project folder), NOT the skill directory.**
 
 **For haiku subcommands** (load, diff, commit, undo, changelog):
-1. Use the Read tool to load the command file from `commands/[cmd].md`.
+1. Determine the skill directory as above and use the Read tool to load the command file (e.g., `.claude/skills/pbi/commands/load.md`).
 2. Spawn a **haiku Agent** with:
    - The full command file content as instructions
    - The detection block outputs above (PBIP_MODE, PBIP_FORMAT, File Index, Git State, Session Context)
@@ -167,7 +189,8 @@ When no keyword matches (catch-all route), this handler runs.
 
 ## Shared Rules
 
-- All bash paths must be double-quoted (e.g., `"$VAR"`, `".SemanticModel/"`)
+- All bash paths must be double-quoted (e.g., `"$VAR"`, `"$SM_DIR/"`)
+- **PBIP folder naming:** Always use the `PBIP_DIR` value from detection (e.g., `Sales.SemanticModel`) — never hardcode `.SemanticModel`. Same for Report: use `PBIR_DIR` (e.g., `Sales.Report`).
 - Session context: Read-then-Write `.pbi-context.md`, 20 row max Command History, never touch Analyst-Reported Failures
 - TMDL: tabs only for indentation, use `grep -rlF` for measure names (fixed-string matching)
 - DAX in shell: single-quoted heredoc delimiter to prevent `$` and backtick expansion

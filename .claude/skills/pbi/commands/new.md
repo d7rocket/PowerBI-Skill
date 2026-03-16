@@ -1,6 +1,6 @@
 # /pbi new
 
-> Detection context (PBIP_MODE, PBIP_FORMAT, File Index, Session Context) is provided by the router.
+> Detection context (PBIP_MODE, PBIP_FORMAT, PBIP_DIR, File Index, Session Context) is provided by the router.
 
 ## Instructions
 
@@ -181,7 +181,7 @@ If PBIP_MODE=file:
 If the analyst did not specify a table, ask: "Which table should this measure be added to?"
 
 **If PBIP_FORMAT=tmdl:**
-1. Run bash: `grep -rlF "table " ".SemanticModel/definition/tables/" 2>/dev/null` to verify the target table file exists.
+1. Run bash: `grep -rlF "table " "$PBIP_DIR/definition/tables/" 2>/dev/null` to verify the target table file exists.
 2. Read the target `.tmdl` file using the Read tool.
 3. Locate the insertion point: after the last existing `measure` block (before the trailing blank line or end of measure section). If no measures exist, insert after the last `column` block.
 4. Scaffold the TMDL block using the file's existing indentation (tabs):
@@ -196,7 +196,7 @@ If the analyst did not specify a table, ask: "Which table should this measure be
 6. Output: "Written to: [Measure Name] in [file path]"
 
 **If PBIP_FORMAT=tmsl:**
-1. Read `.SemanticModel/model.bim` using the Read tool.
+1. Read `$PBIP_DIR/model.bim` using the Read tool.
 2. Find the target table's `"measures"` array. If no `"measures"` array exists, create one.
 3. Append a new measure JSON object:
 ```json
@@ -209,13 +209,13 @@ If the analyst did not specify a table, ask: "Which table should this measure be
 }
 ```
 4. Write the entire model.bim back using the Write tool.
-5. Output: "Written to: [Measure Name] in .SemanticModel/model.bim"
+5. Output: "Written to: [Measure Name] in $PBIP_DIR/model.bim"
 
 **Auto-commit:**
 ```bash
 GIT_STATUS=$(git rev-parse --is-inside-work-tree 2>/dev/null && echo "yes" || echo "no")
 if [ "$GIT_STATUS" = "yes" ]; then
-  git add ".SemanticModel/" 2>/dev/null
+  git add "$PBIP_DIR/" 2>/dev/null
   git commit -m "feat: add [MEASURE_NAME] measure to [TABLE_NAME]" 2>/dev/null && echo "AUTO_COMMIT=ok" || echo "AUTO_COMMIT=fail"
 else
   echo "AUTO_COMMIT=skip_no_repo"

@@ -1,6 +1,6 @@
 # /pbi diff
 
-> Detection context (PBIP_MODE, PBIP_FORMAT, File Index, Git State, Session Context) is provided by the router.
+> Detection context (PBIP_MODE, PBIP_FORMAT, PBIP_DIR, File Index, Git State, Session Context) is provided by the router.
 
 ## Instructions
 
@@ -8,13 +8,13 @@
 
 **If PBIP_MODE=paste:** output exactly this message and stop:
 
-> No PBIP project found. Run /pbi diff from a directory containing .SemanticModel/.
+> No PBIP project found. Run /pbi diff from a directory containing a *.SemanticModel/ folder.
 
 **If GIT=no:** output exactly this message and stop:
 
 > No git repo found. Run /pbi commit to initialise one.
 
-**If GIT=yes and HAS_COMMITS=no:** proceed to Step 1 with the note that this is an empty repo — treat all .SemanticModel/ files as new additions. In Step 2, use `git status --porcelain ".SemanticModel/" 2>/dev/null` as the diff source instead of `git diff HEAD`.
+**If GIT=yes and HAS_COMMITS=no:** proceed to Step 1 with the note that this is an empty repo — treat all $PBIP_DIR/ files as new additions. In Step 2, use `git status --porcelain "$PBIP_DIR/" 2>/dev/null` as the diff source instead of `git diff HEAD`.
 
 **Otherwise (GIT=yes and HAS_COMMITS=yes):** proceed to Step 1.
 
@@ -36,17 +36,17 @@ Based on PBIP_FORMAT, run the appropriate scoped diff command:
 
 **If PBIP_FORMAT=tmdl and HAS_COMMITS=yes:**
 ```bash
-git diff HEAD -- ".SemanticModel/definition/tables/" ".SemanticModel/definition/relationships.tmdl" 2>/dev/null
+git diff HEAD -- "$PBIP_DIR/definition/tables/" "$PBIP_DIR/definition/relationships.tmdl" 2>/dev/null
 ```
 
 **If PBIP_FORMAT=tmsl and HAS_COMMITS=yes:**
 ```bash
-git diff HEAD -- ".SemanticModel/model.bim" 2>/dev/null
+git diff HEAD -- "$PBIP_DIR/model.bim" 2>/dev/null
 ```
 
 **If HAS_COMMITS=no (empty repo fallback):**
 ```bash
-git status --porcelain ".SemanticModel/" 2>/dev/null
+git status --porcelain "$PBIP_DIR/" 2>/dev/null
 ```
 
 Capture the full output text for parsing in Step 3.
@@ -90,7 +90,7 @@ Parse the diff output from model.bim:
 
 #### Empty repo fallback parsing (when HAS_COMMITS=no)
 
-Treat all listed `.SemanticModel/` files as NEW additions. Report: "All model files are new (no prior commit)."
+Treat all listed `$PBIP_DIR/` files as NEW additions. Report: "All model files are new (no prior commit)."
 
 ---
 

@@ -9,8 +9,10 @@
 Run the following bash command to read the local version and check the remote for updates:
 
 ```bash
-LOCAL_VER=$(grep -m1 '^version:' ".claude/skills/pbi/SKILL.md" 2>/dev/null | sed 's/version: *//')
-echo "LOCAL=$LOCAL_VER"
+SKILL_FILE=$(find . -path "*/.claude/skills/pbi/SKILL.md" -print -quit 2>/dev/null)
+if [ -z "$SKILL_FILE" ]; then SKILL_FILE=$(find "$HOME" -maxdepth 5 -path "*/.claude/skills/pbi/SKILL.md" -print -quit 2>/dev/null); fi
+LOCAL_VER=$(grep -m1 '^version:' "$SKILL_FILE" 2>/dev/null | sed 's/version: *//')
+echo "LOCAL=${LOCAL_VER:-unknown}"
 
 # Fetch latest remote tag (timeout 5s to avoid blocking on no network)
 REMOTE_VER=$(git ls-remote --tags --sort=-v:refname origin 2>/dev/null | head -1 | sed 's/.*refs\/tags\///' | sed 's/\^{}//')
@@ -52,7 +54,7 @@ Output the following, inserting the version line from Step 1:
 | `/pbi error` | Diagnose a DAX error and suggest fixes | Sonnet |
 | `/pbi new` | Scaffold a new measure from a plain-English description | Sonnet |
 
-## PBIP Commands (require `.SemanticModel/` directory)
+## PBIP Commands (require `*.SemanticModel/` directory)
 
 | Command | Description | Model |
 |---------|-------------|-------|

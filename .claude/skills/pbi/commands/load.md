@@ -1,6 +1,6 @@
 # /pbi load
 
-> Detection context (PBIP_MODE, PBIP_FORMAT, File Index, Session Context) is provided by the router.
+> Detection context (PBIP_MODE, PBIP_FORMAT, PBIP_DIR, File Index, Session Context) is provided by the router.
 
 ## Instructions
 
@@ -36,7 +36,7 @@ File mode — PBIP project detected ([FORMAT]) | Loading model context...
 
 **For TMDL (`PBIP_FORMAT=tmdl`):**
 
-The File Index has already listed all `.tmdl` file paths under `.SemanticModel/definition/tables/`.
+The File Index has already listed all `.tmdl` file paths under `$PBIP_DIR/definition/tables/`.
 
 Use the Read tool to read each `.tmdl` file from that list.
 
@@ -45,7 +45,7 @@ From each file, extract:
 - **Measure names:** lines matching `measure 'Name'` or `measure Name` (single-word). Extract the text after `measure ` up to ` =` or end of line, stripping any single quotes.
 - **Column names:** lines matching `column 'Name'` or `column Name`. Same extraction rule — strip single quotes if present.
 
-Also check for `.SemanticModel/definition/relationships.tmdl` using the Read tool (if it exists). Extract relationship pairs from lines containing `fromTable:`, `fromColumn:`, `toTable:`, `toColumn:`. Build pairs: `[FromTable][FromColumn] → [ToTable][ToColumn] (many-to-one)`.
+Also check for `$PBIP_DIR/definition/relationships.tmdl` using the Read tool (if it exists). Extract relationship pairs from lines containing `fromTable:`, `fromColumn:`, `toTable:`, `toColumn:`. Build pairs: `[FromTable][FromColumn] → [ToTable][ToColumn] (many-to-one)`.
 
 **Disambiguation rule (TMDL only):** If the same measure name appears in multiple table files, log it as `[MeasureName] (found in: Table1, Table2)` in the Measures column of the summary table. Do not fail — report all locations.
 
@@ -53,7 +53,7 @@ Also check for `.SemanticModel/definition/relationships.tmdl` using the Read too
 
 **For TMSL (`PBIP_FORMAT=tmsl`):**
 
-Read `.SemanticModel/model.bim` with the Read tool.
+Read `$PBIP_DIR/model.bim` with the Read tool.
 
 Navigate the JSON structure:
 - `model.tables[]` → for each table extract: `name`, `measures[].name`, `columns[].name`
@@ -71,7 +71,7 @@ Build the following markdown block:
 ## Model Context
 **Loaded:** [current UTC time in ISO 8601 format]
 **Format:** [TMDL or TMSL (model.bim)]
-**Project:** .SemanticModel
+**Project:** $PBIP_DIR
 
 | Table | Measures | Columns |
 |-------|----------|---------|

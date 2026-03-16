@@ -1,13 +1,13 @@
 # /pbi comment-batch
 
-> Detection context (PBIP_MODE, PBIP_FORMAT, File Index, Session Context) is provided by the router.
+> Detection context (PBIP_MODE, PBIP_FORMAT, PBIP_DIR, File Index, Session Context) is provided by the router.
 
 ## Instructions
 
 ### Step 0 — PBIP-Only Guard
 
 If PBIP_MODE=paste:
-- Output: "Batch commenting requires a PBIP project. Run /pbi comment-batch from a directory containing .SemanticModel/. For a single measure, use /pbi comment instead."
+- Output: "Batch commenting requires a PBIP project. Run /pbi comment-batch from a directory containing a *.SemanticModel/ folder. For a single measure, use /pbi comment instead."
 - Stop.
 
 If PBIP_MODE=file: output header:
@@ -46,7 +46,7 @@ For each file, extract all measure blocks:
 
 **If PBIP_FORMAT=tmsl:**
 
-Read `.SemanticModel/model.bim`. For each table matching the scope, extract:
+Read `$PBIP_DIR/model.bim`. For each table matching the scope, extract:
 - Measure name, expression, existing description
 
 Build the measure list. Output progress:
@@ -112,7 +112,7 @@ For each table file that contains measures to update:
 3. Write the entire modified file back (Write tool) — one write per table file
 
 **TMSL path:**
-1. Read `.SemanticModel/model.bim` (Read tool)
+1. Read `$PBIP_DIR/model.bim` (Read tool)
 2. For each measure to update:
    - Set `"description"` to the generated description
    - Update `"expression"` with commented DAX (use array form if multiline)
@@ -126,7 +126,7 @@ Output for each file written:
 ```bash
 GIT_STATUS=$(git rev-parse --is-inside-work-tree 2>/dev/null && echo "yes" || echo "no")
 if [ "$GIT_STATUS" = "yes" ]; then
-  git add ".SemanticModel/" 2>/dev/null
+  git add "$PBIP_DIR/" 2>/dev/null
   git commit -m "chore: batch comment [N] measures in [scope]" 2>/dev/null && echo "AUTO_COMMIT=ok" || echo "AUTO_COMMIT=fail"
 else
   echo "AUTO_COMMIT=skip_no_repo"

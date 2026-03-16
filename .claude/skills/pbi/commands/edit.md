@@ -1,13 +1,13 @@
 # /pbi edit
 
-> Detection context (PBIP_MODE, PBIP_FORMAT, File Index, Session Context) is provided by the router.
+> Detection context (PBIP_MODE, PBIP_FORMAT, PBIP_DIR, File Index, Session Context) is provided by the router.
 
 ## Instructions
 
 ### Step 0: PBIP-Only Guard
 
 If PBIP_MODE=paste:
-- Output: "No PBIP project found. Run /pbi edit from a directory containing .SemanticModel/."
+- Output: "No PBIP project found. Run /pbi edit from a directory containing a *.SemanticModel/ folder."
 - Stop.
 
 If PBIP_MODE=file: output header:
@@ -37,21 +37,21 @@ If change type is `update-expression`:
 **If PBIP_FORMAT=tmdl:**
 Run bash:
 ```bash
-grep -rlF "[EntityName]" ".SemanticModel/definition/tables/" 2>/dev/null
+grep -rlF "[EntityName]" "$PBIP_DIR/definition/tables/" 2>/dev/null
 ```
 (Replace [EntityName] with the extracted name — omit brackets if present)
 
-- **Zero results**: Run `grep -r "measure " ".SemanticModel/definition/tables/" 2>/dev/null` to list all measure names. Compare requested name to the list using common-typo reasoning. Output up to 3 candidates: "No measure named [RequestedName] found. Did you mean: [Candidate1] (Table1), [Candidate2] (Table1)?" Wait for clarification or stop.
+- **Zero results**: Run `grep -r "measure " "$PBIP_DIR/definition/tables/" 2>/dev/null` to list all measure names. Compare requested name to the list using common-typo reasoning. Output up to 3 candidates: "No measure named [RequestedName] found. Did you mean: [Candidate1] (Table1), [Candidate2] (Table1)?" Wait for clarification or stop.
 - **One result**: Proceed to Step 3 with this file.
 - **Multiple results**: Output: "Found [EntityName] in: [Table1], [Table2], [Table3]. Which table?" Wait for analyst to specify, then re-run grep scoped to that table's file.
 
 If change type is `add` (new entity creation):
-  - Confirm the target table file exists under `.SemanticModel/definition/tables/[TableName].tmdl`.
-  - If table not found: output "Table [TableName] not found in .SemanticModel/definition/tables/. Check the table name and try again." Stop.
+  - Confirm the target table file exists under `$PBIP_DIR/definition/tables/[TableName].tmdl`.
+  - If table not found: output "Table [TableName] not found in $PBIP_DIR/definition/tables/. Check the table name and try again." Stop.
   - If found: proceed directly to Step 3.
 
 **If PBIP_FORMAT=tmsl:**
-Read `.SemanticModel/model.bim` (Read tool). Search the JSON `"measures"` arrays for `"name"` matching EntityName.
+Read `$PBIP_DIR/model.bim` (Read tool). Search the JSON `"measures"` arrays for `"name"` matching EntityName.
 - Zero matches → fuzzy-match; output up to 3 candidates.
 - One match → proceed to Step 3.
 - Multiple matches → list tables and ask.
@@ -59,7 +59,7 @@ Read `.SemanticModel/model.bim` (Read tool). Search the JSON `"measures"` arrays
 ### Step 3: Pre-Write Checklist
 
 **unappliedChanges.json check:**
-Run bash: `ls ".SemanticModel/unappliedChanges.json" 2>/dev/null && echo "UNAPPLIED=yes" || echo "UNAPPLIED=no"`
+Run bash: `ls "$PBIP_DIR/unappliedChanges.json" 2>/dev/null && echo "UNAPPLIED=yes" || echo "UNAPPLIED=no"`
 If UNAPPLIED=yes:
   - Output: "unappliedChanges.json detected — Desktop may have unsaved changes. Proceed anyway? (y/N)"
   - If analyst types y or Y: continue.
@@ -130,7 +130,7 @@ Run the auto-commit bash block:
 ```bash
 GIT_STATUS=$(git rev-parse --is-inside-work-tree 2>/dev/null && echo "yes" || echo "no")
 if [ "$GIT_STATUS" = "yes" ]; then
-  git add ".SemanticModel/" 2>/dev/null
+  git add "$PBIP_DIR/" 2>/dev/null
   git commit -m "[PREFIX]: [VERB] [ENTITY_NAME] in [TABLE_NAME]" 2>/dev/null && echo "AUTO_COMMIT=ok" || echo "AUTO_COMMIT=fail"
 else
   echo "AUTO_COMMIT=skip_no_repo"

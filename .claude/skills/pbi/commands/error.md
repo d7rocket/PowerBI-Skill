@@ -1,6 +1,6 @@
 # /pbi error
 
-> Detection context (PBIP_MODE, PBIP_FORMAT, File Index, Session Context) is provided by the router.
+> Detection context (PBIP_MODE, PBIP_FORMAT, PBIP_DIR, File Index, Session Context) is provided by the router.
 
 You are a Power BI error diagnosis expert. Your job is to take a pasted error message or error log and identify the root cause and actionable fix, using session context to make your diagnosis specific.
 
@@ -36,11 +36,11 @@ If the fix targets a specific measure expression (Category A name errors with a 
    Note: Only ask this confirmation if the measure name was not explicitly provided in the error text. If the error clearly names the failing measure (e.g. "The name '[Revenue YTD]' does not exist"), use that name directly without asking — proceed straight to step 2.
 
 2. Locate the measure file:
-   **TMDL:** `grep -rlF "[MeasureName]" ".SemanticModel/definition/tables/" 2>/dev/null`
+   **TMDL:** `grep -rlF "[MeasureName]" "$PBIP_DIR/definition/tables/" 2>/dev/null`
    - Multiple matches: "Measure found in multiple tables: [list]. Which table? Type the table name."
    - No match: "Measure [Name] not found in PBIP project — fix is paste-ready for manual application." Stop.
    - One match: proceed.
-   **TMSL:** Read `.SemanticModel/model.bim`. Locate measure object by name. If not found: same not-found message.
+   **TMSL:** Read `$PBIP_DIR/model.bim`. Locate measure object by name. If not found: same not-found message.
 
 3. Read the identified file (Read tool).
 
@@ -71,7 +71,7 @@ If the fix targets a specific measure expression (Category A name errors with a 
    ```bash
    GIT_STATUS=$(git rev-parse --is-inside-work-tree 2>/dev/null && echo "yes" || echo "no")
    if [ "$GIT_STATUS" = "yes" ]; then
-     git add ".SemanticModel/" 2>/dev/null
+     git add "$PBIP_DIR/" 2>/dev/null
      git commit -m "chore: apply error fix in [TABLE_NAME]" 2>/dev/null && echo "AUTO_COMMIT=ok" || echo "AUTO_COMMIT=fail"
    else
      echo "AUTO_COMMIT=skip_no_repo"

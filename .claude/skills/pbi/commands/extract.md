@@ -1,6 +1,6 @@
 # /pbi extract
 
-> Detection context (PBIP_MODE, PBIP_FORMAT, File Index, PBIR Detection, Git State, Session Context) is provided by the router.
+> Detection context (PBIP_MODE, PBIP_FORMAT, PBIP_DIR, File Index, PBIR Detection, Git State, Session Context) is provided by the router.
 
 ## Instructions
 
@@ -8,7 +8,7 @@
 
 **If PBIP_MODE=paste:** output exactly this message and stop:
 
-> No PBIP project found in this directory. Run `/pbi extract` from a directory containing `.SemanticModel/`.
+> No PBIP project found in this directory. Run `/pbi extract` from a directory containing a `*.SemanticModel/` folder.
 
 **If PBIP_MODE=file:** proceed to Step 1.
 
@@ -61,15 +61,15 @@ Wait for response:
 
 Read every `.tmdl` file path from the File Index using the Read tool.
 
-Also read `.SemanticModel/definition/relationships.tmdl` (if it exists).
+Also read `$PBIP_DIR/definition/relationships.tmdl` (if it exists).
 
-Also read `.SemanticModel/definition/expressions.tmdl` (if it exists — contains M/Power Query expressions).
+Also read `$PBIP_DIR/definition/expressions.tmdl` (if it exists — contains M/Power Query expressions).
 
-Also read `.SemanticModel/definition/model.tmdl` (if it exists — contains model-level properties).
+Also read `$PBIP_DIR/definition/model.tmdl` (if it exists — contains model-level properties).
 
 **For TMSL (PBIP_FORMAT=tmsl):**
 
-Read `.SemanticModel/model.bim`. If >2000 lines, use offset/limit parameters to read in chunks.
+Read `$PBIP_DIR/model.bim`. If >2000 lines, use offset/limit parameters to read in chunks.
 
 ---
 
@@ -104,7 +104,7 @@ Output format:
 
 ```
 # Project Extract — Overview
-**Project:** .SemanticModel | **Format:** [TMDL/TMSL] | **Generated:** [UTC timestamp]
+**Project:** $PBIP_DIR | **Format:** [TMDL/TMSL] | **Generated:** [UTC timestamp]
 
 ## Overview
 - **Tables:** [N] ([list names, comma-separated])
@@ -136,7 +136,7 @@ Output format:
 
 ```
 # Project Extract — Standard
-**Project:** .SemanticModel | **Format:** [TMDL/TMSL] | **Generated:** [UTC timestamp]
+**Project:** $PBIP_DIR | **Format:** [TMDL/TMSL] | **Generated:** [UTC timestamp]
 
 ## Model Statistics
 | Metric | Count |
@@ -203,7 +203,7 @@ Produce the full Deep Dive report including all Standard tier content PLUS:
 
 ```
 # Project Extract — Deep Dive
-**Project:** .SemanticModel | **Format:** [TMDL/TMSL] | **Generated:** [UTC timestamp]
+**Project:** $PBIP_DIR | **Format:** [TMDL/TMSL] | **Generated:** [UTC timestamp]
 ⚠ Deep Dive extraction — high token output
 
 [... all Standard tier sections ...]

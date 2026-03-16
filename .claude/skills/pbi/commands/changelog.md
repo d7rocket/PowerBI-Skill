@@ -1,6 +1,6 @@
 # /pbi changelog
 
-> Detection context (PBIP_MODE, PBIP_FORMAT, Git State, Session Context) is provided by the router.
+> Detection context (PBIP_MODE, PBIP_FORMAT, PBIP_DIR, Git State, Session Context) is provided by the router.
 
 ## Git Log
 !`git log --oneline --no-decorate -50 2>/dev/null || echo "NO_LOG"`
@@ -10,7 +10,7 @@
 ### Step 0 — Guards
 
 **If PBIP_MODE=paste:** output and stop:
-> No PBIP project found. Run /pbi changelog from a directory containing .SemanticModel/.
+> No PBIP project found. Run /pbi changelog from a directory containing a *.SemanticModel/ folder.
 
 **If GIT=no:** output and stop:
 > No git repo found. Run /pbi commit to initialise one first.
@@ -62,7 +62,7 @@ Build the changelog in this format:
 # Changelog
 
 Generated: [current UTC date YYYY-MM-DD]
-Project: .SemanticModel
+Project: $PBIP_DIR
 
 ---
 

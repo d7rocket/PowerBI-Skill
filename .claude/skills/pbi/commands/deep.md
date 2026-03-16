@@ -1,6 +1,6 @@
 # /pbi deep
 
-> Detection context (PBIP_MODE, PBIP_FORMAT, File Index, Session Context) is provided by the router.
+> Detection context (PBIP_MODE, PBIP_FORMAT, PBIP_DIR, File Index, Session Context) is provided by the router.
 
 ## Instructions
 
@@ -91,7 +91,7 @@ If any field is "(not set)": pause and collect it before continuing (re-run the 
 
 Read `.pbi-context.md ## Model Context`. Analyze the described model conversationally for health issues.
 
-**This review operates on the described model context only. Do NOT read `.SemanticModel/` files. For file-level audit, direct the user to `/pbi audit`.**
+**This review operates on the described model context only. Do NOT read `$PBIP_DIR/` files. For file-level audit, direct the user to `/pbi audit`.**
 
 **CRITICAL checks:**
 - **Bidirectional relationship** — any mention of "both directions", "both ways", "bi-directional", or filter going both ways
@@ -226,7 +226,7 @@ Wait for confirm/cancel response.
 - NEVER ask all 3 intake questions at once — ask one, wait, ask next
 - NEVER re-ask a question if the answer is already in `.pbi-context.md`
 - NEVER advance past a phase gate on vague input ("ok", "sounds good", "yes") — the gate token must be "continue" (case-insensitive). Re-output the gate.
-- NEVER run model review against `.SemanticModel/` files — Phase B operates on described context only. For file-level audit, direct the user to `/pbi audit`.
+- NEVER run model review against `$PBIP_DIR/` files — Phase B operates on described context only. For file-level audit, direct the user to `/pbi audit`.
 - NEVER generate DAX before Gate A→B is confirmed — model review must complete first
 - NEVER trigger the final verification gate (Phase D) after each individual /pbi new call — it fires only on analyst completion signal
 - NEVER advance past the final gate if the business question check returns "no" — offer to continue generating

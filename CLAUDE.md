@@ -13,7 +13,7 @@ All commands are accessed via `/pbi [subcommand]` (e.g., `/pbi explain`, `/pbi a
 ### Subcommand types
 
 - **Paste-in** (work anywhere): explain, format, optimise, comment, error, new
-- **PBIP** (require `.SemanticModel/` directory): load, audit, diff, commit, edit, undo, comment-batch, changelog, extract
+- **PBIP** (require `*.SemanticModel/` directory): load, audit, diff, commit, edit, undo, comment-batch, changelog, extract
 - **Utility** (work anywhere): help
 
 ### Model selection
@@ -25,9 +25,9 @@ All commands are accessed via `/pbi [subcommand]` (e.g., `/pbi explain`, `/pbi a
 ### Detection
 
 Detection blocks run once in `SKILL.md` and are shared by all subcommands:
-- **PBIP detection**: file-existence checks (`model.bim` → TMSL, `definition/tables/` → TMDL)
-- **File Index**: lists all `.tmdl` files or model.bim
-- **PBIR detection**: checks for `.Report/` directory
+- **PBIP detection**: globs for `*.SemanticModel` or `.SemanticModel` directories, outputs `PBIP_DIR=<actual folder name>`, then checks format (`model.bim` → TMSL, `definition/tables/` → TMDL)
+- **File Index**: lists all `.tmdl` files or model.bim under `$PBIP_DIR`
+- **PBIR detection**: globs for `*.Report` or `.Report` directories, outputs `PBIR_DIR=<actual folder name>`
 - **Git state**: checks if inside a git repo with commits
 - **Session context**: reads `.pbi-context.md`
 

@@ -1,6 +1,6 @@
 # /pbi commit
 
-> Detection context (PBIP_MODE, PBIP_FORMAT, File Index, Git State, Session Context) is provided by the router.
+> Detection context (PBIP_MODE, PBIP_FORMAT, PBIP_DIR, File Index, Git State, Session Context) is provided by the router.
 
 ## Instructions
 
@@ -8,7 +8,7 @@
 
 **If PBIP_MODE=paste:** output exactly and stop:
 
-> No PBIP project found. Run /pbi commit from a directory containing .SemanticModel/.
+> No PBIP project found. Run /pbi commit from a directory containing a *.SemanticModel/ folder.
 
 **If PBIP_MODE=file AND GIT=no:** proceed to Step 1a (git init flow).
 
@@ -41,7 +41,7 @@ cache/
 
 **3. Stage and create the initial commit:**
 ```bash
-git add ".SemanticModel/" ".gitignore" && git commit -m "chore: initial PBIP model commit"
+git add "$PBIP_DIR/" ".gitignore" && git commit -m "chore: initial PBIP model commit"
 ```
 
 **4. Output to analyst:**
@@ -56,7 +56,7 @@ git add ".SemanticModel/" ".gitignore" && git commit -m "chore: initial PBIP mod
 ### Step 1b — Initial commit on empty repo (repo exists but no commits yet)
 
 ```bash
-git add ".SemanticModel/" && git commit -m "chore: initial PBIP model commit"
+git add "$PBIP_DIR/" && git commit -m "chore: initial PBIP model commit"
 ```
 
 > Initial commit created: chore: initial PBIP model commit
@@ -69,17 +69,17 @@ Proceed to Step 5 (context update).
 
 **TMDL:**
 ```bash
-git diff HEAD -- ".SemanticModel/definition/tables/" ".SemanticModel/definition/relationships.tmdl" 2>/dev/null
+git diff HEAD -- "$PBIP_DIR/definition/tables/" "$PBIP_DIR/definition/relationships.tmdl" 2>/dev/null
 ```
 
 **TMSL:**
 ```bash
-git diff HEAD -- ".SemanticModel/model.bim" 2>/dev/null
+git diff HEAD -- "$PBIP_DIR/model.bim" 2>/dev/null
 ```
 
 **If the diff output is empty:** output and stop:
 
-> No changes to commit in .SemanticModel/.
+> No changes to commit in $PBIP_DIR/.
 
 ---
 
@@ -135,7 +135,7 @@ Show the analyst the planned commit message before executing:
 ### Step 4 — Stage and commit
 
 ```bash
-git add ".SemanticModel/definition/" ".SemanticModel/model.bim" ".SemanticModel/definition.pbism" 2>/dev/null && git commit -m "[full message]" 2>/dev/null && echo "COMMIT=ok" || echo "COMMIT=fail"
+git add "$PBIP_DIR/definition/" "$PBIP_DIR/model.bim" "$PBIP_DIR/definition.pbism" 2>/dev/null && git commit -m "[full message]" 2>/dev/null && echo "COMMIT=ok" || echo "COMMIT=fail"
 ```
 
 - **COMMIT=ok:** output: `Committed. Run: git push`

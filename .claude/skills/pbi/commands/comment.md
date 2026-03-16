@@ -1,6 +1,6 @@
 # /pbi comment
 
-> Detection context (PBIP_MODE, PBIP_FORMAT, File Index, Session Context) is provided by the router.
+> Detection context (PBIP_MODE, PBIP_FORMAT, PBIP_DIR, File Index, Session Context) is provided by the router.
 
 ## File Mode Branch
 
@@ -21,7 +21,7 @@ If PBIP_MODE=file:
 Use the measure name extracted in Step 2 as the search key.
 
 **If PBIP_FORMAT=tmdl:**
-1. Run bash: `grep -rlF "[MeasureName]" ".SemanticModel/definition/tables/" 2>/dev/null`
+1. Run bash: `grep -rlF "[MeasureName]" "$PBIP_DIR/definition/tables/" 2>/dev/null`
    - Replace [MeasureName] with the actual extracted measure name.
    - If multiple files returned: output "Measure [Name] found in multiple tables: [list]. Use --table TableName to specify which one." Deliver paste-ready output only. Stop write-back.
    - If no file returned: output "Measure [Name] not found in PBIP project — output is paste-ready for manual addition." Stop write-back.
@@ -41,7 +41,7 @@ Use the measure name extracted in Step 2 as the search key.
    ```bash
    GIT_STATUS=$(git rev-parse --is-inside-work-tree 2>/dev/null && echo "yes" || echo "no")
    if [ "$GIT_STATUS" = "yes" ]; then
-     git add ".SemanticModel/" 2>/dev/null
+     git add "$PBIP_DIR/" 2>/dev/null
      git commit -m "chore: update [MEASURE_NAME] comment in [TABLE_NAME]" 2>/dev/null && echo "AUTO_COMMIT=ok" || echo "AUTO_COMMIT=fail"
    else
      echo "AUTO_COMMIT=skip_no_repo"
@@ -53,7 +53,7 @@ Use the measure name extracted in Step 2 as the search key.
    - AUTO_COMMIT=fail: do not output anything (git failure is non-fatal; file write succeeded)
 
 **If PBIP_FORMAT=tmsl:**
-1. Read `.SemanticModel/model.bim` using the Read tool.
+1. Read `$PBIP_DIR/model.bim` using the Read tool.
 2. Locate the measure JSON object where `"name"` equals the extracted measure name.
    - If not found: output "Measure [Name] not found in PBIP project — output is paste-ready for manual addition." Stop write-back.
 3. Update the measure object:
@@ -62,12 +62,12 @@ Use the measure name extracted in Step 2 as the search key.
    - Preserve ALL other fields: formatString, displayFolder, annotations, etc.
 4. Write the entire model.bim back using the Write tool.
 5. Append the write confirmation line after the Description Field in the output:
-   > Written to: [MeasureName] in .SemanticModel/model.bim
+   > Written to: [MeasureName] in $PBIP_DIR/model.bim
 6. Run the auto-commit bash block:
    ```bash
    GIT_STATUS=$(git rev-parse --is-inside-work-tree 2>/dev/null && echo "yes" || echo "no")
    if [ "$GIT_STATUS" = "yes" ]; then
-     git add ".SemanticModel/" 2>/dev/null
+     git add "$PBIP_DIR/" 2>/dev/null
      git commit -m "chore: update [MEASURE_NAME] comment in [TABLE_NAME]" 2>/dev/null && echo "AUTO_COMMIT=ok" || echo "AUTO_COMMIT=fail"
    else
      echo "AUTO_COMMIT=skip_no_repo"
