@@ -70,3 +70,8 @@ Read `.pbi-context.md` (Read tool), update these sections, then Write the full f
 1. Update `## Last Command` section: Command = `/pbi undo`, Timestamp = current UTC ISO 8601, Outcome = `Reverted [commit message]`.
 2. Append a new row to `## Command History`. Keep last 20 rows maximum.
 3. Do NOT modify `## Analyst-Reported Failures` or any other sections.
+
+### Anti-Patterns
+- NEVER revert without showing the commit details and getting confirmation
+- NEVER revert more than one commit at a time — use git revert for a single commit only
+- NEVER use git reset --hard — always use git revert to preserve history

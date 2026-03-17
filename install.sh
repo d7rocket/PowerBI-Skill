@@ -2,48 +2,118 @@
 set -e
 
 TARGET="${1:-.}"
-VERSION="4.0.0"
+VERSION="4.1.0"
 BASE="https://raw.githubusercontent.com/deveshd7/PowerBI-Skill/main"
+SKILL_DIR="$TARGET/.claude/skills/pbi"
 
+IS_UPDATE=false
+[ -d "$SKILL_DIR" ] && IS_UPDATE=true
+
+# ── Colors ──────────────────────────────────────────────────────────
+YELLOW='\033[1;33m'
+DIM='\033[0;33m'
+CYAN='\033[0;36m'
+GREEN='\033[0;32m'
+RED='\033[0;31m'
+GRAY='\033[0;90m'
+RESET='\033[0m'
+
+# ── Banner ──────────────────────────────────────────────────────────
 echo ""
-echo "  ╔═══════════════════════════════════════════════════╗"
-echo "  ║                                                   ║"
-echo "  ║   ██████  ██████  ██                              ║"
-echo "  ║   ██   ██ ██   ██ ██                              ║"
-echo "  ║   ██████  ██████  ██      Power BI DAX Co-pilot   ║"
-echo "  ║   ██      ██   ██ ██      for Claude Code         ║"
-echo "  ║   ██      ██████  ██                              ║"
-echo "  ║                                          v$VERSION   ║"
-echo "  ╚═══════════════════════════════════════════════════╝"
+echo -e "${DIM}  ╔═════════════════════════════════════════════════════════╗${RESET}"
+echo -e "${DIM}  ║                                                         ║${RESET}"
+echo -e "${YELLOW}  ║   ██████╗ ██████╗ ██╗                                   ${DIM}║${RESET}"
+echo -e "${YELLOW}  ║   ██╔══██╗██╔══██╗██║                                   ${DIM}║${RESET}"
+echo -e "${YELLOW}  ║   ██████╔╝██████╔╝██║     ${DIM}Power BI DAX Co-pilot         ║${RESET}"
+echo -e "${YELLOW}  ║   ██╔═══╝ ██╔══██╗██║     ${DIM}for Claude Code               ║${RESET}"
+echo -e "${YELLOW}  ║   ██║     ██████╔╝██║                                   ${DIM}║${RESET}"
+echo -e "${DIM}  ║   ╚═╝     ╚═════╝ ╚═╝                        v${VERSION}  ║${RESET}"
+echo -e "${DIM}  ║                                                         ║${RESET}"
+echo -e "${DIM}  ╚═════════════════════════════════════════════════════════╝${RESET}"
 echo ""
 
-mkdir -p "$TARGET/.claude/skills/pbi/commands" "$TARGET/.claude/skills/pbi/shared"
+if $IS_UPDATE; then
+    echo -e "${GRAY}  Updating existing installation...${RESET}"
+else
+    echo -e "${GRAY}  Fresh install — setting up skill directory...${RESET}"
+fi
+echo ""
 
-echo "  [1/3] Downloading skill router..."
-curl -sL "$BASE/.claude/skills/pbi/SKILL.md" -o "$TARGET/.claude/skills/pbi/SKILL.md"
+# ── Pre-flight ──────────────────────────────────────────────────────
+if ! command -v curl &>/dev/null; then
+    echo -e "${RED}  Error: curl is required but not found. Install curl and try again.${RESET}"
+    exit 1
+fi
 
-echo "  [2/3] Downloading commands..."
-commands=(explain format optimise comment error new load audit diff commit edit undo comment-batch changelog extract help)
+if ! curl -s --head --connect-timeout 5 "https://raw.githubusercontent.com" >/dev/null 2>&1; then
+    echo -e "${RED}  Error: Cannot reach GitHub. Check your internet connection.${RESET}"
+    exit 1
+fi
+
+mkdir -p "$SKILL_DIR/commands" "$SKILL_DIR/shared"
+
+# ── Download router ─────────────────────────────────────────────────
+echo -e "${CYAN}  [1/3] Skill router${RESET}"
+if curl -sL "$BASE/.claude/skills/pbi/SKILL.md" -o "$SKILL_DIR/SKILL.md" 2>/dev/null; then
+    echo -e "${GRAY}        SKILL.md${RESET}"
+else
+    echo -e "${RED}        SKILL.md — FAILED${RESET}"
+    echo -e "${RED}  Cannot continue without the router. Check your network.${RESET}"
+    exit 1
+fi
+
+# ── Download commands ───────────────────────────────────────────────
+echo -e "${CYAN}  [2/3] Commands${RESET}"
+commands=(explain format optimise comment error new load audit diff commit edit undo comment-batch changelog extract deep help)
 total=${#commands[@]}
 i=0
+failed=()
 for cmd in "${commands[@]}"; do
-  i=$((i + 1))
-  pct=$((i * 100 / total))
-  filled=$((pct / 5))
-  empty=$((20 - filled))
-  bar=$(printf '%0.s=' $(seq 1 $filled 2>/dev/null) 2>/dev/null || true)
-  space=$(printf '%0.s ' $(seq 1 $empty 2>/dev/null) 2>/dev/null || true)
-  printf "\r        [%-20s] %d/%d  " "$bar" "$i" "$total"
-  curl -sL "$BASE/.claude/skills/pbi/commands/$cmd.md" -o "$TARGET/.claude/skills/pbi/commands/$cmd.md"
+    i=$((i + 1))
+    pct=$((i * 100 / total))
+    filled=$((pct / 5))
+    bar=""
+    for ((f=0; f<filled; f++)); do bar="${bar}█"; done
+    for ((e=0; e<20-filled; e++)); do bar="${bar}░"; done
+    printf "\r        %s %d%%  " "$bar" "$pct"
+    if ! curl -sL "$BASE/.claude/skills/pbi/commands/$cmd.md" -o "$SKILL_DIR/commands/$cmd.md" 2>/dev/null; then
+        failed+=("$cmd")
+    fi
 done
-echo ""
+printf "\r        ████████████████████ done — %d commands     \n" "$total"
 
-echo "  [3/3] Downloading shared resources..."
-curl -sL "$BASE/.claude/skills/pbi/shared/api-notes.md" -o "$TARGET/.claude/skills/pbi/shared/api-notes.md"
+# ── Download shared ─────────────────────────────────────────────────
+echo -e "${CYAN}  [3/3] Shared resources${RESET}"
+if curl -sL "$BASE/.claude/skills/pbi/shared/api-notes.md" -o "$SKILL_DIR/shared/api-notes.md" 2>/dev/null; then
+    echo -e "${GRAY}        api-notes.md${RESET}"
+else
+    echo -e "${YELLOW}        api-notes.md — skipped (non-critical)${RESET}"
+fi
 
-resolved=$(cd "$TARGET/.claude/skills/pbi" && pwd)
+# ── Verify ──────────────────────────────────────────────────────────
+file_count=$(find "$SKILL_DIR" -type f | wc -l | tr -d ' ')
+resolved=$(cd "$SKILL_DIR" && pwd)
+
 echo ""
-echo "  Installed to: $resolved"
+if [ ${#failed[@]} -gt 0 ]; then
+    echo -e "${YELLOW}  Warning: Failed to download: ${failed[*]}${RESET}"
+    echo -e "${YELLOW}  Re-run the installer to retry.${RESET}"
+    echo ""
+fi
+
+# ── Summary ─────────────────────────────────────────────────────────
+echo -e "${GREEN}  ╔══════════════════════════════════════════╗${RESET}"
+if $IS_UPDATE; then
+    echo -e "${GREEN}  ║  Update complete                         ║${RESET}"
+else
+    echo -e "${GREEN}  ║  Installation complete                    ║${RESET}"
+fi
+echo -e "${GREEN}  ║                                          ║${RESET}"
+echo -e "${GREEN}  ║  ${file_count} files installed                       ║${RESET}"
+echo -e "${GREEN}  ║  Version ${VERSION}                          ║${RESET}"
+echo -e "${GREEN}  ║                                          ║${RESET}"
+echo -e "${GREEN}  ║  Open Claude Code and type /pbi           ║${RESET}"
+echo -e "${GREEN}  ╚══════════════════════════════════════════╝${RESET}"
 echo ""
-echo "  Ready! Open Claude Code and type /pbi to get started."
+echo -e "${GRAY}  Installed to: $resolved${RESET}"
 echo ""

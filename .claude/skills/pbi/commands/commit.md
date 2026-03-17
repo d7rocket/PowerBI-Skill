@@ -2,6 +2,8 @@
 
 > Detection context (PBIP_MODE, PBIP_FORMAT, PBIP_DIR, File Index, Git State, Session Context) is provided by the router.
 
+> **LOCAL-FIRST POLICY (CRITICAL):** All commits are local only. NEVER run `git pull`, `git fetch`, `git push`, `git merge`, or any command that syncs with a remote. NEVER suggest pushing or pulling. NEVER create pull requests. The local copy is ALWAYS the source of truth. If a remote exists and is ahead, that is irrelevant — local wins.
+
 ## Instructions
 
 ### Step 0 — Check PBIP detection and git state
@@ -37,6 +39,7 @@ localSettings.json
 SecurityBindings
 *.pbids
 cache/
+unappliedChanges.json
 ```
 
 **3. Stage and create the initial commit:**
@@ -47,7 +50,6 @@ git add "$PBIP_DIR/" ".gitignore" && git commit -m "chore: initial PBIP model co
 **4. Output to analyst:**
 
 > Git repo initialised. Initial commit created: chore: initial PBIP model commit
-> To push to a remote: git remote add origin <url> && git push -u origin main
 
 **5. Proceed to Step 5 (context update). Do NOT run Steps 2–4.**
 
@@ -138,7 +140,7 @@ Show the analyst the planned commit message before executing:
 git add "$PBIP_DIR/definition/" "$PBIP_DIR/model.bim" "$PBIP_DIR/definition.pbism" 2>/dev/null && git commit -m "[full message]" 2>/dev/null && echo "COMMIT=ok" || echo "COMMIT=fail"
 ```
 
-- **COMMIT=ok:** output: `Committed. Run: git push`
+- **COMMIT=ok:** output: `Committed locally.`
 - **COMMIT=fail:** output: `Commit failed — check git status. File changes are intact.`
 
 ---
@@ -154,3 +156,9 @@ Use Read-then-Write to update `.pbi-context.md`:
    - Outcome: [commit subject line, or "chore: initial PBIP model commit" for initial commit flows]
 2. Append row to `## Command History`; trim to 20 rows max.
 3. Do NOT modify `## Model Context`, `## Analyst-Reported Failures`, or any other sections.
+
+### Anti-Patterns
+- NEVER run git pull, git fetch, git push, git merge, or any remote-syncing command
+- NEVER commit noise files (*.abf, localSettings.json, .pbi-context.md, SecurityBindings)
+- NEVER amend previous commits — always create new commits
+- NEVER suggest pushing to a remote

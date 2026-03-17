@@ -8,6 +8,8 @@ Respond with: "Paste your DAX measure below:"
 
 Wait for the analyst to paste a DAX measure, then follow these steps in order.
 
+**Empty input guard:** If the pasted content is empty, whitespace-only, or contains no DAX-like text, output: "Please paste a DAX measure to optimise." and stop.
+
 ---
 
 ### Step 0.5 — Model Context Check
@@ -186,6 +188,57 @@ RATIONALE: "CALCULATE wrapping COUNTROWS pushes filters to the storage engine in
 
 ---
 
+**Rule 11 — SUMMARIZE Used for Aggregation**
+
+DETECT: `SUMMARIZE(Table, GroupColumn, "ResultName", AggregateExpression)` where SUMMARIZE includes an inline aggregate expression (third+ arguments beyond table and grouping columns).
+
+FLAG: "SUMMARIZE with inline aggregation is deprecated by Microsoft. It can silently produce incorrect results when the aggregate references columns outside the GROUP BY list."
+
+REWRITE:
+```dax
+ADDCOLUMNS(
+    SUMMARIZE(Table, Table[GroupColumn]),
+    "ResultName", CALCULATE(SUM(Table[Column]))
+)
+```
+
+RATIONALE: "ADDCOLUMNS + SUMMARIZE is the recommended replacement. SUMMARIZE can ignore grouping context when the expression references columns outside the GROUP BY — producing wrong numbers without any error. ADDCOLUMNS evaluates each expression in a clean filter context per group."
+
+---
+
+**Rule 12 — FILTER on RELATEDTABLE**
+
+DETECT: `FILTER(RELATEDTABLE(Table), condition)` used as a CALCULATE argument where the condition tests a single column.
+
+REWRITE (single-column condition only):
+```dax
+CALCULATE([Measure], RelatedTable[Column] = "Value")
+```
+
+RATIONALE: "FILTER(RELATEDTABLE(Table), ...) materialises the related table and iterates row by row. A direct relationship filter pushes the condition to the storage engine. This matters on large related tables."
+
+If the condition is complex (multiple columns, OR logic, dynamic filters), FLAG only — do not rewrite. Add to the **Flags** section: "FILTER(RELATEDTABLE(...)) with complex condition — review whether a direct filter is possible."
+
+---
+
+**Rule 13 — Semi-Additive Pattern Opportunities**
+
+DETECT: Manual date filtering patterns that replicate built-in time intelligence:
+- `CALCULATE([Measure], FILTER(ALL('Date'), 'Date'[Date] <= MAX('Date'[Date])))` → running total
+- `CALCULATE([Measure], FILTER('Date', 'Date'[Year] = YEAR(TODAY()) && 'Date'[Date] <= TODAY()))` → year-to-date
+- `CALCULATE([Measure], FILTER(ALL('Date'[Date]), ...))` with date-range logic equivalent to DATEADD or SAMEPERIODLASTYEAR
+
+FLAG: "This measure implements manual date filtering that could use a built-in time intelligence function. Built-in functions (TOTALYTD, DATEADD, SAMEPERIODLASTYEAR, DATESYTD) are engine-optimised and handle edge cases (fiscal years, blank dates) more reliably."
+
+REWRITE ONLY IF the pattern directly maps to a standard function:
+- Running total with `<= MAX(Date)` → `CALCULATE([Measure], DATESYTD('Date'[Date]))`
+- Year-to-date with year/date filter → `TOTALYTD([Measure], 'Date'[Date])`
+- Prior year comparison → `CALCULATE([Measure], SAMEPERIODLASTYEAR('Date'[Date]))`
+
+If the pattern uses custom fiscal calendars or non-standard date hierarchies, flag only: "Custom date logic detected — verify fiscal calendar requirements before converting to built-in time intelligence."
+
+---
+
 ### Step 6 — Multiple Valid Rewrites
 
 If more than one valid rewrite exists for any portion of the measure, show each option as a labelled alternative with a brief trade-off comparison.
@@ -260,3 +313,9 @@ After producing output, update `.pbi-context.md` using Read then Write:
    - Format: `| [timestamp] | /pbi optimise | [measure name] | Optimised — [rules applied] |`
 4. Do not modify the **Analyst-Reported Failures** section.
 5. Write the updated file back to `.pbi-context.md`.
+
+### Anti-Patterns
+- NEVER rewrite iterator-over-measure-reference patterns — flag only (CRITICAL GUARD)
+- NEVER change business logic — optimisation must preserve semantics
+- NEVER suggest removing CALCULATE when it controls context transitions
+- NEVER rewrite complex nested iterators without flagging — only rewrite trivially collapsible cases

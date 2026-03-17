@@ -283,3 +283,9 @@ Use Read-then-Write to update `.pbi-context.md`:
 1. Update `## Last Command`: Command = `/pbi extract [tier]`, Outcome = `Extract complete — [tier] tier, [N] tables, [M] measures. Written to project-extract.md`
 2. Append row to `## Command History`; trim to 20 rows max
 3. Do NOT modify `## Model Context`, `## Analyst-Reported Failures`, or any other sections
+
+### Anti-Patterns
+- NEVER output raw file contents — always structure the output by tier
+- NEVER exceed tier boundaries (overview stays high-level, standard adds detail, deep-dive is comprehensive)
+- NEVER advance past the tier picker without a valid selection
+- NEVER run the Opus agent for non-deep-dive tiers

@@ -1,16 +1,39 @@
 <p align="center">
   <img src="https://img.shields.io/badge/Claude_Code-Skill-blueviolet?style=for-the-badge&logo=data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHBhdGggZmlsbD0id2hpdGUiIGQ9Ik0xMiAyQzYuNDggMiAyIDYuNDggMiAxMnM0LjQ4IDEwIDEwIDEwIDEwLTQuNDggMTAtMTBTMTcuNTIgMiAxMiAyem0tMiAxNWwtNS01IDEuNDEtMS40MUwxMCAxNC4xN2w3LjU5LTcuNTlMMTkgOGwtOSA5eiIvPjwvc3ZnPg==" alt="Claude Code Skill">
-  <img src="https://img.shields.io/badge/version-4.0-blue?style=for-the-badge" alt="Version 4.0">
+  <img src="https://img.shields.io/badge/version-4.1-blue?style=for-the-badge" alt="Version 4.1">
   <img src="https://img.shields.io/badge/license-MIT-green?style=for-the-badge" alt="MIT License">
   <img src="https://img.shields.io/badge/Power_BI-DAX-F2C811?style=for-the-badge&logo=powerbi&logoColor=black" alt="Power BI DAX">
 </p>
 
-<h1 align="center">/pbi — Power BI DAX Co-pilot for Claude Code</h1>
+<div align="center">
+
+```
+  ██████╗ ██████╗ ██╗
+  ██╔══██╗██╔══██╗██║
+  ██████╔╝██████╔╝██║   Power BI DAX Co-pilot
+  ██╔═══╝ ██╔══██╗██║   for Claude Code
+  ██║     ██████╔╝██║
+  ╚═╝     ╚═════╝ ╚═╝   v4.1
+```
+
+</div>
 
 <p align="center">
   <strong>Explain, format, optimise, audit, and edit DAX measures — directly from your terminal.</strong><br>
   Works with pasted DAX <em>and</em> with Power BI Project (PBIP) files on disk.
 </p>
+
+---
+
+## What's New in v4.1
+
+- **Auto-resume** — context loads automatically on every `/pbi` invocation. No more running `/pbi load` first.
+- **Local-first git** — all commits stay local. The skill will never pull, push, or create PRs. Your files are always the source of truth.
+- **13 optimisation rules** — added SUMMARIZE deprecation, FILTER(RELATEDTABLE) detection, and semi-additive pattern opportunities.
+- **Expanded audit** — new rules for calculation groups, field parameters, aggregation tables, and high-cardinality columns. Bidirectional fix now asks which direction to keep.
+- **BLANK propagation diagnosis** — `/pbi error` now catches implicit BLANK propagation issues.
+- **Anti-patterns on every command** — all 17 commands now have explicit anti-pattern guards.
+- **Input validation** — empty paste guards on all paste-in commands, malformed file guards on load/audit.
 
 ---
 
@@ -27,38 +50,45 @@
 |:--------|:------------|
 | `/pbi explain` | Plain-English breakdown of any DAX measure |
 | `/pbi format` | Auto-format via DAX Formatter API |
-| `/pbi optimise` | 10-rule performance scan with side-by-side diff |
+| `/pbi optimise` | 13-rule performance scan with side-by-side diff |
 | `/pbi comment` | Add inline `//` comments + description field |
-| `/pbi error` | Diagnose Power BI error messages |
+| `/pbi error` | Diagnose Power BI error messages (7 categories) |
 | `/pbi new` | Scaffold a measure from plain English |
 
 </td>
 <td width="50%" valign="top">
 
 ### PBIP Project Commands
-*Auto-detected when `.SemanticModel/` exists*
+*Auto-detected when `*.SemanticModel/` exists*
 
 | Command | Description |
 |:--------|:------------|
 | `/pbi load` | Index your model (tables, measures, columns) |
-| `/pbi audit` | Full model health scan with auto-fix |
+| `/pbi audit` | Full model health scan with auto-fix (19 rules) |
 | `/pbi edit` | Change your model with plain language |
 | `/pbi diff` | Human-readable change summary |
 | `/pbi commit` | Auto-generated business-language commits |
 | `/pbi undo` | Revert the last auto-commit |
 | `/pbi comment-batch` | Comment every measure in a table |
 | `/pbi changelog` | Generate CHANGELOG from git history |
-| `/pbi extract` | Export project documentation |
+| `/pbi extract` | Export project documentation (3 tiers) |
 
 </td>
 </tr>
 </table>
 
+### Workflow Commands
+
+| Command | Description |
+|:--------|:------------|
+| `/pbi deep` | Guided multi-phase workflow: intake → model review → DAX development → verification |
+| `/pbi help` | Command reference with version check |
+
 ---
 
 ## Installation
 
-Pick whichever method works for you. All three get you the same result: the `/pbi` skill ready to use in Claude Code.
+Pick whichever method works for you. All four get you the same result: the `/pbi` skill ready to use in Claude Code.
 
 ### Option 1 — One-liner install (macOS / Linux / WSL)
 
@@ -136,6 +166,8 @@ cp -r /tmp/pbi-skill/.claude your-project/.claude
 
 Claude will break down exactly what the measure does — filter context, row context, context transitions, and performance notes.
 
+**4.** If you're in a PBIP project folder, context loads automatically — no setup needed.
+
 ---
 
 ## How It Works
@@ -143,7 +175,15 @@ Claude will break down exactly what the measure does — filter context, row con
 | Mode | When | What happens |
 |:-----|:-----|:-------------|
 | **Paste-in** | No PBIP project | Paste DAX into chat, get results back |
-| **File mode** | `.SemanticModel/` detected | Reads/writes TMDL or TMSL files directly, auto-commits changes |
+| **File mode** | `*.SemanticModel/` detected | Reads/writes TMDL or TMSL files directly, auto-commits changes |
+
+### Auto-Resume
+
+Every `/pbi` invocation automatically loads your project context. If `.pbi-context.md` has model context from a prior session, it's resumed instantly. If not, the skill auto-runs a lightweight load. No explicit `/pbi load` required.
+
+### Local-First Git
+
+All git operations are strictly local. The skill will **never** run `git pull`, `git push`, `git fetch`, or create pull requests. Your local files are always the source of truth. If you want to sync with a remote, you do it yourself outside the skill.
 
 ### Session Memory
 
@@ -151,12 +191,12 @@ Every command reads and writes `.pbi-context.md` at your project root. This give
 
 - **Last command** and its outcome
 - **Command history** (rolling 20 entries)
-- **Model context** — tables, measures, columns, relationships (via `/pbi load`)
+- **Model context** — tables, measures, columns, relationships
 - **Analyst-reported failures** — flag approaches that didn't work so Claude avoids repeating them
 
 ### Smart Model Routing
 
-DAX reasoning commands run on **Sonnet** for analytical depth. File-heavy commands (load, diff, commit, undo, changelog) dispatch to **Haiku** agents for speed and lower cost.
+DAX reasoning commands run on **Sonnet** for analytical depth. File-heavy commands (load, diff, commit, undo, changelog) dispatch to **Haiku** agents for speed and lower cost. Deep extraction uses **Opus** for comprehensive analysis.
 
 ---
 
@@ -187,7 +227,7 @@ Generates the DAX expression, format string, display folder, and description —
 ```
 /pbi audit
 ```
-Runs 6 domain passes across your model: relationships, naming conventions, date table, measure quality, hidden column hygiene, and report layer. Outputs a severity-graded report and offers to auto-fix issues.
+Runs 8 domain passes across your model: relationships, naming conventions, date table, measure quality, hidden column hygiene, report layer, advanced features, and performance heuristics. Outputs a severity-graded report and offers to auto-fix issues.
 </details>
 
 <details>
@@ -205,8 +245,17 @@ Claude finds the measure in your TMDL/TMSL files, applies the change, and auto-c
 
 ```
 /pbi format     # formats via DAX Formatter API
-/pbi optimise   # checks 10 performance rules, shows before/after
+/pbi optimise   # checks 13 performance rules, shows before/after
 ```
+</details>
+
+<details>
+<summary><strong>Deep mode</strong></summary>
+
+```
+/pbi deep
+```
+Guided multi-phase workflow: gathers business context, reviews your model for structural issues, then enters DAX development with full context awareness. Phase gates prevent skipping steps.
 </details>
 
 <details>
@@ -218,6 +267,7 @@ Claude finds the measure in your TMDL/TMSL files, applies the change, and auto-c
 /pbi undo        # revert the last auto-commit
 /pbi changelog   # generate CHANGELOG.md from git history
 ```
+All commits are local only — the skill never pushes to a remote.
 </details>
 
 ---
@@ -236,6 +286,8 @@ Claude finds the measure in your TMDL/TMSL files, applies the change, and auto-c
 - [x] PBIP file I/O — load, audit, diff, commit, edit, undo
 - [x] New measure scaffolding, batch commenting, audit auto-fix, changelog
 - [x] Single-skill architecture, one-liner install, parallel audit agents
+- [x] Auto-resume context, local-first git, expanded audit rules
+- [x] Deep mode guided workflow, project extraction (3 tiers)
 - [ ] Cross-measure dependency graph
 - [ ] Side-by-side measure comparison
 - [ ] Calculated column support

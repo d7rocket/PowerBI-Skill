@@ -31,7 +31,7 @@ Build the version line for the header:
 
 - If REMOTE is `unavailable`: `**Version:** LOCAL (could not check for updates)`
 - If LOCAL matches REMOTE (strip leading `v`): `**Version:** LOCAL ✓ up to date`
-- If LOCAL is behind REMOTE: `**Version:** LOCAL → **LOCAL is behind REMOTE** — run \`git pull origin main\` to update`
+- If LOCAL is behind REMOTE: `**Version:** LOCAL → **Update available: REMOTE** — download the latest release manually from the repository`
 
 ### Step 2 — Output help reference
 
@@ -93,3 +93,7 @@ Output the following, inserting the version line from Step 1:
 ---
 
 Stop. Do not output anything else.
+
+### Anti-Patterns
+- NEVER suggest git pull or git push
+- NEVER output anything after the help reference — stop immediately

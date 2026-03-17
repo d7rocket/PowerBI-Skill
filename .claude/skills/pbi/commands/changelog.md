@@ -103,3 +103,8 @@ Read `.pbi-context.md` (Read tool), update these sections, then Write the full f
 - `## Last Command`: Command = `/pbi changelog`, Timestamp = current UTC ISO 8601, Measure = `(git operation)`, Outcome = `Changelog generated — [N] entries`
 - `## Command History`: Append one row; keep last 20 rows maximum.
 - Do NOT modify `## Analyst-Reported Failures`.
+
+### Anti-Patterns
+- NEVER include noise-file changes in the changelog
+- NEVER fabricate changes not present in git history
+- NEVER include merge commits in the changelog output

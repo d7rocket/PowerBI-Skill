@@ -130,3 +130,8 @@ Use Read-then-Write to update `.pbi-context.md`:
    - Outcome: Diff shown — [N] changes
 2. Append row to `## Command History`; trim to 20 rows max.
 3. Do NOT modify `## Model Context`, `## Analyst-Reported Failures`, or any other sections.
+
+### Anti-Patterns
+- NEVER modify any files — diff is strictly read-only
+- NEVER include noise files (*.abf, localSettings.json, .pbi-context.md) in the diff output
+- NEVER run git pull, git push, or any remote operation

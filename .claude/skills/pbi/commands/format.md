@@ -10,7 +10,9 @@
 
 Respond to the analyst with exactly: "Paste your DAX measure below:"
 
-Once the analyst pastes a DAX measure, follow these steps in order:
+Once the analyst pastes a DAX measure, follow these steps in order.
+
+**Empty input guard:** If the pasted content is empty, whitespace-only, or contains no DAX-like text, output: "Please paste a DAX measure to format." and stop.
 
 ### Step 0.5 — Model Context Check
 
@@ -162,3 +164,9 @@ After producing the output, update the `.pbi-context.md` file:
 | Timestamp | Command | Measure Name | What Failed | Notes |
 |-----------|---------|--------------|-------------|-------|
 ```
+
+### Anti-Patterns
+- NEVER change DAX logic — formatting is cosmetic only
+- NEVER remove comments from the original measure
+- NEVER change the measure name
+- NEVER skip the DAX Formatter API check — always try API first

@@ -40,6 +40,8 @@ The File Index has already listed all `.tmdl` file paths under `$PBIP_DIR/defini
 
 Use the Read tool to read each `.tmdl` file from that list.
 
+**Malformed file guard:** If a `.tmdl` file cannot be read or does not contain a `table` keyword on any line, output: `Warning: [filename] could not be parsed — skipping.` and continue with the next file. Do not fail the entire load.
+
 From each file, extract:
 - **Table name:** from the `table TableName` declaration at the top of the file
 - **Measure names:** lines matching `measure 'Name'` or `measure Name` (single-word). Extract the text after `measure ` up to ` =` or end of line, stripping any single quotes.
@@ -123,3 +125,9 @@ File mode — PBIP project detected ([FORMAT]) | Context loaded.
 
 Context loaded — all DAX commands will now use model-aware analysis.
 ```
+
+### Anti-Patterns
+- NEVER overwrite existing Model Context without re-reading .pbi-context.md first
+- NEVER output raw file contents to the analyst — only the summary table
+- NEVER fail silently on unreadable files — log a warning and skip the file
+- NEVER modify Analyst-Reported Failures section

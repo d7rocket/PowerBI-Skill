@@ -1,7 +1,7 @@
 ---
 name: pbi
 description: Power BI DAX co-pilot. /pbi [subcommand] routes to the appropriate handler.
-version: 4.0.0
+version: 4.1.0
 disable-model-invocation: true
 model: sonnet
 allowed-tools: Read, Write, Bash, Agent
@@ -29,6 +29,27 @@ Save the `PBIP_DIR` value from the output — all subsequent commands must use i
 ### Session Context
 !`cat ".pbi-context.md" 2>/dev/null | tail -80 || echo "No prior context found."`
 
+### Auto-Resume (every invocation)
+
+After detection blocks run, apply the following before routing:
+
+1. **PBIP_MODE=file, context exists** — Session Context output contains `## Model Context` with a table:
+   - Count the table rows in the Model Context table.
+   - Output on a single line: `Context resumed — [N] tables loaded`
+   - All subcommands can skip their "Model Context Check" (Step 0.5) — context is already available.
+
+2. **PBIP_MODE=file, no context yet** — Session Context has no `## Model Context` or `.pbi-context.md` does not exist:
+   - Output: `No model context — auto-loading project...`
+   - Execute `/pbi load` Steps 2–4 inline: read all files from File Index, extract table/measure/column/relationship structure, build the Model Context markdown block, write it to `.pbi-context.md`.
+   - Output the summary table and: `Auto-loaded [N] tables. Context ready.`
+
+3. **PBIP_MODE=paste — nearby folder check**: Check parent directories for a PBIP project:
+   Run bash: `for d in .. ../.. ../../..; do SM=$(ls -d "$d"/*.SemanticModel "$d"/.SemanticModel 2>/dev/null | head -1); if [ -n "$SM" ]; then FULL=$(cd "$d" && pwd); echo "NEARBY_PBIP=$FULL"; break; fi; done`
+   - If NEARBY_PBIP is found: output: `No PBIP project here, but found one at [NEARBY_PBIP]. Run cd "[NEARBY_PBIP]" first.`
+   - If not found: skip silently. Paste-in commands still work.
+
+After auto-resume completes, proceed to Routing.
+
 ## Routing
 
 Parse `$ARGUMENTS` first word/keyword to determine the subcommand. Match against these patterns:
@@ -43,7 +64,7 @@ Parse `$ARGUMENTS` first word/keyword to determine the subcommand. Match against
 | new, create, "add measure", scaffold | commands/new.md | sonnet direct |
 | edit, rename, update, change, modify | commands/edit.md | sonnet direct |
 | "comment-batch", "comment all", "batch comment", "document all" | commands/comment-batch.md | sonnet direct |
-| audit, "health check", "review model", "find issues" | commands/audit.md | sonnet direct |
+| audit, "health check", "review model", "find issues" | commands/audit.md | sonnet direct (spawns haiku agents for 5+ table models) |
 | load, context, "model context", "load project" | commands/load.md | haiku Agent |
 | diff, "what changed", changes, "show changes" | commands/diff.md | haiku Agent |
 | commit, save, snapshot, git | commands/commit.md | haiku Agent |
@@ -170,6 +191,19 @@ When no keyword matches (catch-all route), this handler runs.
    - `## Command History`: append row, keep 20 max
    - Do NOT modify `## Analyst-Reported Failures`
 
+## Post-Command Epilogue (runs after every subcommand)
+
+After any subcommand completes (including the Solve-First Default handler):
+
+1. **Auto-stage** (if PBIP_MODE=file AND GIT=yes AND the command wrote files to `$PBIP_DIR/`):
+   ```bash
+   git add "$PBIP_DIR/" 2>/dev/null
+   ```
+   Output: `Staged locally | Context updated`
+
+2. **Skip conditions**: If PBIP_MODE=paste, or GIT=no, or the command did not write any files (e.g., explain in paste mode, help, diff), skip the epilogue entirely.
+3. **Auto-committing commands**: Commands that auto-commit (comment, new, edit, error, audit, comment-batch) already run `git add` + `git commit`. The epilogue's `git add` is a harmless no-op in those cases — skip the "Staged locally" output if the command already output an "Auto-committed" message.
+
 ## Shared Rules
 
 - All bash paths must be double-quoted (e.g., `"$VAR"`, `"$SM_DIR/"`)
@@ -179,3 +213,5 @@ When no keyword matches (catch-all route), this handler runs.
 - DAX in shell: single-quoted heredoc delimiter to prevent `$` and backtick expansion
 - TMSL expression format: preserve original form (string vs array); use array if expression has line breaks
 - Escalation state: `## Escalation State` in `.pbi-context.md` tracks gathered context during escalation. Read before solving (use existing context), write after asking escalation questions. Clear at session start if stale.
+- **LOCAL-FIRST GIT POLICY (CRITICAL):** The local copy of all files is ALWAYS the source of truth. The skill MUST NEVER run `git pull`, `git fetch`, `git merge`, `git rebase`, or any command that downloads or overwrites local files with remote content. The skill MUST NEVER suggest or run `git push`, and MUST NEVER create pull requests. Allowed git operations: `git init`, `git add`, `git commit`, `git diff`, `git log`, `git status`, `git revert`, `git rev-parse`. If the user manually asks to push or pull, they do it themselves outside the skill. This policy exists because pulling has previously overwritten local PBIP changes and broken relationships.
+- **Auto-Resume:** Every `/pbi` invocation loads project context automatically (see Auto-Resume section above). Individual commands should skip their "Model Context Check" (Step 0.5) if Auto-Resume already loaded context.

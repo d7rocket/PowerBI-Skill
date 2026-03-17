@@ -25,6 +25,8 @@ Respond to the analyst with exactly:
 
 Wait for the analyst to paste a DAX measure before proceeding.
 
+**Empty input guard:** If the pasted content is empty, whitespace-only, or contains no DAX-like text (no `=`, no function names, no table references), output: "Please paste a DAX measure to explain." and stop.
+
 ---
 
 ### Step 2 — Measure Extraction
@@ -120,3 +122,9 @@ After producing the output, update `.pbi-context.md` using the following steps:
 3. Use the **Write** tool to write the full updated file back to `.pbi-context.md`.
 
 Do NOT use bash append commands — always Read then Write to avoid malformed state.
+
+### Anti-Patterns
+- NEVER restate DAX syntax in plain English — explain business logic and intent
+- NEVER skip complexity inference — always classify before explaining
+- NEVER reference columns not in Model Context when model-aware context is available
+- NEVER modify or rewrite the measure — explain only

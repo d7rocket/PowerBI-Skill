@@ -147,9 +147,14 @@ Classify the pasted error into one of the categories below. If it matches multip
 - Fix: Identify the cycle. For each measure in the error, list what other measures it references. Trace the chain until you find where it loops back. Break the cycle by introducing a VAR that captures an intermediate value without referencing the outer measure, or by splitting one measure into a base measure that has no circular reference.
 
 **Category C — Context Transition Errors / Incorrect Results**
-- Patterns: "not valid in the current context", unexpected BLANK results when values are expected, unexpected totals, "a table of multiple values was supplied where a single value was expected"
+- Patterns: "not valid in the current context", unexpected totals, "a table of multiple values was supplied where a single value was expected"
 - Root cause: An iterator is calling a measure reference from within a row context. The implicit CALCULATE that wraps a measure reference inside an iterator triggers a context transition.
 - Fix: Review iterators that call measure references directly. Make the context transition explicit: use `SUMX(Table, CALCULATE([Measure]))` to be clear about what you intend.
+
+**Category C2 — Implicit BLANK Propagation**
+- Patterns: Measure returns BLANK when values are expected, subtotals show BLANK instead of a number, specific rows in a matrix are blank despite having data, "unexpected BLANK results"
+- Root cause: When any operand in an arithmetic expression is BLANK, the entire expression returns BLANK. This commonly occurs with DIVIDE (denominator returns BLANK instead of 0), subtraction involving missing periods, or measures that depend on other measures which return BLANK for certain filter combinations.
+- Fix: Identify which sub-expression returns BLANK by testing each component separately. Wrap BLANK-producing expressions with `IF(ISBLANK([Measure]), 0, [Measure])` or use `COALESCE([Measure], 0)` at the point where BLANK enters the calculation. For DIVIDE, ensure the alternate result parameter handles the BLANK case: `DIVIDE([Numerator], [Denominator], 0)`.
 
 **Category D — Data Refresh / Data Type Errors**
 - Patterns: "DataFormat.Error", "type mismatch", "cannot convert", "Expression.Error", "We cannot convert the value", refresh failures, "column not found" in Power Query
@@ -203,3 +208,9 @@ After producing the output, update `.pbi-context.md` using Read then Write.
 1. **Last Command section:** Set Command = `/pbi error`, Timestamp = current UTC time, Measure = `Error: [first 50 characters of the pasted error text]`, Outcome = `Diagnosed as Category [X] — [brief one-line summary of root cause]`.
 2. **Command History table:** Append a new row. Keep to last 20 rows.
 3. **Analyst-Reported Failures section:** Do NOT modify this section.
+
+### Anti-Patterns
+- NEVER suggest a fix that previously failed (check Analyst-Reported Failures first)
+- NEVER auto-apply a file fix without showing the before/after preview and getting confirmation
+- NEVER diagnose without checking prior failure history and last command correlation
+- NEVER skip the Category classification step — always classify before diagnosing

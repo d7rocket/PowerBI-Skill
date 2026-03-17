@@ -99,6 +99,8 @@ Respond immediately with:
 
 Wait for the analyst to paste their DAX measure before proceeding.
 
+**Empty input guard:** If the pasted content is empty, whitespace-only, or contains no DAX-like text, output: "Please paste a DAX measure to comment." and stop.
+
 ### Step 2 — Measure Extraction
 
 - Extract the measure name from the text before the first `=` sign (strip whitespace). Example: `Revenue YTD = CALCULATE(...)` → measure name is `Revenue YTD`.
@@ -174,3 +176,9 @@ After producing the output, update `.pbi-context.md` using Read then Write:
    - Append a new row to the `## Command History` table with columns: Timestamp, Command (`/pbi comment`), Measure Name (extracted name), Outcome (`Commented`).
    - Keep the Command History table to a maximum of 20 rows — if adding the new row would exceed 20, remove the oldest row first.
    - Do **not** modify the `## Analyst-Reported Failures` section.
+
+### Anti-Patterns
+- NEVER translate DAX syntax word-for-word into English — explain business logic
+- NEVER remove existing comments — only add or update
+- NEVER modify the DAX expression while adding comments
+- NEVER exceed 300 characters in the Description Field
