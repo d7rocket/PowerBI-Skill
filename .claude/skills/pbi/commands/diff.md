@@ -66,7 +66,7 @@ Apply these parsing rules to the diff text captured in Step 2. Build an internal
 **Measures:**
 - A measure is ADDED if a `+ measure Name =` line appears WITHOUT a corresponding `- measure Name =` line in the same file's diff.
 - A measure is REMOVED if a `- measure Name =` line appears WITHOUT a corresponding `+ measure Name =` line.
-- A measure is MODIFIED if BOTH appear for the same name, OR if lines inside a measure block changed but the measure declaration line is unchanged.
+- A measure is MODIFIED if BOTH `+` and `-` lines appear for the same measure name, OR if property lines (formatString, displayFolder, description `///`) or expression body lines changed within a measure block while the `measure Name =` declaration line itself is unchanged.
 - **Extract measure name:** text between `measure ` and ` =`; strip single quotes.
 - **Extract table name:** from the file path — `tables/TableName.tmdl` → `TableName`.
 

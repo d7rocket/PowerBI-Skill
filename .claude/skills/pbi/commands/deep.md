@@ -42,7 +42,7 @@ Wait for answer.
 
 ### Step 2 — Write Context
 
-Read `.pbi-context.md` with Read tool. Add or update these sections with the gathered answers:
+Read `.pbi-context.md` with Read tool. If the file does not exist, create it with a blank template containing these section headers: `## Business Question`, `## Model Context`, `## Existing Measures`, `## Last Command`, `## Command History`, `## Analyst-Reported Failures`. Then add or update these sections with the gathered answers:
 
 - `## Business Question`: The stated business question, verbatim from user
 - `## Existing Measures`: The user's answer about existing measures
@@ -66,7 +66,7 @@ Output exactly:
 > Type **continue** to proceed, or **cancel** to stop the session.
 
 Wait for the analyst's response.
-- Response is "continue" (case-insensitive): proceed to Phase B — Model Review.
+- Response contains "continue" (case-insensitive, e.g., "continue", "continue please", "yes continue"): proceed to Phase B — Model Review.
 - Response is "cancel": output "Session paused. Use /pbi deep to restart." and stop.
 - Any other response: re-output the gate prompt above. Do NOT advance.
 
@@ -130,7 +130,7 @@ Output exactly:
 > Type **continue** to proceed, or **cancel** to stop the session.
 
 Wait for the analyst's response.
-- Response is "continue" (case-insensitive): proceed to Phase C — DAX Development.
+- Response contains "continue" (case-insensitive, e.g., "continue", "continue please", "yes continue"): proceed to Phase C — DAX Development.
 - Response is "cancel": output "Session paused. Use /pbi deep to restart." and stop.
 - Any other response: re-output the gate prompt above. Do NOT advance.
 
@@ -157,6 +157,8 @@ Output:
 
 > **DAX Development phase:**
 > Context saved to .pbi-context.md. All /pbi commands will use this context going forward.
+>
+> Available commands: **explain** · **format** · **optimise** · **comment** · **new** · **error** · **edit** · **audit** · **diff** · **commit** (see `/pbi help` for full list)
 >
 > What would you like to work on first?
 > When you've finished generating measures, say "done" to review your session before closing.
@@ -225,7 +227,7 @@ Wait for confirm/cancel response.
 - NEVER enter deep mode unless the user explicitly typed `/pbi deep` — no automatic upgrade
 - NEVER ask all 3 intake questions at once — ask one, wait, ask next
 - NEVER re-ask a question if the answer is already in `.pbi-context.md`
-- NEVER advance past a phase gate on vague input ("ok", "sounds good", "yes") — the gate token must be "continue" (case-insensitive). Re-output the gate.
+- NEVER advance past a phase gate on vague input ("ok", "sounds good", "yes") — the response must contain "continue" (case-insensitive). Re-output the gate.
 - NEVER run model review against `$PBIP_DIR/` files — Phase B operates on described context only. For file-level audit, direct the user to `/pbi audit`.
 - NEVER generate DAX before Gate A→B is confirmed — model review must complete first
 - NEVER trigger the final verification gate (Phase D) after each individual /pbi new call — it fires only on analyst completion signal

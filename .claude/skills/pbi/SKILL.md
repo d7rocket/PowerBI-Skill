@@ -1,11 +1,16 @@
 ---
 name: pbi
-description: Power BI DAX co-pilot. /pbi [subcommand] routes to the appropriate handler.
-version: 4.1.0
+description: Power BI DAX co-pilot. Explains, formats, optimises, comments, and scaffolds DAX measures. Audits PBIP semantic models for hidden columns, bidirectional filters, and naming issues with auto-fix. Tracks model changes with local git versioning. Use when user mentions "DAX", "Power BI", "PBIP", "semantic model", asks to "explain this measure", "format DAX", "optimise DAX", "audit my model", "create a measure", "comment DAX", "fix DAX error", "edit measure", "diff changes", "undo last change", "extract project summary", or works with .tmdl/.bim files. Supports both TMDL and TMSL formats.
+license: MIT
 disable-model-invocation: true
 model: sonnet
 allowed-tools: Read, Write, Bash, Agent
-argument-hint: "[explain|format|optimise|comment|error|new|load|audit|diff|commit|edit|undo|comment-batch|changelog|deep|extract|help]"
+argument-hint: "[explain|format|optimise|comment|error|new|load|audit|diff|commit|edit|undo|comment-batch|changelog|deep|extract|docs|help]"
+metadata:
+  author: d7rocket
+  version: 4.3.0
+  category: data-analytics
+  tags: [power-bi, dax, pbip, semantic-model]
 ---
 
 ## Detection Blocks (run once, shared by all subcommands)
@@ -13,21 +18,21 @@ argument-hint: "[explain|format|optimise|comment|error|new|load|audit|diff|commi
 **Folder naming:** Real PBIP projects use `<ProjectName>.SemanticModel` and `<ReportName>.Report` (e.g., `Sales.SemanticModel`, `Sales.Report`). Test fixtures may use `.SemanticModel`. Detection globs for both patterns.
 
 ### PBIP Detection
-!`SM_DIR=$(ls -d *.SemanticModel .SemanticModel 2>/dev/null | head -1); if [ -n "$SM_DIR" ]; then if [ -f "$SM_DIR/model.bim" ]; then echo "PBIP_MODE=file PBIP_FORMAT=tmsl PBIP_DIR=$SM_DIR"; elif [ -d "$SM_DIR/definition/tables" ]; then echo "PBIP_MODE=file PBIP_FORMAT=tmdl PBIP_DIR=$SM_DIR"; else echo "PBIP_MODE=file PBIP_FORMAT=tmdl PBIP_DIR=$SM_DIR"; fi; else echo "PBIP_MODE=paste"; fi`
+!`python ".claude/skills/pbi/scripts/detect.py" pbip 2>/dev/null || echo "PBIP_MODE=paste"`
 
 Save the `PBIP_DIR` value from the output — all subsequent commands must use it instead of a hardcoded `.SemanticModel`.
 
 ### File Index
-!`SM_DIR=$(ls -d *.SemanticModel .SemanticModel 2>/dev/null | head -1); if [ -d "$SM_DIR/definition/tables" ]; then find "$SM_DIR/definition/tables/" -name "*.tmdl" 2>/dev/null; elif [ -f "$SM_DIR/model.bim" ]; then echo "tmsl:$SM_DIR/model.bim"; fi`
+!`python ".claude/skills/pbi/scripts/detect.py" files 2>/dev/null`
 
 ### PBIR Detection
-!`RPT_DIR=$(ls -d *.Report .Report 2>/dev/null | head -1); if [ -n "$RPT_DIR" ]; then find "$RPT_DIR/" -name "*.json" -not -name "item.config.json" -not -name "item.metadata.json" 2>/dev/null | head -20 && echo "PBIR=yes PBIR_DIR=$RPT_DIR"; else echo "PBIR=no"; fi`
+!`python ".claude/skills/pbi/scripts/detect.py" pbir 2>/dev/null || echo "PBIR=no"`
 
 ### Git State
-!`git rev-parse --is-inside-work-tree 2>/dev/null && echo "GIT=yes" || echo "GIT=no"; git rev-parse HEAD 2>/dev/null && echo "HAS_COMMITS=yes" || echo "HAS_COMMITS=no"`
+!`python ".claude/skills/pbi/scripts/detect.py" git 2>/dev/null || (echo "GIT=no" && echo "HAS_COMMITS=no")`
 
 ### Session Context
-!`cat ".pbi-context.md" 2>/dev/null | tail -80 || echo "No prior context found."`
+!`python ".claude/skills/pbi/scripts/detect.py" context 2>/dev/null || echo "No prior context found."`
 
 ### Auto-Resume (every invocation)
 
@@ -44,9 +49,9 @@ After detection blocks run, apply the following before routing:
    - Output the summary table and: `Auto-loaded [N] tables. Context ready.`
 
 3. **PBIP_MODE=paste — nearby folder check**: Check parent directories for a PBIP project:
-   Run bash: `for d in .. ../.. ../../..; do SM=$(ls -d "$d"/*.SemanticModel "$d"/.SemanticModel 2>/dev/null | head -1); if [ -n "$SM" ]; then FULL=$(cd "$d" && pwd); echo "NEARBY_PBIP=$FULL"; break; fi; done`
-   - If NEARBY_PBIP is found: output: `No PBIP project here, but found one at [NEARBY_PBIP]. Run cd "[NEARBY_PBIP]" first.`
-   - If not found: skip silently. Paste-in commands still work.
+   Run: `python ".claude/skills/pbi/scripts/detect.py" nearby 2>/dev/null`
+   - If NEARBY_PBIP is found (non-empty value): output: `No PBIP project here, but found one at [NEARBY_PBIP]. Run cd "[NEARBY_PBIP]" first.`
+   - If NEARBY_PBIP is empty: skip silently. Paste-in commands still work.
 
 After auto-resume completes, proceed to Routing.
 
@@ -72,6 +77,7 @@ Parse `$ARGUMENTS` first word/keyword to determine the subcommand. Match against
 | changelog, "release notes", history, "what shipped" | commands/changelog.md | haiku Agent |
 | deep | commands/deep.md | sonnet direct |
 | extract, "project summary", "model summary", "export model" | commands/extract.md | sonnet direct |
+| docs, documentation, "generate docs", "document project", "project docs" | commands/docs.md | sonnet direct |
 | help, commands, "what can you do", "list commands" | commands/help.md | sonnet direct |
 | (no keyword match — free-text) | Solve-first handler (inline below) | sonnet direct |
 
@@ -79,7 +85,7 @@ If intent is ambiguous between two commands: pick the most specific match and no
 
 ### Execution
 
-**For sonnet subcommands** (explain, format, optimise, comment, error, new, edit, comment-batch, audit, deep, extract, help):
+**For sonnet subcommands** (explain, format, optimise, comment, error, new, edit, comment-batch, audit, deep, extract, docs, help):
 1. Determine the skill directory: find where this SKILL.md file is located (typically `.claude/skills/pbi/` relative to the project root). Use the Glob tool to find the skill directory if needed: `**/.claude/skills/pbi/commands/[cmd].md`.
 2. Use the Read tool to load the command file at that path (e.g., `.claude/skills/pbi/commands/explain.md`).
 3. Execute the loaded instructions directly in the current context. Pass through the detection block outputs above and any remaining `$ARGUMENTS` after the subcommand keyword. **All file operations (Read, Write, Bash) must target the user's CWD (their project folder), NOT the skill directory.**
@@ -117,10 +123,13 @@ What would you like to do?
 **F — Extract project summary**
   extract (overview · standard · deep-dive)
 
+**G — Generate project documentation**
+  docs (polished, stakeholder-ready model documentation)
+
 **? — Help**
   List all commands
 
-Type A, B, C, D, E, F, or ? — or describe what you need and I'll route you directly.
+Type A, B, C, D, E, F, G, or ? — or describe what you need and I'll route you directly.
 
 ---
 
@@ -132,9 +141,10 @@ On analyst response:
 - "D": Ask — "Which command? **edit** — change a specific entity · **comment-batch** — comment all measures at once" — then route.
 - "E": Route to `/pbi deep`.
 - "F": Route to `/pbi extract`.
+- "G": Route to `/pbi docs`. Output "Routing to /pbi docs — generating project documentation." then proceed.
 - "?": Route to `/pbi help`.
 - Free-text response: Apply the keyword matching from the Routing table above. If no keyword matches, route to **Solve-First Default** handler and treat the text as the request.
-- Any response that does not match A/B/C/D/E/F/? or a recognisable keyword: Output "I didn't catch that — type A, B, C, D, E, F, or ? — or describe what you need."
+- Any response that does not match A/B/C/D/E/F/G/? or a recognisable keyword: Output "I didn't catch that — type A, B, C, D, E, F, G, or ? — or describe what you need."
 
 ## Solve-First Default
 
@@ -201,17 +211,56 @@ After any subcommand completes (including the Solve-First Default handler):
    ```
    Output: `Staged locally | Context updated`
 
-2. **Skip conditions**: If PBIP_MODE=paste, or GIT=no, or the command did not write any files (e.g., explain in paste mode, help, diff), skip the epilogue entirely.
+2. **Skip conditions**: If PBIP_MODE=paste, or GIT=no, or the command did not write any files (e.g., explain in paste mode, help, diff), skip the auto-stage step (but still run context tracking below).
 3. **Auto-committing commands**: Commands that auto-commit (comment, new, edit, error, audit, comment-batch) already run `git add` + `git commit`. The epilogue's `git add` is a harmless no-op in those cases — skip the "Staged locally" output if the command already output an "Auto-committed" message.
+
+4. **Context tracking** — After every command completes, estimate context window usage and output a status line:
+   - Count the total rows in `## Command History` in `.pbi-context.md` (N).
+   - Estimate = min(5 + (N × 5), 100).
+   - Build a 10-block progress bar: filled blocks (█) for used portion, empty blocks (░) for remaining.
+   - Output: `Context: [██████░░░░] ~[estimate]%`
+   - If estimate >= 70: append ` — consider /clear to free up context`
+   - If estimate >= 90: append ` — /clear recommended before continuing`
+   - This line appears after all other command output, as the very last line.
 
 ## Shared Rules
 
-- All bash paths must be double-quoted (e.g., `"$VAR"`, `"$SM_DIR/"`)
+- **PYTHON-FIRST FILE OPERATIONS (CRITICAL):** All file read/write and text search operations MUST use Python with `encoding='utf-8'` to correctly handle accented characters (French: é, è, ê, ç, à, ù, etc.). Do NOT use `grep`, `cat`, `sed`, `awk`, or shell redirects for reading/writing model files. For measure name search, use `python ".claude/skills/pbi/scripts/detect.py" search "MeasureName" "$PBIP_DIR"` instead of `grep -rlF`. Shell/bash is allowed ONLY for: git CLI commands and Python script invocation.
 - **PBIP folder naming:** Always use the `PBIP_DIR` value from detection (e.g., `Sales.SemanticModel`) — never hardcode `.SemanticModel`. Same for Report: use `PBIR_DIR` (e.g., `Sales.Report`).
+- All bash paths must be double-quoted (e.g., `"$VAR"`, `"$SM_DIR/"`)
 - Session context: Read-then-Write `.pbi-context.md`, 20 row max Command History, never touch Analyst-Reported Failures
-- TMDL: tabs only for indentation, use `grep -rlF` for measure names (fixed-string matching)
-- DAX in shell: single-quoted heredoc delimiter to prevent `$` and backtick expansion
+- TMDL: tabs only for indentation
 - TMSL expression format: preserve original form (string vs array); use array if expression has line breaks
 - Escalation state: `## Escalation State` in `.pbi-context.md` tracks gathered context during escalation. Read before solving (use existing context), write after asking escalation questions. Clear at session start if stale.
 - **LOCAL-FIRST GIT POLICY (CRITICAL):** The local copy of all files is ALWAYS the source of truth. The skill MUST NEVER run `git pull`, `git fetch`, `git merge`, `git rebase`, or any command that downloads or overwrites local files with remote content. The skill MUST NEVER suggest or run `git push`, and MUST NEVER create pull requests. Allowed git operations: `git init`, `git add`, `git commit`, `git diff`, `git log`, `git status`, `git revert`, `git rev-parse`. If the user manually asks to push or pull, they do it themselves outside the skill. This policy exists because pulling has previously overwritten local PBIP changes and broken relationships.
 - **Auto-Resume:** Every `/pbi` invocation loads project context automatically (see Auto-Resume section above). Individual commands should skip their "Model Context Check" (Step 0.5) if Auto-Resume already loaded context.
+
+## Troubleshooting
+
+### PBIP project not detected
+**Symptom:** PBIP_MODE=paste even though a .pbip project exists in the directory.
+**Cause:** The `.SemanticModel` or `*.SemanticModel` folder is missing, renamed, or nested in a subdirectory.
+**Solution:**
+- Verify the folder exists: `ls -d *.SemanticModel .SemanticModel 2>/dev/null`
+- Ensure CWD is the project root (the folder containing the `.SemanticModel` directory)
+- If in a subfolder, run `cd ..` to the project root and retry
+
+### Git not initialized
+**Symptom:** GIT=no — commands like diff, commit, undo, and changelog are unavailable.
+**Cause:** The project directory has no git repository.
+**Solution:** Run `/pbi commit` — it will auto-initialize a git repo and create the first commit.
+
+### Context file stale or corrupted
+**Symptom:** Auto-resume shows outdated tables/measures, or commands reference entities that no longer exist.
+**Cause:** `.pbi-context.md` is out of sync with the actual model files.
+**Solution:** Run `/pbi load` to rebuild context from scratch. This overwrites the existing context file.
+
+### TMDL indentation broken after edit
+**Symptom:** Power BI Desktop shows parse errors after a skill edit.
+**Cause:** Spaces were used instead of tabs in TMDL files.
+**Solution:** The skill enforces tab indentation, but if an external edit introduced spaces, fix with: `sed -i 's/^    /\t/g' <file>.tmdl` (replace 4-space runs with tabs). Then run `/pbi diff` to verify.
+
+### Measure name not found
+**Symptom:** A command says a measure doesn't exist, but it does.
+**Cause:** Measure name contains accented characters (French) or special characters, and the search failed due to encoding issues.
+**Solution:** The skill uses Python-based search (`detect.py search`) with UTF-8 encoding. If you still see this error, verify the file encoding: `python -c "open('file.tmdl','r',encoding='utf-8').read()"` — if this fails, the file may have non-UTF-8 encoding.

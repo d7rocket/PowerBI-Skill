@@ -73,7 +73,7 @@ For each measure in the list, generate:
 - Max 300 characters, no DAX function names, no markdown
 - Ends with a period
 
-**Skip rule:** If a measure already has a `///` description AND the expression already contains `//` comments, mark it as "already commented" and skip. Include it in the summary as skipped.
+**Skip rule:** Skip only if a measure has BOTH a `///` description AND `//` comments in the expression body. If only one is present (e.g., description exists but no inline comments, or inline comments exist but no description), update the missing part. Include skipped measures in the summary with status "Skipped (already commented)".
 
 ---
 

@@ -51,7 +51,7 @@ Wait for response:
 - "A" or "a" → Overview tier
 - "B" or "b" → Standard tier
 - "C" or "c" → Deep Dive tier
-- Anything else → Re-output the tier picker. Do NOT advance.
+- Anything else → Re-output the tier picker. After 3 invalid responses, default to Standard tier and output: "Defaulting to Standard tier."
 
 ---
 
@@ -98,7 +98,7 @@ Count:
 
 #### Tier: Overview
 
-**Execution model:** Spawn a **haiku Agent** with the extracted metadata counts and table/measure names.
+**Execution model:** Spawn a **haiku Agent** with the following prompt: "Generate a Project Extract — Overview report. Here is the extracted metadata: [pass the full metadata counts, table names, measure names by table, and relationship list]. Format the output exactly as specified below."
 
 Output format:
 
@@ -196,7 +196,7 @@ Output format:
 
 **Execution model:** Run directly in current context (Sonnet reads files, then spawns an **opus Agent** for analysis).
 
-The Sonnet context performs Steps 2–3 (file reading and metadata extraction), then spawns an **opus Agent** with the full extracted metadata and these analysis instructions:
+The Sonnet context performs Steps 2–3 (file reading and metadata extraction), then spawns an **opus Agent** with the following prompt: "Produce a Deep Dive project extraction report. Here is the full extracted metadata: [pass all tables, columns, measures with full DAX expressions, relationships, roles, expressions]. Analyze the model and generate the report exactly as specified below." The opus Agent instructions:
 
 **Opus Agent instructions:**
 Produce the full Deep Dive report including all Standard tier content PLUS:
@@ -215,11 +215,11 @@ Produce the full Deep Dive report including all Standard tier content PLUS:
 |---------|---------------------|---------------|--------------|
 | [Name] | [Simple/Medium/Complex/Advanced] | [CALCULATE, FILTER, etc.] | [N] |
 
-Complexity rules:
-- **Simple:** Single function or arithmetic (SUM, COUNT, DIVIDE)
-- **Medium:** CALCULATE with 1–2 filters, basic time intelligence
-- **Complex:** Nested CALCULATE, variables (VAR/RETURN), iterator functions (SUMX, MAXX)
-- **Advanced:** Dynamic filters, SELECTEDVALUE branching, virtual tables, recursive patterns
+Complexity rules (with examples):
+- **Simple:** Single function or arithmetic — e.g., `SUM([Amount])`, `COUNTROWS(Sales)`, `DIVIDE([Revenue], [Cost])`
+- **Medium:** CALCULATE with 1–2 filters, basic time intelligence — e.g., `CALCULATE(SUM([Amount]), DATEADD(Date[Date], -1, YEAR))`
+- **Complex:** Nested CALCULATE, variables (VAR/RETURN), iterator functions — e.g., `VAR _total = SUMX(Sales, Sales[Qty] * Sales[Price]) RETURN DIVIDE(_total, [Target])`
+- **Advanced:** Dynamic filters, SELECTEDVALUE branching, virtual tables — e.g., `CALCULATE([Revenue], FILTER(ALL(Product), Product[Category] = SELECTEDVALUE(Slicer[Category])))`
 
 ### Common Patterns Detected
 [List DAX patterns found across measures:]

@@ -13,12 +13,12 @@ All commands are accessed via `/pbi [subcommand]` (e.g., `/pbi explain`, `/pbi a
 ### Subcommand types
 
 - **Paste-in** (work anywhere): explain, format, optimise, comment, error, new
-- **PBIP** (require `*.SemanticModel/` directory): load, audit, diff, commit, edit, undo, comment-batch, changelog, extract
+- **PBIP** (require `*.SemanticModel/` directory): load, audit, diff, commit, edit, undo, comment-batch, changelog, extract, docs
 - **Utility** (work anywhere): help
 
 ### Model selection
 
-- **Sonnet** (default): DAX reasoning subcommands — explain, format, optimise, comment, error, new, edit, comment-batch, audit, help
+- **Sonnet** (default): DAX reasoning subcommands — explain, format, optimise, comment, error, new, edit, comment-batch, audit, docs, help
 - **Haiku** (via Agent spawn): file/git-heavy subcommands — load, diff, commit, undo, changelog; also extract simple tier
 - **Opus** (via Agent spawn): extract detailed tier (high token usage, deep analysis)
 
@@ -46,8 +46,8 @@ Desktop detection (`tasklist`) has been removed — file-mode commands always wr
 
 - **TMDL files use tabs for indentation** — never convert tabs to spaces when writing back
 - **TMSL expression format**: preserve original form (JSON string vs array). Use array form only if the expression contains line breaks
-- **grep for measure names**: always use `grep -rlF` (fixed-string) to avoid regex metacharacters in measure names breaking the search
-- **DAX in shell commands**: write to a temp file using a single-quoted heredoc delimiter to prevent shell expansion of `$`, backticks, etc.
+- **Python-first file operations**: always use Python with `encoding='utf-8'` for file read/write and text search. Use `detect.py search` instead of `grep -rlF` for measure name search. Shell/bash is only for git CLI commands.
+- **UTF-8 encoding**: model files may contain French accented characters (é, è, ê, ç, à, ù). All file operations must handle UTF-8 correctly.
 
 ## Directory Structure
 
@@ -70,7 +70,10 @@ Desktop detection (`tasklist`) has been removed — file-mode commands always wr
     comment-batch.md    ← batch commenting (sonnet)
     changelog.md        ← changelog generation (haiku)
     extract.md          ← project extraction (haiku/sonnet/opus by tier)
+    docs.md             ← project documentation generator (sonnet)
     help.md             ← command reference (sonnet)
+  scripts/
+    detect.py           ← Python detection + search utilities (UTF-8 safe)
   shared/
     api-notes.md        ← DAX Formatter API reference
 ```
@@ -92,4 +95,4 @@ Test fixtures are in `tests/fixtures/`:
 
 ## Version
 
-Current: 4.1.0 (set in `pbi/SKILL.md` frontmatter)
+Current: 4.3.0 (set in `pbi/SKILL.md` frontmatter)

@@ -96,7 +96,8 @@ Accumulate findings_relationships[]:
 - Recommendation: `Change crossFilteringBehavior to single-direction. Bidirectional filters create ambiguous filter paths and degrade query performance.`
 
 **Rule R-02 — Isolated table heuristic (WARN):**
-- Tables with NO outbound relationships AND whose name matches fact table patterns (contains "Sales", "Orders", "Transactions", "Invoice", "Fact", or no "Dim" prefix) AND has at least one numeric column
+- Tables with NO outbound or inbound relationships AND whose name matches fact table patterns (contains "Sales", "Orders", "Transactions", "Invoice", "Fact", or starts without "Dim"/"Date"/"Calendar" prefix) AND has at least one numeric column (dataType: int64, double, decimal)
+- Only flag tables with 2+ columns (single-column parameter tables are intentionally standalone)
 - Recommendation: `Verify this table is intentionally isolated. Fact tables typically have relationships to dimension tables.`
 
 **Rule R-03 — No relationships at all (INFO):**
@@ -158,7 +159,9 @@ Accumulate findings_columns[]:
 
 **Skip if PBIR=no.**
 
-Read each JSON file listed by PBIR Detection. Look for measure references in:
+Read each JSON file listed by PBIR Detection. If a JSON file cannot be parsed (malformed JSON), output: `Warning: [filename] contains invalid JSON — skipping report-layer check for this visual.` and continue with remaining files.
+
+Look for measure references in:
 - `"dataTransforms"` → `"projections"` → `"queryRef"`
 - `"dataTransforms"` → `"selects"` → `"measure"` → `"property"`
 
@@ -196,7 +199,8 @@ Accumulate findings_performance[]:
 - Recommendation: `Aggregation tables should be hidden. Users should interact with the detail table — the engine routes queries to the aggregation table automatically.`
 
 **Rule P-02 — High-cardinality column heuristic (INFO):**
-- For each column that is NOT hidden AND is NOT used in any relationship AND whose name matches high-cardinality patterns: contains "Description", "Comment", "Note", "Detail", "Address", "Email", "URL", "Path", "FullName", "LongText", or ends with "_desc", "_text", "_notes"
+- For each column that is NOT hidden AND is NOT used in any relationship AND whose dataType is `string` AND whose name matches high-cardinality patterns: contains "Description", "Comment", "Note", "Detail", "Address", "Email", "URL", "Path", "FullName", "LongText", or ends with "_desc", "_text", "_notes"
+- Only flag if the column is NOT in a table with fewer than 3 columns (small lookup tables often have legitimate text columns)
 - Finding: `Column [TableName].[ColumnName] appears to be high-cardinality text. Consider hiding it if not used in visuals.`
 - Recommendation: `High-cardinality text columns consume memory and rarely belong in filter panes. Hide them unless they are intentionally exposed for search or display.`
 
@@ -323,6 +327,14 @@ fi
 - AUTO_COMMIT=skip_no_repo: Output "No git repo — run /pbi commit to initialise one."
 - AUTO_COMMIT=fail: silent
 
+**Auto-fix example walkthrough:**
+Given a model with a bidirectional relationship `Sales[ProductKey] → Product[ProductKey]` and a visible key column `Sales[ProductKey]`:
+1. Prompt: "Relationship Sales → Product is bidirectional. Which direction? A — Sales → Product, B — Product → Sales"
+2. User picks A → set crossFilteringBehavior to `oneDirection` (many-to-one: Product filters Sales)
+3. Add `isHidden` to `Sales[ProductKey]` column block
+4. Write back the modified `.tmdl` files
+5. Commit: `fix: auto-fix 2 audit findings (R-01, H-01)`
+
 ---
 
 ### Step 6 — Update .pbi-context.md
@@ -335,5 +347,5 @@ Use Read-then-Write to update `.pbi-context.md`:
 ### Anti-Patterns
 - NEVER auto-fix without confirmation — always show the fix list and ask
 - NEVER change relationship direction without asking which direction to keep
-- NEVER modify measures during audit — audit is read-only except for auto-fix of structural issues
+- NEVER add, remove, rename, or rewrite measure expressions during audit — auto-fix only touches structural properties (isHidden, crossFilteringBehavior)
 - NEVER report findings without severity classification (CRITICAL/WARN/INFO)
