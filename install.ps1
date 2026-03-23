@@ -109,6 +109,12 @@ try {
 } catch {
     Write-Host "        api-notes.md — skipped (non-critical)" -ForegroundColor Yellow
 }
+try {
+    Invoke-WebRequest -Uri "$base/.claude/skills/pbi/shared/CHANGELOG.md" -OutFile (Join-Path $sharedDir "CHANGELOG.md") -UseBasicParsing
+    Write-Host "        CHANGELOG.md" -ForegroundColor DarkGray
+} catch {
+    Write-Host "        CHANGELOG.md — skipped (non-critical)" -ForegroundColor Yellow
+}
 
 # ── Verify ──────────────────────────────────────────────────────────
 $fileCount = (Get-ChildItem -Path $skillBase -Recurse -File).Count
