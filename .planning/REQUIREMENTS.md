@@ -21,7 +21,7 @@ Requirements for milestone v1.2: Quality & Distribution.
 
 ### UTF-8 Safety
 
-- [ ] **UTF8-01**: All measure search operations use `detect.py search` instead of `grep -rlF` (edit.md, comment.md, error.md, new.md)
+- [x] **UTF8-01**: All measure search operations use `detect.py search` instead of `grep -rlF` (edit.md, comment.md, error.md, new.md)
 - [x] **UTF8-02**: Format.md HTML parsing uses Python instead of grep/sed pipeline
 - [x] **UTF8-03**: Help.md version check uses Python instead of grep/sed
 
@@ -54,7 +54,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | INST-04 | Phase 5 | Pending |
 | TOKEN-01 | Phase 6 | Complete |
 | TOKEN-02 | Phase 6 | Complete |
-| UTF8-01 | Phase 6 | Pending |
+| UTF8-01 | Phase 6 | Complete |
 | UTF8-02 | Phase 6 | Complete |
 | UTF8-03 | Phase 6 | Complete |
 | HIST-01 | Phase 7 | Pending |
