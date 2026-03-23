@@ -1,0 +1,81 @@
+# Changelog
+
+All notable changes to the PBI skill are documented here.
+Format: [Keep a Changelog](https://keepachangelog.com)
+
+## [4.3.0] — 2026-03-23
+
+### Changed
+
+- Python-first UTF-8 file operations: all measure search now uses `detect.py search` instead of `grep -rlF` in edit.md, comment.md, error.md, and new.md
+- `format.md` HTML response parsing migrated to `detect.py html-parse` Python subcommand
+- `help.md` version check migrated to `detect.py version-check` Python subcommand
+- `detect.py` expanded with three new subcommands: `html-parse`, `version-check`, `gitignore-check`
+- TMSL large-file guard added: commands reading model.bim use offset/limit chunked-read at 2000-line threshold (edit.md, comment.md, error.md, new.md, load.md)
+
+## [4.1.0] — 2026-03-23
+
+### Added
+
+- Auto-resume — every `/pbi` invocation auto-loads project context from `.pbi-context.md` without requiring explicit `/pbi load`
+- LOCAL-FIRST GIT POLICY enforced in all commands — `git pull`, `git fetch`, `git push` are never used; local files are always the source of truth
+
+### Changed
+
+- Installer (`install.ps1`) rewritten with `-Scope project|user` parameter, full file manifest including `detect.py` and `docs.md`, dynamic version banner read from downloaded SKILL.md
+- `scripts/` directory created automatically by installer; `detect.py` placed inside it
+
+## [4.0.0] — 2026-03-14
+
+### Added
+
+- `/pbi docs` command — generates polished, stakeholder-ready model documentation from PBIP project
+- `/pbi extract` command with three tiers (overview, standard, deep-dive) for structured project summaries
+- `/pbi deep` command — guided multi-phase workflow with upfront context gathering, model review, DAX development, and verification phases
+
+### Changed
+
+- Routing table extended to cover `docs`, `extract`, and `deep` keywords
+- Model selection is now automatic — Haiku for file/git operations, Sonnet for DAX reasoning, Opus for deep-dive extraction
+
+## [3.0.0] — 2026-03-14
+
+### Added
+
+- `/pbi audit` command — full model health check with auto-fix for critical issues (bidirectional filters, unhidden key columns, naming violations)
+- `/pbi comment-batch` command — adds descriptions to all undocumented measures in a single pass
+- `/pbi changelog` command — generates release notes from recent local git commits
+- Parallel agent execution for audit on models with 5+ tables (3 domain-pass agents)
+- `/pbi edit` command — modify model entities from plain-English instructions with auto-commit
+
+### Changed
+
+- All PBIP commands now use the `PBIP_DIR` value from detection output — never a hardcoded `.SemanticModel`
+- Auto-commit added after successful writes in edit, comment, error, and new; `/pbi undo` reverts the last auto-commit
+- Post-command auto-stage — after every command that writes to `$PBIP_DIR/`, changes are staged with `git add`
+
+## [2.0.0] — 2026-03-14
+
+### Added
+
+- PBIP context loading — `/pbi load` reads all TMDL/TMSL files, extracts table/measure/column/relationship structure into `.pbi-context.md`
+- `/pbi diff` command — summarises uncommitted model changes using `git diff`
+- `/pbi commit` command — stages and commits model changes with a generated commit message
+- `/pbi undo` command — reverts the last auto-commit using `git revert`
+- Session context tracking — every command reads and writes `.pbi-context.md`; Command History is trimmed to 20 rows max
+
+### Changed
+
+- Detection blocks run once in SKILL.md and are shared by all subcommands (PBIP detection, file index, PBIR detection, git state)
+- Post-command epilogue added — auto-stage and context tracking (progress bar) after every subcommand
+
+## [1.0.0] — 2026-03-13
+
+### Added
+
+- Initial release of `/pbi` skill for Claude Code
+- Core subcommands: `explain`, `format`, `optimise`, `comment`, `error`, `new`, `load`, `help`
+- DAX Formatter API integration: `format` uses `shared/api-notes.md` for API reference
+- Solve-First Default handler: free-text questions route to an immediate DAX solution with a two-failure escalation flow
+- Escalation logic: silent retry on first failure, one targeted question on second failure, escalation state written to `.pbi-context.md`
+- `detect.py` utility script for UTF-8-safe PBIP/PBIR/git detection
