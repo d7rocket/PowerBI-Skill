@@ -47,7 +47,10 @@ Full phase details: `.planning/milestones/v1.1-ROADMAP.md`
   2. The installed version banner reads the actual version from the downloaded `SKILL.md` (no hardcoded version string)
   3. `-Scope project` installs to `.claude/skills/pbi/` and `-Scope user` installs to `~/.claude/skills/pbi/`
   4. The `scripts/` directory is created automatically and `detect.py` is placed inside it
-**Plans**: TBD
+**Plans**: 1 plan
+
+Plans:
+- [ ] 05-01-PLAN.md — Rewrite install.ps1: scope param, full manifest, dynamic version, scripts/ dir
 
 ### Phase 6: Token Safety + UTF-8 Hardening
 **Goal**: No skill command fails due to token overflow, and all file operations safely handle French accented characters
@@ -77,6 +80,6 @@ Full phase details: `.planning/milestones/v1.1-ROADMAP.md`
 | 2. Context-Aware DAX | v1.0 | 5/5 | Complete | 2026-03-14 |
 | 3. Context Field Fixes | v1.1 | 2/2 | Complete | 2026-03-14 |
 | 4. Deep Mode Complete | v1.1 | 2/2 | Complete | 2026-03-14 |
-| 5. Installer Overhaul | v1.2 | 0/? | Not started | - |
+| 5. Installer Overhaul | v1.2 | 0/1 | Not started | - |
 | 6. Token Safety + UTF-8 Hardening | v1.2 | 0/? | Not started | - |
 | 7. Version History Command | v1.2 | 0/? | Not started | - |
