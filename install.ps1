@@ -7,7 +7,8 @@ $ErrorActionPreference = "Stop"
 $ProgressPreference = "SilentlyContinue"
 
 if ($Scope -eq "user") {
-    $skillBase = Join-Path ($env:USERPROFILE ?? $HOME) ".claude\skills\pbi"
+    $userHome = if ($env:USERPROFILE) { $env:USERPROFILE } else { $HOME }
+    $skillBase = Join-Path $userHome ".claude\skills\pbi"
 } else {
     $skillBase = Join-Path (Get-Location) ".claude\skills\pbi"
 }
