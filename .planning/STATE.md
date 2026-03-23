@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: Quality & Distribution
 status: planning
-stopped_at: Phase 5 context gathered
-last_updated: "2026-03-23T17:57:07.201Z"
+stopped_at: Phase 6 context gathered
+last_updated: "2026-03-23T18:18:43.153Z"
 last_activity: 2026-03-23
 progress:
   total_phases: 3
@@ -58,6 +58,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-23T17:35:58.908Z
-Stopped at: Phase 5 context gathered
-Resume file: .planning/phases/05-installer-overhaul/05-CONTEXT.md
+Last session: 2026-03-23T18:18:43.139Z
+Stopped at: Phase 6 context gathered
+Resume file: .planning/phases/06-token-safety-utf-8-hardening/06-CONTEXT.md
