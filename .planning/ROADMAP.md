@@ -64,7 +64,7 @@ Plans:
 **Plans**: 5 plans
 
 Plans:
-- [ ] 06-01-PLAN.md — Expand detect.py: add html-parse, version-check, gitignore-check subcommands
+- [x] 06-01-PLAN.md — Expand detect.py: add html-parse, version-check, gitignore-check subcommands
 - [ ] 06-02-PLAN.md — Replace grep in edit.md + comment.md; add TMSL chunked-read guard
 - [ ] 06-03-PLAN.md — Replace grep in error.md + new.md; add TMSL chunked-read guard
 - [ ] 06-04-PLAN.md — Replace grep/sed in format.md + help.md + diff.md with detect.py calls
@@ -88,5 +88,5 @@ Plans:
 | 3. Context Field Fixes | v1.1 | 2/2 | Complete | 2026-03-14 |
 | 4. Deep Mode Complete | v1.1 | 2/2 | Complete | 2026-03-14 |
 | 5. Installer Overhaul | v1.2 | 0/1 | Complete    | 2026-03-23 |
-| 6. Token Safety + UTF-8 Hardening | v1.2 | 0/5 | Not started | - |
+| 6. Token Safety + UTF-8 Hardening | v1.2 | 1/5 | In Progress|  |
 | 7. Version History Command | v1.2 | 0/? | Not started | - |
