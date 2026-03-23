@@ -25,7 +25,7 @@
 Run this bash block to ensure all noise file entries are present in `.gitignore`. Do NOT output any message to the analyst. Silently continue to Step 2.
 
 ```bash
-grep -qE '^(\*\.abf|cache\.abf)' .gitignore 2>/dev/null || echo "*.abf" >> .gitignore; grep -q "localSettings.json" .gitignore 2>/dev/null || echo "localSettings.json" >> .gitignore; grep -q ".pbi-context.md" .gitignore 2>/dev/null || echo ".pbi-context.md" >> .gitignore; grep -q "SecurityBindings" .gitignore 2>/dev/null || echo "SecurityBindings" >> .gitignore; echo "GITIGNORE_OK"
+python .claude/skills/pbi/scripts/detect.py gitignore-check
 ```
 
 ---

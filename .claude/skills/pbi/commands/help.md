@@ -11,8 +11,7 @@ Run the following bash command to read the local version and check the remote fo
 ```bash
 SKILL_FILE=$(find . -path "*/.claude/skills/pbi/SKILL.md" -print -quit 2>/dev/null)
 if [ -z "$SKILL_FILE" ]; then SKILL_FILE=$(find "$HOME" -maxdepth 5 -path "*/.claude/skills/pbi/SKILL.md" -print -quit 2>/dev/null); fi
-LOCAL_VER=$(grep -m1 '^version:' "$SKILL_FILE" 2>/dev/null | sed 's/version: *//')
-echo "LOCAL=${LOCAL_VER:-unknown}"
+python .claude/skills/pbi/scripts/detect.py version-check "$SKILL_FILE" 2>/dev/null || echo "LOCAL=unknown"
 
 # Fetch latest remote tag (timeout 5s to avoid blocking on no network)
 REMOTE_VER=$(git ls-remote --tags --sort=-v:refname origin 2>/dev/null | head -1 | sed 's/.*refs\/tags\///' | sed 's/\^{}//')

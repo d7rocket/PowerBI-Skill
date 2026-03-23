@@ -56,7 +56,7 @@ curl -s -L -X POST "https://www.daxformatter.com" \
   --data-urlencode "fx@$TMPFILE" \
   -d "r=US&embed=1" \
   --max-time 5 -o "$TMPHTML" 2>/dev/null
-python ".claude/skills/pbi/scripts/detect.py" html-parse "$TMPHTML"
+python .claude/skills/pbi/scripts/detect.py html-parse "$TMPHTML"
 rm -f "$TMPFILE" "$TMPHTML"
 ```
 
