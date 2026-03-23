@@ -55,7 +55,7 @@ Also check for `$PBIP_DIR/definition/relationships.tmdl` using the Read tool (if
 
 **For TMSL (`PBIP_FORMAT=tmsl`):**
 
-Read `$PBIP_DIR/model.bim` with the Read tool.
+Read `$PBIP_DIR/model.bim` with the Read tool. If model.bim is >2000 lines, use offset/limit parameters to read it in chunks of 1000 lines — read the full file across multiple reads before navigating the JSON structure.
 
 Navigate the JSON structure:
 - `model.tables[]` → for each table extract: `name`, `measures[].name`, `columns[].name`
