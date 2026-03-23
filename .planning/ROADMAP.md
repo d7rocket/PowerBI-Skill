@@ -77,7 +77,11 @@ Plans:
 **Success Criteria** (what must be TRUE):
   1. Typing `/pbi version` displays the full version history with release notes for every shipped version
   2. `CHANGELOG.md` exists in the skill distribution and is included when the installer runs
-**Plans**: TBD
+**Plans**: 2 plans
+
+Plans:
+- [ ] 07-01-PLAN.md — Create CHANGELOG.md (shared/) and version.md command file
+- [ ] 07-02-PLAN.md — Wire version keyword into SKILL.md routing table and add CHANGELOG.md to installer
 
 ## Progress
 
@@ -89,4 +93,4 @@ Plans:
 | 4. Deep Mode Complete | v1.1 | 2/2 | Complete | 2026-03-14 |
 | 5. Installer Overhaul | v1.2 | 0/1 | Complete    | 2026-03-23 |
 | 6. Token Safety + UTF-8 Hardening | v1.2 | 5/5 | Complete    | 2026-03-23 |
-| 7. Version History Command | v1.2 | 0/? | Not started | - |
+| 7. Version History Command | v1.2 | 0/2 | Not started | - |
