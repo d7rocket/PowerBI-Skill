@@ -1,6 +1,6 @@
 <p align="center">
   <img src="https://img.shields.io/badge/Claude_Code-Skill-blueviolet?style=for-the-badge&logo=data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHBhdGggZmlsbD0id2hpdGUiIGQ9Ik0xMiAyQzYuNDggMiAyIDYuNDggMiAxMnM0LjQ4IDEwIDEwIDEwIDEwLTQuNDggMTAtMTBTMTcuNTIgMiAxMiAyem0tMiAxNWwtNS01IDEuNDEtMS40MUwxMCAxNC4xN2w3LjU5LTcuNTlMMTkgOGwtOSA5eiIvPjwvc3ZnPg==" alt="Claude Code Skill">
-  <img src="https://img.shields.io/badge/version-4.1-blue?style=for-the-badge" alt="Version 4.1">
+  <img src="https://img.shields.io/badge/version-4.3-blue?style=for-the-badge" alt="Version 4.3">
   <img src="https://img.shields.io/badge/license-MIT-green?style=for-the-badge" alt="MIT License">
   <img src="https://img.shields.io/badge/Power_BI-DAX-F2C811?style=for-the-badge&logo=powerbi&logoColor=black" alt="Power BI DAX">
 </p>
@@ -13,7 +13,7 @@
   ██████╔╝██████╔╝██║   Power BI DAX Co-pilot
   ██╔═══╝ ██╔══██╗██║   for Claude Code
   ██║     ██████╔╝██║
-  ╚═╝     ╚═════╝ ╚═╝   v4.1
+  ╚═╝     ╚═════╝ ╚═╝   v4.3
 ```
 
 </div>
@@ -25,15 +25,15 @@
 
 ---
 
-## What's New in v4.1
+## What's New in v4.3
 
-- **Auto-resume** — context loads automatically on every `/pbi` invocation. No more running `/pbi load` first.
-- **Local-first git** — all commits stay local. The skill will never pull, push, or create PRs. Your files are always the source of truth.
-- **13 optimisation rules** — added SUMMARIZE deprecation, FILTER(RELATEDTABLE) detection, and semi-additive pattern opportunities.
-- **Expanded audit** — new rules for calculation groups, field parameters, aggregation tables, and high-cardinality columns. Bidirectional fix now asks which direction to keep.
-- **BLANK propagation diagnosis** — `/pbi error` now catches implicit BLANK propagation issues.
-- **Anti-patterns on every command** — all 17 commands now have explicit anti-pattern guards.
-- **Input validation** — empty paste guards on all paste-in commands, malformed file guards on load/audit.
+- **Python-first UTF-8** — all file operations use Python with `encoding='utf-8'`. French accented characters in model files are handled correctly. Zero grep/sed in any command.
+- **`/pbi docs`** — generate polished project documentation for stakeholders.
+- **`/pbi version`** — view full version history from within Claude Code (offline, no network calls).
+- **Context tracking** — progress bar estimates context usage, suggests `/clear` when running high.
+- **Installer overhaul** — `-Scope project|user` parameter, correct GitHub URL, all files included (detect.py, docs.md, CHANGELOG.md).
+- **Token safety** — chunked reading for large model.bim files prevents "file content exceeds 10K tokens" errors.
+- **10 detect.py subcommands** — search, html-parse, version-check, gitignore-check, and 6 detection commands.
 
 ---
 
@@ -72,51 +72,47 @@
 | `/pbi comment-batch` | Comment every measure in a table |
 | `/pbi changelog` | Generate CHANGELOG from git history |
 | `/pbi extract` | Export project documentation (3 tiers) |
+| `/pbi docs` | Polished project documentation for stakeholders |
 
 </td>
 </tr>
 </table>
 
-### Workflow Commands
+### Workflow & Utility Commands
 
 | Command | Description |
 |:--------|:------------|
 | `/pbi deep` | Guided multi-phase workflow: intake → model review → DAX development → verification |
+| `/pbi version` | Full version history with release notes |
 | `/pbi help` | Command reference with version check |
 
 ---
 
 ## Installation
 
-Pick whichever method works for you. All four get you the same result: the `/pbi` skill ready to use in Claude Code.
+Pick whichever method works for you. All options get you the same result: the `/pbi` skill ready to use in Claude Code.
 
-### Option 1 — One-liner install (macOS / Linux / WSL)
-
-```bash
-curl -sL https://raw.githubusercontent.com/deveshd7/PowerBI-Skill/main/install.sh | bash
-```
-
-To install into a specific project folder:
-
-```bash
-curl -sL https://raw.githubusercontent.com/deveshd7/PowerBI-Skill/main/install.sh | bash -s -- /path/to/your/project
-```
-
-### Option 2 — PowerShell install (Windows)
+### Option 1 — PowerShell install (Windows)
 
 ```powershell
-irm https://raw.githubusercontent.com/deveshd7/PowerBI-Skill/main/install.ps1 | iex
+irm https://raw.githubusercontent.com/d7rocket/PowerBI-Skill/main/install.ps1 | iex
 ```
 
-To install into a specific project folder:
+This installs to your **user** profile (`~/.claude/skills/pbi/`) — available in all projects. To install into the current project only:
 
 ```powershell
-& ([scriptblock]::Create((irm https://raw.githubusercontent.com/deveshd7/PowerBI-Skill/main/install.ps1))) -Target "C:\path\to\your\project"
+& ([scriptblock]::Create((irm https://raw.githubusercontent.com/d7rocket/PowerBI-Skill/main/install.ps1))) -Scope project
+```
+
+### Option 2 — One-liner install (macOS / Linux / WSL)
+
+```bash
+curl -sL https://raw.githubusercontent.com/d7rocket/PowerBI-Skill/main/install.sh | bash
 ```
 
 ### Option 3 — Manual download (any OS)
 
-1. Go to the [**Releases page**](https://github.com/deveshd7/PowerBI-Skill/releases) or click **Code > Download ZIP** on the repo
+1. Go to the [**Releases page**](https://github.com/d7rocket/PowerBI-Skill/releases) or click **Code > Download ZIP** on the repo
 2. Extract the ZIP
 3. Copy the `.claude` folder into your project root:
 
@@ -127,6 +123,7 @@ your-project/
       pbi/
         SKILL.md
         commands/
+        scripts/
         shared/
   ... your other files
 ```
@@ -136,7 +133,7 @@ That's it. Claude Code auto-discovers skills in `.claude/skills/`.
 ### Option 4 — Git clone
 
 ```bash
-git clone https://github.com/deveshd7/PowerBI-Skill.git
+git clone https://github.com/d7rocket/PowerBI-Skill.git
 cd PowerBI-Skill
 claude
 ```
@@ -144,7 +141,7 @@ claude
 Or clone and copy just the skill into an existing project:
 
 ```bash
-git clone https://github.com/deveshd7/PowerBI-Skill.git /tmp/pbi-skill
+git clone https://github.com/d7rocket/PowerBI-Skill.git /tmp/pbi-skill
 cp -r /tmp/pbi-skill/.claude your-project/.claude
 ```
 
@@ -288,6 +285,8 @@ All commits are local only — the skill never pushes to a remote.
 - [x] Single-skill architecture, one-liner install, parallel audit agents
 - [x] Auto-resume context, local-first git, expanded audit rules
 - [x] Deep mode guided workflow, project extraction (3 tiers)
+- [x] Python-first UTF-8, `/pbi docs`, context tracking
+- [x] Installer overhaul (`-Scope project|user`), token safety, `/pbi version`
 - [ ] Cross-measure dependency graph
 - [ ] Side-by-side measure comparison
 - [ ] Calculated column support

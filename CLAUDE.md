@@ -14,11 +14,11 @@ All commands are accessed via `/pbi [subcommand]` (e.g., `/pbi explain`, `/pbi a
 
 - **Paste-in** (work anywhere): explain, format, optimise, comment, error, new
 - **PBIP** (require `*.SemanticModel/` directory): load, audit, diff, commit, edit, undo, comment-batch, changelog, extract, docs
-- **Utility** (work anywhere): help
+- **Utility** (work anywhere): help, version
 
 ### Model selection
 
-- **Sonnet** (default): DAX reasoning subcommands — explain, format, optimise, comment, error, new, edit, comment-batch, audit, docs, help
+- **Sonnet** (default): DAX reasoning subcommands — explain, format, optimise, comment, error, new, edit, comment-batch, audit, docs, version, help
 - **Haiku** (via Agent spawn): file/git-heavy subcommands — load, diff, commit, undo, changelog; also extract simple tier
 - **Opus** (via Agent spawn): extract detailed tier (high token usage, deep analysis)
 
@@ -71,11 +71,13 @@ Desktop detection (`tasklist`) has been removed — file-mode commands always wr
     changelog.md        ← changelog generation (haiku)
     extract.md          ← project extraction (haiku/sonnet/opus by tier)
     docs.md             ← project documentation generator (sonnet)
+    version.md          ← version history display (sonnet)
     help.md             ← command reference (sonnet)
   scripts/
-    detect.py           ← Python detection + search utilities (UTF-8 safe)
+    detect.py           ← Python detection, search, HTML parsing, version check, gitignore (UTF-8 safe, 10 subcommands)
   shared/
     api-notes.md        ← DAX Formatter API reference
+    CHANGELOG.md        ← version history (read by /pbi version)
 ```
 
 ## Testing
