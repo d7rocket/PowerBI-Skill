@@ -16,28 +16,44 @@
   ╚═╝     ╚═════╝ ╚═╝   v4.3
 ```
 
+**Explain, format, optimise, audit, and edit DAX measures — directly from your terminal.**
+Works with pasted DAX *and* with Power BI Project (PBIP) files on disk.
+
 </div>
 
-<p align="center">
-  <strong>Explain, format, optimise, audit, and edit DAX measures — directly from your terminal.</strong><br>
-  Works with pasted DAX <em>and</em> with Power BI Project (PBIP) files on disk.
-</p>
+---
+
+## Quick Start
+
+```powershell
+# Install (Windows) — one command, all projects
+irm https://raw.githubusercontent.com/d7rocket/PowerBI-Skill/main/install.ps1 | iex
+
+# Then open Claude Code and type:
+/pbi
+```
+
+```bash
+# Install (macOS / Linux / WSL)
+curl -sL https://raw.githubusercontent.com/d7rocket/PowerBI-Skill/main/install.sh | bash
+```
 
 ---
 
 ## What's New in v4.3
 
-- **Python-first UTF-8** — all file operations use Python with `encoding='utf-8'`. French accented characters in model files are handled correctly. Zero grep/sed in any command.
-- **`/pbi docs`** — generate polished project documentation for stakeholders.
-- **`/pbi version`** — view full version history from within Claude Code (offline, no network calls).
-- **Context tracking** — progress bar estimates context usage, suggests `/clear` when running high.
-- **Installer overhaul** — `-Scope project|user` parameter, correct GitHub URL, all files included (detect.py, docs.md, CHANGELOG.md).
-- **Token safety** — chunked reading for large model.bim files prevents "file content exceeds 10K tokens" errors.
-- **10 detect.py subcommands** — search, html-parse, version-check, gitignore-check, and 6 detection commands.
+| Feature | Details |
+|:--------|:--------|
+| **Python-first UTF-8** | All file ops use Python with `encoding='utf-8'`. French accents handled correctly. Zero grep/sed. |
+| **`/pbi docs`** | Generate polished project documentation for stakeholders |
+| **`/pbi version`** | View full version history offline from within Claude Code |
+| **Context tracking** | Progress bar estimates context usage, suggests `/clear` when high |
+| **Installer overhaul** | `-Scope project\|user`, correct GitHub URL, all files included |
+| **Token safety** | Chunked reading for large model.bim files — no more 10K token errors |
 
 ---
 
-## What can it do?
+## Commands
 
 <table>
 <tr>
@@ -46,13 +62,13 @@
 ### Paste-in Commands
 *Work anywhere — just paste your DAX*
 
-| Command | Description |
+| Command | What it does |
 |:--------|:------------|
-| `/pbi explain` | Plain-English breakdown of any DAX measure |
+| `/pbi explain` | Plain-English breakdown of any measure |
 | `/pbi format` | Auto-format via DAX Formatter API |
-| `/pbi optimise` | 13-rule performance scan with side-by-side diff |
-| `/pbi comment` | Add inline `//` comments + description field |
-| `/pbi error` | Diagnose Power BI error messages (7 categories) |
+| `/pbi optimise` | 13-rule performance scan with diff |
+| `/pbi comment` | Add `//` comments + description field |
+| `/pbi error` | Diagnose errors (7 categories) |
 | `/pbi new` | Scaffold a measure from plain English |
 
 </td>
@@ -61,139 +77,110 @@
 ### PBIP Project Commands
 *Auto-detected when `*.SemanticModel/` exists*
 
-| Command | Description |
+| Command | What it does |
 |:--------|:------------|
-| `/pbi load` | Index your model (tables, measures, columns) |
-| `/pbi audit` | Full model health scan with auto-fix (19 rules) |
+| `/pbi audit` | Model health scan + auto-fix (19 rules) |
 | `/pbi edit` | Change your model with plain language |
+| `/pbi docs` | Project documentation for stakeholders |
+| `/pbi extract` | Export documentation (3 tiers) |
 | `/pbi diff` | Human-readable change summary |
-| `/pbi commit` | Auto-generated business-language commits |
+| `/pbi commit` | Business-language auto-commits |
 | `/pbi undo` | Revert the last auto-commit |
-| `/pbi comment-batch` | Comment every measure in a table |
 | `/pbi changelog` | Generate CHANGELOG from git history |
-| `/pbi extract` | Export project documentation (3 tiers) |
-| `/pbi docs` | Polished project documentation for stakeholders |
+| `/pbi comment-batch` | Comment every measure in a table |
 
 </td>
 </tr>
 </table>
 
-### Workflow & Utility Commands
-
-| Command | Description |
+| Command | What it does |
 |:--------|:------------|
-| `/pbi deep` | Guided multi-phase workflow: intake → model review → DAX development → verification |
+| `/pbi deep` | Guided workflow: intake &rarr; model review &rarr; DAX dev &rarr; verification |
 | `/pbi version` | Full version history with release notes |
-| `/pbi help` | Command reference with version check |
+| `/pbi help` | Command reference with update check |
 
 ---
 
-## Installation
+## How It Works
 
-Pick whichever method works for you. All options get you the same result: the `/pbi` skill ready to use in Claude Code.
-
-### Option 1 — PowerShell install (Windows)
-
-```powershell
-irm https://raw.githubusercontent.com/d7rocket/PowerBI-Skill/main/install.ps1 | iex
+```
+                 ┌─────────────────────────┐
+                 │   You type /pbi [cmd]    │
+                 └────────────┬────────────┘
+                              │
+                 ┌────────────▼────────────┐
+                 │    5 detection blocks    │
+                 │  PBIP? Format? Git? etc  │
+                 └────────────┬────────────┘
+                              │
+              ┌───────────────┼───────────────┐
+              │               │               │
+     ┌────────▼───────┐ ┌────▼────┐ ┌────────▼────────┐
+     │   Paste-in     │ │  PBIP   │ │   Workflow      │
+     │ explain format │ │ audit   │ │ deep extract    │
+     │ optimise new   │ │ edit    │ │ docs version    │
+     │ comment error  │ │ diff    │ │ help            │
+     │                │ │ commit  │ │                 │
+     │   Sonnet       │ │ Haiku   │ │   Sonnet/Opus   │
+     └────────────────┘ └─────────┘ └─────────────────┘
 ```
 
-This installs to your **user** profile (`~/.claude/skills/pbi/`) — available in all projects. To install into the current project only:
+| Feature | How |
+|:--------|:----|
+| **Auto-Resume** | Context loads automatically — no `/pbi load` needed |
+| **Local-First Git** | Never pulls, pushes, or creates PRs. Your files are the source of truth. |
+| **Session Memory** | `.pbi-context.md` persists model context, command history, failure flags |
+| **Smart Routing** | Sonnet for DAX reasoning, Haiku for file ops, Opus for deep extraction |
+| **UTF-8 Safe** | Python-based search handles French accents (e, e, c, a, u) |
+
+---
+
+## Installation Options
+
+### PowerShell (Windows)
 
 ```powershell
+# User-level (default) — available in all projects
+irm https://raw.githubusercontent.com/d7rocket/PowerBI-Skill/main/install.ps1 | iex
+
+# Project-level — installs into current directory only
 & ([scriptblock]::Create((irm https://raw.githubusercontent.com/d7rocket/PowerBI-Skill/main/install.ps1))) -Scope project
 ```
 
-### Option 2 — One-liner install (macOS / Linux / WSL)
+### Bash (macOS / Linux / WSL)
 
 ```bash
 curl -sL https://raw.githubusercontent.com/d7rocket/PowerBI-Skill/main/install.sh | bash
 ```
 
-### Option 3 — Manual download (any OS)
-
-1. Go to the [**Releases page**](https://github.com/d7rocket/PowerBI-Skill/releases) or click **Code > Download ZIP** on the repo
-2. Extract the ZIP
-3. Copy the `.claude` folder into your project root:
-
-```
-your-project/
-  .claude/
-    skills/
-      pbi/
-        SKILL.md
-        commands/
-        scripts/
-        shared/
-  ... your other files
-```
-
-That's it. Claude Code auto-discovers skills in `.claude/skills/`.
-
-### Option 4 — Git clone
+### Manual / Git Clone
 
 ```bash
 git clone https://github.com/d7rocket/PowerBI-Skill.git
-cd PowerBI-Skill
-claude
+cd PowerBI-Skill && claude
 ```
 
-Or clone and copy just the skill into an existing project:
+Or copy just the skill into an existing project:
 
 ```bash
 git clone https://github.com/d7rocket/PowerBI-Skill.git /tmp/pbi-skill
 cp -r /tmp/pbi-skill/.claude your-project/.claude
 ```
 
----
-
-## Getting Started
-
-**1.** Open Claude Code in your project directory
-
-**2.** Type `/pbi` — you'll see the command menu
-
-**3.** Try it out:
+<details>
+<summary>What gets installed</summary>
 
 ```
-/pbi explain
-
-> Revenue YTD = CALCULATE([Revenue], DATESYTD('Date'[Date]))
+.claude/skills/pbi/
+  SKILL.md              Router + detection blocks
+  commands/             19 command files (.md)
+  scripts/detect.py     UTF-8 detection + search (10 subcommands)
+  shared/
+    api-notes.md        DAX Formatter API reference
+    CHANGELOG.md        Version history
 ```
 
-Claude will break down exactly what the measure does — filter context, row context, context transitions, and performance notes.
-
-**4.** If you're in a PBIP project folder, context loads automatically — no setup needed.
-
----
-
-## How It Works
-
-| Mode | When | What happens |
-|:-----|:-----|:-------------|
-| **Paste-in** | No PBIP project | Paste DAX into chat, get results back |
-| **File mode** | `*.SemanticModel/` detected | Reads/writes TMDL or TMSL files directly, auto-commits changes |
-
-### Auto-Resume
-
-Every `/pbi` invocation automatically loads your project context. If `.pbi-context.md` has model context from a prior session, it's resumed instantly. If not, the skill auto-runs a lightweight load. No explicit `/pbi load` required.
-
-### Local-First Git
-
-All git operations are strictly local. The skill will **never** run `git pull`, `git push`, `git fetch`, or create pull requests. Your local files are always the source of truth. If you want to sync with a remote, you do it yourself outside the skill.
-
-### Session Memory
-
-Every command reads and writes `.pbi-context.md` at your project root. This gives Claude persistent memory across commands:
-
-- **Last command** and its outcome
-- **Command history** (rolling 20 entries)
-- **Model context** — tables, measures, columns, relationships
-- **Analyst-reported failures** — flag approaches that didn't work so Claude avoids repeating them
-
-### Smart Model Routing
-
-DAX reasoning commands run on **Sonnet** for analytical depth. File-heavy commands (load, diff, commit, undo, changelog) dispatch to **Haiku** agents for speed and lower cost. Deep extraction uses **Opus** for comprehensive analysis.
+</details>
 
 ---
 
@@ -204,8 +191,10 @@ DAX reasoning commands run on **Sonnet** for analytical depth. File-heavy comman
 
 ```
 /pbi explain
+
+> Revenue YTD = CALCULATE([Revenue], DATESYTD('Date'[Date]))
 ```
-Paste your DAX and get a structured breakdown — what it calculates, how filter context flows, and any performance considerations.
+Get a structured breakdown — filter context, row context, context transitions, and performance notes.
 </details>
 
 <details>
@@ -215,7 +204,7 @@ Paste your DAX and get a structured breakdown — what it calculates, how filter
 /pbi new
 > year-to-date revenue filtered to the selected region, in the Sales table
 ```
-Generates the DAX expression, format string, display folder, and description — and writes it to your PBIP files if a project is detected.
+Generates the DAX, format string, display folder, and description — writes to PBIP if detected.
 </details>
 
 <details>
@@ -224,7 +213,7 @@ Generates the DAX expression, format string, display folder, and description —
 ```
 /pbi audit
 ```
-Runs 8 domain passes across your model: relationships, naming conventions, date table, measure quality, hidden column hygiene, report layer, advanced features, and performance heuristics. Outputs a severity-graded report and offers to auto-fix issues.
+8 domain passes: relationships, naming, date table, measure quality, hidden columns, report layer, advanced features, performance. Severity-graded report with auto-fix.
 </details>
 
 <details>
@@ -234,16 +223,7 @@ Runs 8 domain passes across your model: relationships, naming conventions, date 
 /pbi edit
 > rename [Total Sales] to [Revenue] in the Sales table
 ```
-Claude finds the measure in your TMDL/TMSL files, applies the change, and auto-commits.
-</details>
-
-<details>
-<summary><strong>Format + Optimise</strong></summary>
-
-```
-/pbi format     # formats via DAX Formatter API
-/pbi optimise   # checks 13 performance rules, shows before/after
-```
+Finds the measure, applies the change, auto-commits.
 </details>
 
 <details>
@@ -252,7 +232,7 @@ Claude finds the measure in your TMDL/TMSL files, applies the change, and auto-c
 ```
 /pbi deep
 ```
-Guided multi-phase workflow: gathers business context, reviews your model for structural issues, then enters DAX development with full context awareness. Phase gates prevent skipping steps.
+Four-phase guided workflow with hard gates: business context intake, model review, DAX development, final verification.
 </details>
 
 <details>
@@ -260,33 +240,33 @@ Guided multi-phase workflow: gathers business context, reviews your model for st
 
 ```
 /pbi diff        # what changed since last commit
-/pbi commit      # auto-generated business-language commit message
+/pbi commit      # auto-generated business-language commit
 /pbi undo        # revert the last auto-commit
-/pbi changelog   # generate CHANGELOG.md from git history
+/pbi changelog   # generate CHANGELOG.md from history
 ```
-All commits are local only — the skill never pushes to a remote.
+All commits are local only.
 </details>
 
 ---
 
 ## Requirements
 
-- [**Claude Code**](https://docs.anthropic.com/en/claude-code) CLI installed
+- [**Claude Code**](https://docs.anthropic.com/en/claude-code) CLI
 - A Claude account (claude.ai or API key)
-- For PBIP commands: a Power BI project saved in [PBIP format](https://learn.microsoft.com/en-us/power-bi/developer/projects/projects-overview)
+- For PBIP commands: a project in [PBIP format](https://learn.microsoft.com/en-us/power-bi/developer/projects/projects-overview)
 
 ---
 
 ## Roadmap
 
-- [x] Paste-in DAX commands — explain, format, optimise, comment, error
-- [x] PBIP file I/O — load, audit, diff, commit, edit, undo
-- [x] New measure scaffolding, batch commenting, audit auto-fix, changelog
-- [x] Single-skill architecture, one-liner install, parallel audit agents
+- [x] Paste-in DAX commands (explain, format, optimise, comment, error)
+- [x] PBIP file I/O (load, audit, diff, commit, edit, undo)
+- [x] Measure scaffolding, batch commenting, audit auto-fix, changelog
+- [x] Single-skill router, one-liner install, parallel audit agents
 - [x] Auto-resume context, local-first git, expanded audit rules
-- [x] Deep mode guided workflow, project extraction (3 tiers)
+- [x] Deep mode workflow, project extraction (3 tiers)
 - [x] Python-first UTF-8, `/pbi docs`, context tracking
-- [x] Installer overhaul (`-Scope project|user`), token safety, `/pbi version`
+- [x] Installer overhaul, token safety, `/pbi version`
 - [ ] Cross-measure dependency graph
 - [ ] Side-by-side measure comparison
 - [ ] Calculated column support

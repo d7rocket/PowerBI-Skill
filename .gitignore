@@ -1,4 +1,23 @@
+# Power BI
 *.abf
+cache.abf
 localSettings.json
-.pbi-context.md
 SecurityBindings
+
+# PBI Skill session state
+.pbi-context.md
+
+# GSD planning artifacts
+.planning/
+
+# Python
+__pycache__/
+*.pyc
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+Thumbs.db
+.DS_Store
