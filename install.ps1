@@ -66,14 +66,15 @@ try {
 
 # Read version from downloaded SKILL.md (parses "  version: X.Y.Z" under metadata:)
 $versionLine = Get-Content (Join-Path $skillBase "SKILL.md") | Where-Object { $_ -match '^\s+version:' } | Select-Object -First 1
-$version = if ($versionLine) { ($versionLine -split ':\s+')[1].Trim() } else { "unknown" }
+$version = "unknown"
+if ($versionLine) { $version = ($versionLine -split ':\s+')[1].Trim() }
 
 # ── Download commands ───────────────────────────────────────────────
 Write-Host "  [2/4] Commands" -ForegroundColor Cyan
 $commands = @(
     "explain","format","optimise","comment","error","new",
     "load","audit","diff","commit","edit","undo",
-    "comment-batch","changelog","extract","deep","help","docs"
+    "comment-batch","changelog","extract","deep","help","docs","version"
 )
 $total = $commands.Count
 $i = 0
