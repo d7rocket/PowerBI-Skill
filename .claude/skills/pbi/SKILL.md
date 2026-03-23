@@ -5,7 +5,7 @@ license: MIT
 disable-model-invocation: true
 model: sonnet
 allowed-tools: Read, Write, Bash, Agent
-argument-hint: "[explain|format|optimise|comment|error|new|load|audit|diff|commit|edit|undo|comment-batch|changelog|deep|extract|docs|help]"
+argument-hint: "[explain|format|optimise|comment|error|new|load|audit|diff|commit|edit|undo|comment-batch|changelog|deep|extract|docs|help|version]"
 metadata:
   author: d7rocket
   version: 4.3.0
@@ -79,6 +79,7 @@ Parse `$ARGUMENTS` first word/keyword to determine the subcommand. Match against
 | extract, "project summary", "model summary", "export model" | commands/extract.md | sonnet direct |
 | docs, documentation, "generate docs", "document project", "project docs" | commands/docs.md | sonnet direct |
 | help, commands, "what can you do", "list commands" | commands/help.md | sonnet direct |
+| version, "version history", "what version" | commands/version.md | sonnet direct |
 | (no keyword match — free-text) | Solve-first handler (inline below) | sonnet direct |
 
 If intent is ambiguous between two commands: pick the most specific match and note it — "Routing to /pbi edit (you can also use /pbi comment if you only need to add comments)."
