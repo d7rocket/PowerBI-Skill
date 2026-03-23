@@ -34,7 +34,7 @@ Full phase details: `.planning/milestones/v1.1-ROADMAP.md`
 
 - [x] **Phase 5: Installer Overhaul** - Installer reliably installs all files with configurable scope (completed 2026-03-23)
 - [x] **Phase 6: Token Safety + UTF-8 Hardening** - No command file triggers token errors; all file ops use Python/UTF-8 (completed 2026-03-23)
-- [ ] **Phase 7: Version History Command** - `/pbi version` shows full version history from bundled changelog
+- [x] **Phase 7: Version History Command** - `/pbi version` shows full version history from bundled changelog (completed 2026-03-23)
 
 ## Phase Details
 
@@ -80,8 +80,8 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 07-01-PLAN.md — Create CHANGELOG.md (shared/) and version.md command file
-- [ ] 07-02-PLAN.md — Wire version keyword into SKILL.md routing table and add CHANGELOG.md to installer
+- [x] 07-01-PLAN.md — Create CHANGELOG.md (shared/) and version.md command file
+- [x] 07-02-PLAN.md — Wire version keyword into SKILL.md routing table and add CHANGELOG.md to installer
 
 ## Progress
 
@@ -93,4 +93,4 @@ Plans:
 | 4. Deep Mode Complete | v1.1 | 2/2 | Complete | 2026-03-14 |
 | 5. Installer Overhaul | v1.2 | 0/1 | Complete    | 2026-03-23 |
 | 6. Token Safety + UTF-8 Hardening | v1.2 | 5/5 | Complete    | 2026-03-23 |
-| 7. Version History Command | v1.2 | 0/2 | Not started | - |
+| 7. Version History Command | v1.2 | 2/2 | Complete   | 2026-03-23 |

@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: Quality & Distribution
-status: Ready to plan
-stopped_at: Phase 7 context gathered
-last_updated: "2026-03-23T18:59:03.734Z"
+status: Phase complete — ready for verification
+stopped_at: Completed 07-02-PLAN.md
+last_updated: "2026-03-23T19:20:01.646Z"
 progress:
   total_phases: 4
-  completed_phases: 3
-  total_plans: 8
-  completed_plans: 8
+  completed_phases: 4
+  total_plans: 10
+  completed_plans: 10
 ---
 
 # Project State
@@ -19,12 +19,12 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-23 after v1.2 milestone start)
 
 **Core value:** Never block a data analyst — solve immediately, interrogate only when stuck or asked
-**Current focus:** Phase 06 — Token Safety + UTF-8 Hardening
+**Current focus:** Phase 07 — Version History Command
 
 ## Current Position
 
-Phase: 7
-Plan: Not started
+Phase: 07 (Version History Command) — EXECUTING
+Plan: 2 of 2
 
 ## Performance Metrics
 
@@ -47,6 +47,7 @@ v1.2 phase grouping decision: TOKEN and UTF8 requirements merged into Phase 6 (c
 - [Phase 06-token-safety-utf-8-hardening]: detect.py search replaces grep -rlF in edit.md and comment.md; TMSL branches get offset/limit chunked-read guard at 2000-line threshold
 - [Phase 06-token-safety-utf-8-hardening]: Unquoted detect.py path in bash blocks (path space-free) preserves detect.py <subcommand> substring for verification
 - [Phase 06-token-safety-utf-8-hardening]: REMOTE_VER sed calls retained in help.md — ASCII-safe git tag processing, out of UTF8-03 scope
+- [Phase 07]: version row inserted before catch-all in SKILL.md routing table; CHANGELOG.md added to install.ps1 as non-critical download
 
 ### Pending Todos
 
@@ -58,6 +59,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-23T18:59:03.729Z
-Stopped at: Phase 7 context gathered
-Resume file: .planning/phases/07-version-history-command/07-CONTEXT.md
+Last session: 2026-03-23T19:19:53.824Z
+Stopped at: Completed 07-02-PLAN.md
+Resume file: None

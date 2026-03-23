@@ -27,8 +27,8 @@ Requirements for milestone v1.2: Quality & Distribution.
 
 ### Version History
 
-- [ ] **HIST-01**: `/pbi version` command displays full version history from bundled CHANGELOG.md
-- [ ] **HIST-02**: CHANGELOG.md file included in skill distribution with all versions documented
+- [x] **HIST-01**: `/pbi version` command displays full version history from bundled CHANGELOG.md
+- [x] **HIST-02**: CHANGELOG.md file included in skill distribution with all versions documented
 
 ## Future Requirements
 
@@ -57,8 +57,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | UTF8-01 | Phase 6 | Complete |
 | UTF8-02 | Phase 6 | Complete |
 | UTF8-03 | Phase 6 | Complete |
-| HIST-01 | Phase 7 | Pending |
-| HIST-02 | Phase 7 | Pending |
+| HIST-01 | Phase 7 | Complete |
+| HIST-02 | Phase 7 | Complete |
 
 **Coverage:**
 - v1.2 requirements: 11 total
