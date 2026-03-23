@@ -48,23 +48,23 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| INST-01 | — | Pending |
-| INST-02 | — | Pending |
-| INST-03 | — | Pending |
-| INST-04 | — | Pending |
-| TOKEN-01 | — | Pending |
-| TOKEN-02 | — | Pending |
-| UTF8-01 | — | Pending |
-| UTF8-02 | — | Pending |
-| UTF8-03 | — | Pending |
-| HIST-01 | — | Pending |
-| HIST-02 | — | Pending |
+| INST-01 | Phase 5 | Pending |
+| INST-02 | Phase 5 | Pending |
+| INST-03 | Phase 5 | Pending |
+| INST-04 | Phase 5 | Pending |
+| TOKEN-01 | Phase 6 | Pending |
+| TOKEN-02 | Phase 6 | Pending |
+| UTF8-01 | Phase 6 | Pending |
+| UTF8-02 | Phase 6 | Pending |
+| UTF8-03 | Phase 6 | Pending |
+| HIST-01 | Phase 7 | Pending |
+| HIST-02 | Phase 7 | Pending |
 
 **Coverage:**
 - v1.2 requirements: 11 total
-- Mapped to phases: 0
-- Unmapped: 11 ⚠️
+- Mapped to phases: 11
+- Unmapped: 0 ✓
 
 ---
 *Requirements defined: 2026-03-23*
-*Last updated: 2026-03-23 after initial definition*
+*Last updated: 2026-03-23 after roadmap creation (phases 5-7 assigned)*
