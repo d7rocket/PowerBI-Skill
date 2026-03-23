@@ -15,7 +15,7 @@ $cmdsDir    = Join-Path $skillBase "commands"
 $scriptsDir = Join-Path $skillBase "scripts"
 $sharedDir  = Join-Path $skillBase "shared"
 
-$base = "https://raw.githubusercontent.com/d7rocket/PBI-SKILL/main"
+$base = "https://raw.githubusercontent.com/d7rocket/PowerBI-Skill/main"
 $isUpdate = Test-Path $skillBase
 
 # ── Banner ──────────────────────────────────────────────────────────
