@@ -36,11 +36,11 @@ If the fix targets a specific measure expression (Category A name errors with a 
    Note: Only ask this confirmation if the measure name was not explicitly provided in the error text. If the error clearly names the failing measure (e.g. "The name '[Revenue YTD]' does not exist"), use that name directly without asking — proceed straight to step 2.
 
 2. Locate the measure file:
-   **TMDL:** `grep -rlF "[MeasureName]" "$PBIP_DIR/definition/tables/" 2>/dev/null`
+   **TMDL:** `python ".claude/skills/pbi/scripts/detect.py" search "[MeasureName]" "$PBIP_DIR" 2>/dev/null`
    - Multiple matches: "Measure found in multiple tables: [list]. Which table? Type the table name."
    - No match: "Measure [Name] not found in PBIP project — fix is paste-ready for manual application." Stop.
    - One match: proceed.
-   **TMSL:** Read `$PBIP_DIR/model.bim`. Locate measure object by name. If not found: same not-found message.
+   **TMSL:** Read `$PBIP_DIR/model.bim` using the Read tool. If model.bim is >2000 lines, use offset/limit parameters to read in chunks of 1000 lines — read the full file before searching. Locate measure object by name. If not found: same not-found message.
 
 3. Read the identified file (Read tool).
 
