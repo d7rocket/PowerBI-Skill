@@ -68,7 +68,7 @@ Plans:
 - [ ] 06-02-PLAN.md — Replace grep in edit.md + comment.md; add TMSL chunked-read guard
 - [ ] 06-03-PLAN.md — Replace grep in error.md + new.md; add TMSL chunked-read guard
 - [ ] 06-04-PLAN.md — Replace grep/sed in format.md + help.md + diff.md with detect.py calls
-- [ ] 06-05-PLAN.md — Add TMSL chunked-read guard to load.md
+- [x] 06-05-PLAN.md — Add TMSL chunked-read guard to load.md
 
 ### Phase 7: Version History Command
 **Goal**: Users can see the full skill version history from within Claude Code without leaving the session

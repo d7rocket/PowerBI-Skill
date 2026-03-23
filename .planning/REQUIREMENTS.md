@@ -16,8 +16,8 @@ Requirements for milestone v1.2: Quality & Distribution.
 
 ### Token Management
 
-- [ ] **TOKEN-01**: No command file triggers "file content exceeds 10K tokens" during skill execution
-- [ ] **TOKEN-02**: Large command files (audit, optimise, error, comment) are trimmed or restructured to stay within limits
+- [x] **TOKEN-01**: No command file triggers "file content exceeds 10K tokens" during skill execution
+- [x] **TOKEN-02**: Large command files (audit, optimise, error, comment) are trimmed or restructured to stay within limits
 
 ### UTF-8 Safety
 
@@ -52,8 +52,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | INST-02 | Phase 5 | Pending |
 | INST-03 | Phase 5 | Pending |
 | INST-04 | Phase 5 | Pending |
-| TOKEN-01 | Phase 6 | Pending |
-| TOKEN-02 | Phase 6 | Pending |
+| TOKEN-01 | Phase 6 | Complete |
+| TOKEN-02 | Phase 6 | Complete |
 | UTF8-01 | Phase 6 | Pending |
 | UTF8-02 | Phase 6 | Complete |
 | UTF8-03 | Phase 6 | Complete |
