@@ -93,4 +93,4 @@ Plans:
 | 4. Deep Mode Complete | v1.1 | 2/2 | Complete | 2026-03-14 |
 | 5. Installer Overhaul | v1.2 | 0/1 | Complete    | 2026-03-23 |
 | 6. Token Safety + UTF-8 Hardening | v1.2 | 5/5 | Complete    | 2026-03-23 |
-| 7. Version History Command | v1.2 | 2/2 | Complete   | 2026-03-23 |
+| 7. Version History Command | v1.2 | 2/2 | Complete    | 2026-03-23 |
