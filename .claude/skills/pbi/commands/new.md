@@ -181,7 +181,7 @@ If PBIP_MODE=file:
 If the analyst did not specify a table, ask: "Which table should this measure be added to?"
 
 **If PBIP_FORMAT=tmdl:**
-1. Run bash: `grep -rlF "table " "$PBIP_DIR/definition/tables/" 2>/dev/null` to verify the target table file exists.
+1. Run bash: `python ".claude/skills/pbi/scripts/detect.py" search "table " "$PBIP_DIR" 2>/dev/null` to verify the target table file exists. If no output is returned, the table was not found — output "Table [TableName] not found in $PBIP_DIR/definition/tables/. Check the table name and try again." and stop.
 2. Read the target `.tmdl` file using the Read tool.
 3. Locate the insertion point: after the last existing `measure` block (before the trailing blank line or end of measure section). If no measures exist, insert after the last `column` block.
 4. Scaffold the TMDL block using the file's existing indentation (tabs):
@@ -196,7 +196,7 @@ If the analyst did not specify a table, ask: "Which table should this measure be
 6. Output: "Written to: [Measure Name] in [file path]"
 
 **If PBIP_FORMAT=tmsl:**
-1. Read `$PBIP_DIR/model.bim` using the Read tool.
+1. Read `$PBIP_DIR/model.bim` using the Read tool. If model.bim is >2000 lines, use offset/limit parameters to read in chunks of 1000 lines — read the full file before locating the target table's measures array.
 2. Find the target table's `"measures"` array. If no `"measures"` array exists, create one.
 3. Append a new measure JSON object:
 ```json
