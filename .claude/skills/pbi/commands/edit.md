@@ -37,13 +37,17 @@ If change type is `update-expression`:
 **If PBIP_FORMAT=tmdl:**
 Run bash:
 ```bash
-grep -rlF "[EntityName]" "$PBIP_DIR/definition/tables/" 2>/dev/null
+python ".claude/skills/pbi/scripts/detect.py" search "[EntityName]" "$PBIP_DIR" 2>/dev/null
 ```
 (Replace [EntityName] with the extracted name — omit brackets if present)
 
-- **Zero results**: Run `grep -r "measure " "$PBIP_DIR/definition/tables/" 2>/dev/null` to list all measure names. Compare requested name to the list using common-typo reasoning. Output up to 3 candidates: "No measure named [RequestedName] found. Did you mean: [Candidate1] (Table1), [Candidate2] (Table1)?" Wait for clarification or stop.
+- **Zero results**: Run bash:
+  ```bash
+  python ".claude/skills/pbi/scripts/detect.py" search "measure " "$PBIP_DIR" 2>/dev/null
+  ```
+  Read each returned file to list measure names. Compare requested name to the list using common-typo reasoning. Output up to 3 candidates: "No measure named [RequestedName] found. Did you mean: [Candidate1] (Table1), [Candidate2] (Table1)?" Wait for clarification or stop.
 - **One result**: Proceed to Step 3 with this file.
-- **Multiple results**: Output: "Found [EntityName] in: [Table1], [Table2], [Table3]. Which table?" Wait for analyst to specify, then re-run grep scoped to that table's file.
+- **Multiple results**: Output: "Found [EntityName] in: [Table1], [Table2], [Table3]. Which table?" Wait for analyst to specify, then re-run the search scoped to that table's file.
 
 If change type is `add` (new entity creation):
   - Confirm the target table file exists under `$PBIP_DIR/definition/tables/[TableName].tmdl`.
@@ -51,7 +55,7 @@ If change type is `add` (new entity creation):
   - If found: proceed directly to Step 3.
 
 **If PBIP_FORMAT=tmsl:**
-Read `$PBIP_DIR/model.bim` (Read tool). Search the JSON `"measures"` arrays for `"name"` matching EntityName.
+Read `$PBIP_DIR/model.bim` using the Read tool. If model.bim is >2000 lines, use offset/limit parameters to read in chunks of 1000 lines — read the full file across multiple reads before searching. Search the JSON `"measures"` arrays for `"name"` matching EntityName.
 - Zero matches → fuzzy-match; output up to 3 candidates.
 - One match → proceed to Step 3.
 - Multiple matches → list tables and ask.
