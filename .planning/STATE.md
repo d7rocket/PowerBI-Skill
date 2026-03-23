@@ -4,13 +4,13 @@ milestone: v1.2
 milestone_name: Quality & Distribution
 status: planning
 stopped_at: Phase 5 context gathered
-last_updated: "2026-03-23T17:35:58.912Z"
-last_activity: 2026-03-23 — v1.2 roadmap created, 3 phases (5-7), 11/11 requirements mapped
+last_updated: "2026-03-23T17:57:07.201Z"
+last_activity: 2026-03-23
 progress:
   total_phases: 3
-  completed_phases: 1
-  total_plans: 2
-  completed_plans: 2
+  completed_phases: 2
+  total_plans: 3
+  completed_plans: 3
   percent: 0
 ---
 
@@ -25,10 +25,10 @@ See: .planning/PROJECT.md (updated 2026-03-23 after v1.2 milestone start)
 
 ## Current Position
 
-Phase: 5 of 7 (Installer Overhaul)
-Plan: — of — in current phase
+Phase: 6 of 7 (token safety + utf 8 hardening)
+Plan: Not started
 Status: Ready to plan
-Last activity: 2026-03-23 — v1.2 roadmap created, 3 phases (5-7), 11/11 requirements mapped
+Last activity: 2026-03-23
 
 Progress: [░░░░░░░░░░] 0%
 

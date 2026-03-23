@@ -32,7 +32,7 @@ Full phase details: `.planning/milestones/v1.1-ROADMAP.md`
 
 **Milestone Goal:** Fix installer reliability, eliminate token overflow, enforce Python-first file ops, and add version history command.
 
-- [ ] **Phase 5: Installer Overhaul** - Installer reliably installs all files with configurable scope
+- [x] **Phase 5: Installer Overhaul** - Installer reliably installs all files with configurable scope (completed 2026-03-23)
 - [ ] **Phase 6: Token Safety + UTF-8 Hardening** - No command file triggers token errors; all file ops use Python/UTF-8
 - [ ] **Phase 7: Version History Command** - `/pbi version` shows full version history from bundled changelog
 
@@ -80,6 +80,6 @@ Plans:
 | 2. Context-Aware DAX | v1.0 | 5/5 | Complete | 2026-03-14 |
 | 3. Context Field Fixes | v1.1 | 2/2 | Complete | 2026-03-14 |
 | 4. Deep Mode Complete | v1.1 | 2/2 | Complete | 2026-03-14 |
-| 5. Installer Overhaul | v1.2 | 0/1 | Not started | - |
+| 5. Installer Overhaul | v1.2 | 0/1 | Complete    | 2026-03-23 |
 | 6. Token Safety + UTF-8 Hardening | v1.2 | 0/? | Not started | - |
 | 7. Version History Command | v1.2 | 0/? | Not started | - |
