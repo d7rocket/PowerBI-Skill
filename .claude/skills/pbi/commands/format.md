@@ -4,7 +4,7 @@
 > DAX Formatter API reference is in `shared/api-notes.md` (read if needed).
 
 ## Format API Status
-!`curl -s -L -X POST "https://www.daxformatter.com" -d "fx=1%2B1&r=US&embed=1" --max-time 5 2>/dev/null | grep -q 'formatted' && echo "API_OK" || echo "API_FAIL"`
+!`TMPCHECK=$(mktemp); curl -s -L -X POST "https://www.daxformatter.com" -d "fx=1%2B1&r=US&embed=1" --max-time 5 -o "$TMPCHECK" 2>/dev/null; python3 -c "import sys; d=open('$TMPCHECK','r',errors='replace').read(); print('API_OK' if 'formatted' in d else 'API_FAIL')"; rm -f "$TMPCHECK"`
 
 ## Instructions
 
@@ -48,21 +48,16 @@ Use the Bash tool to call the DAX Formatter API. To avoid shell injection from D
 
 ```bash
 TMPFILE=$(mktemp)
+TMPHTML=$(mktemp)
 cat > "$TMPFILE" <<'ENDDAX'
 PASTE_MEASURE_HERE
 ENDDAX
 curl -s -L -X POST "https://www.daxformatter.com" \
   --data-urlencode "fx@$TMPFILE" \
   -d "r=US&embed=1" \
-  --max-time 5 2>/dev/null | \
-  grep -o '<div class="formatted"[^>]*>.*</div>' | \
-  sed 's/<div class="formatted"[^>]*>//g' | \
-  sed 's/<\/div>.*//g' | \
-  sed 's/<br>/\n/g' | \
-  sed 's/<span[^>]*>//g' | \
-  sed 's/<\/span>//g' | \
-  sed 's/&nbsp;/ /g'
-rm -f "$TMPFILE"
+  --max-time 5 -o "$TMPHTML" 2>/dev/null
+python ".claude/skills/pbi/scripts/detect.py" html-parse "$TMPHTML"
+rm -f "$TMPFILE" "$TMPHTML"
 ```
 
 Replace `PASTE_MEASURE_HERE` with the actual measure text the analyst pasted (between the `<<'ENDDAX'` and `ENDDAX` lines — the single-quoted delimiter prevents shell expansion). The output of this command is the formatted DAX string. Present it in a fenced `dax` code block.
