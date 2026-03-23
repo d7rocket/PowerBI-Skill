@@ -34,7 +34,20 @@ Never block a data analyst — solve immediately, interrogate only when stuck or
 
 ### Active
 
-None — all known requirements are validated.
+- [ ] Installer reliably installs/updates all skill files with per-project vs user-level scope choice (INST-01–04)
+- [ ] Large command files stay under token limits during skill execution (TOKEN-01–02)
+- [ ] All file operations use Python with UTF-8 encoding — no grep/sed on model files (UTF8-01–03)
+- [ ] `/pbi version` command shows full version history from bundled changelog (HIST-01)
+
+## Current Milestone: v1.2 Quality & Distribution
+
+**Goal:** Fix installer reliability, eliminate token overflow, enforce Python-first file ops, and add version history command.
+
+**Target features:**
+- Reworked installer with `-Scope project|user` parameter, all files included, version read from SKILL.md
+- Token management for large command files
+- Replace remaining grep/sed with Python for UTF-8 safety
+- New `/pbi version` command with bundled CHANGELOG.md
 
 ### Out of Scope
 
@@ -45,11 +58,11 @@ None — all known requirements are validated.
 
 ## Context
 
-**Shipped v1.1** with 4 phases, 11 plans total, ~3,200 LOC across skill markdown files.
+**Shipped v1.1** with 4 phases, 11 plans total, ~3,200 LOC across skill markdown files. Current version: v4.3.0.
 
-**Tech stack:** Claude Code skill markdown, `.pbi-context.md` for session state, TMDL/TMSL file support.
+**Tech stack:** Claude Code skill markdown, `.pbi-context.md` for session state, TMDL/TMSL file support, Python detection script (`detect.py`).
 
-**v1.1 outcome:** All three Priority 1 cross-phase `.pbi-context.md` field bugs closed. Deep mode fully implemented with four-phase workflow (Phase A intake → Phase B model review → Phase C DAX development → Phase D final verification), hard gates at each phase boundary, context re-injection, and 8 acceptance scenarios.
+**v1.2 drivers:** install.ps1 is out of sync (v4.1.0 vs SKILL.md v4.3.0), missing `docs.md` and `detect.py` from download list. Several command files (audit 16KB, optimise 14KB, error 13KB) trigger 10K token errors. Four commands still use `grep -rlF` instead of `detect.py search` for measure lookups. French accented characters in model files require consistent Python/UTF-8 handling.
 
 **Pending verification:** pbi-error file-mode live tests (ERR-03/INFRA-06) deferred until Power BI Desktop available. No implementation gap — same pattern as verified pbi-comment.
 
@@ -76,5 +89,22 @@ None — all known requirements are validated.
 | Gate tokens: `continue`/`cancel` mid-session, `confirm`/`cancel` terminal | Differentiates mid-session phase advance from final session close | ✓ Good — clear semantic difference for users |
 | Model review scope: described context only, no file reads | Phase B should be fast and conversational; file-level audit is `/pbi audit` | ✓ Good — non-blocking, routes users to right tool for deep analysis |
 
+## Evolution
+
+This document evolves at phase transitions and milestone boundaries.
+
+**After each phase transition** (via `/gsd:transition`):
+1. Requirements invalidated? → Move to Out of Scope with reason
+2. Requirements validated? → Move to Validated with phase reference
+3. New requirements emerged? → Add to Active
+4. Decisions to log? → Add to Key Decisions
+5. "What This Is" still accurate? → Update if drifted
+
+**After each milestone** (via `/gsd:complete-milestone`):
+1. Full review of all sections
+2. Core Value check — still the right priority?
+3. Audit Out of Scope — reasons still valid?
+4. Update Context with current state
+
 ---
-*Last updated: 2026-03-14 after v1.1 milestone*
+*Last updated: 2026-03-23 after v1.2 milestone start*
