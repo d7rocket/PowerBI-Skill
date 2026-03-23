@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: Quality & Distribution
 status: Phase complete — ready for verification
-stopped_at: Completed 07-02-PLAN.md
-last_updated: "2026-03-23T19:20:01.646Z"
+stopped_at: Completed 07-01-PLAN.md
+last_updated: "2026-03-23T19:20:15.862Z"
 progress:
   total_phases: 4
   completed_phases: 4
@@ -48,6 +48,7 @@ v1.2 phase grouping decision: TOKEN and UTF8 requirements merged into Phase 6 (c
 - [Phase 06-token-safety-utf-8-hardening]: Unquoted detect.py path in bash blocks (path space-free) preserves detect.py <subcommand> substring for verification
 - [Phase 06-token-safety-utf-8-hardening]: REMOTE_VER sed calls retained in help.md — ASCII-safe git tag processing, out of UTF8-03 scope
 - [Phase 07]: version row inserted before catch-all in SKILL.md routing table; CHANGELOG.md added to install.ps1 as non-critical download
+- [Phase 07-version-history-command]: CHANGELOG.md bundled in shared/ directory for fully offline /pbi version command — no network dependency at runtime
 
 ### Pending Todos
 
@@ -59,6 +60,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-23T19:19:53.824Z
-Stopped at: Completed 07-02-PLAN.md
+Last session: 2026-03-23T19:20:15.858Z
+Stopped at: Completed 07-01-PLAN.md
 Resume file: None
