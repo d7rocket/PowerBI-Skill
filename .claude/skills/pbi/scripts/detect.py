@@ -9,6 +9,9 @@ Usage:
     python detect.py context   — Read last 80 lines of .pbi-context.md
     python detect.py nearby    — Check parent directories for a PBIP project
     python detect.py search <name> <pbip_dir>  — Find files containing measure name
+    python detect.py html-parse <tmpfile>  — Strip DAX Formatter HTML to clean DAX text
+    python detect.py version-check <skill_file>  — Read version from SKILL.md frontmatter
+    python detect.py gitignore-check  — Ensure .gitignore contains all noise-file entries
 """
 import sys
 import os
@@ -137,6 +140,91 @@ def search_measure(name, pbip_dir):
             pass
 
 
+def html_parse(tmpfile):
+    """Strip DAX Formatter HTML response to clean DAX text.
+
+    Replicates the grep/sed pipeline from format.md:
+      grep -o '<div class="formatted"[^>]*>.*</div>'
+      sed strip div tags, <br>->newline, strip spans, &nbsp;->space
+    UTF-8 safe — handles accented DAX identifiers.
+    """
+    import re
+    try:
+        with open(tmpfile, 'r', encoding='utf-8') as f:
+            html = f.read()
+    except (OSError, IOError):
+        return  # Silent — format.md API_FAIL branch handles empty output
+
+    # Extract content inside <div class="formatted"...>...</div>
+    m = re.search(r'<div class="formatted"[^>]*>(.*?)</div>', html, re.DOTALL)
+    if not m:
+        return  # Silent empty — triggers API_FAIL fallback in format.md
+
+    text = m.group(1)
+    # Replace <br> with newlines
+    text = re.sub(r'<br\s*/?>', '\n', text, flags=re.IGNORECASE)
+    # Strip all span tags (opening and closing)
+    text = re.sub(r'<span[^>]*>', '', text)
+    text = re.sub(r'</span>', '', text)
+    # Convert &nbsp; to regular space
+    text = text.replace('&nbsp;', ' ')
+    # Strip the outer div tags (already extracted via group(1), but clean residual tags)
+    text = re.sub(r'<[^>]+>', '', text)
+    # Print each line stripped of trailing whitespace
+    for line in text.split('\n'):
+        print(line.rstrip())
+
+
+def version_check(skill_file):
+    """Read version from SKILL.md YAML frontmatter.
+
+    Replaces: grep -m1 '^version:' "$SKILL_FILE" | sed 's/version: *//'
+    Handles both top-level 'version:' and indented 'version:' (e.g., under metadata:).
+    Prints: LOCAL=<version>
+    """
+    try:
+        with open(skill_file, 'r', encoding='utf-8') as f:
+            for line in f:
+                stripped = line.strip()
+                if stripped.startswith('version:'):
+                    ver = stripped[len('version:'):].strip()
+                    print('LOCAL=' + ver)
+                    return
+    except (OSError, IOError):
+        pass
+    print('LOCAL=unknown')
+
+
+def gitignore_check():
+    """Ensure four noise-file entries exist in .gitignore.
+
+    Replaces grep/append pipeline in diff.md Step 1.
+    Entries required: *.abf, localSettings.json, .pbi-context.md, SecurityBindings
+    Prints GITIGNORE_OK when done.
+    """
+    required = ['*.abf', 'localSettings.json', '.pbi-context.md', 'SecurityBindings']
+    existing_lines = []
+    try:
+        with open('.gitignore', 'r', encoding='utf-8') as f:
+            existing_lines = f.readlines()
+    except FileNotFoundError:
+        pass  # Will create below
+
+    existing_text = ''.join(existing_lines)
+    to_add = []
+    for entry in required:
+        # Match *.abf also catches cache.abf since we add *.abf
+        if entry not in existing_text:
+            to_add.append(entry)
+
+    if to_add:
+        with open('.gitignore', 'a', encoding='utf-8') as f:
+            for entry in to_add:
+                f.write(entry + '\n')
+
+    print('GITIGNORE_OK')
+
+
 if __name__ == '__main__':
     if len(sys.argv) < 2:
         print('Usage: detect.py [pbip|files|pbir|git|context|nearby|search]', file=sys.stderr)
@@ -157,6 +245,12 @@ if __name__ == '__main__':
         detect_nearby()
     elif cmd == 'search' and len(sys.argv) >= 4:
         search_measure(sys.argv[2], sys.argv[3])
+    elif cmd == 'html-parse' and len(sys.argv) >= 3:
+        html_parse(sys.argv[2])
+    elif cmd == 'version-check' and len(sys.argv) >= 3:
+        version_check(sys.argv[2])
+    elif cmd == 'gitignore-check':
+        gitignore_check()
     else:
         print('Unknown command: ' + cmd, file=sys.stderr)
         sys.exit(1)
