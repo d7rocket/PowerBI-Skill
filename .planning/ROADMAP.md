@@ -61,7 +61,14 @@ Plans:
   2. Measure search in `edit.md`, `comment.md`, `error.md`, and `new.md` uses `detect.py search` — no `grep -rlF` calls remain in those files
   3. `format.md` HTML response parsing uses a Python script instead of a grep/sed pipeline
   4. `help.md` version check reads SKILL.md version via Python instead of grep/sed
-**Plans**: TBD
+**Plans**: 5 plans
+
+Plans:
+- [ ] 06-01-PLAN.md — Expand detect.py: add html-parse, version-check, gitignore-check subcommands
+- [ ] 06-02-PLAN.md — Replace grep in edit.md + comment.md; add TMSL chunked-read guard
+- [ ] 06-03-PLAN.md — Replace grep in error.md + new.md; add TMSL chunked-read guard
+- [ ] 06-04-PLAN.md — Replace grep/sed in format.md + help.md + diff.md with detect.py calls
+- [ ] 06-05-PLAN.md — Add TMSL chunked-read guard to load.md
 
 ### Phase 7: Version History Command
 **Goal**: Users can see the full skill version history from within Claude Code without leaving the session
@@ -81,5 +88,5 @@ Plans:
 | 3. Context Field Fixes | v1.1 | 2/2 | Complete | 2026-03-14 |
 | 4. Deep Mode Complete | v1.1 | 2/2 | Complete | 2026-03-14 |
 | 5. Installer Overhaul | v1.2 | 0/1 | Complete    | 2026-03-23 |
-| 6. Token Safety + UTF-8 Hardening | v1.2 | 0/? | Not started | - |
+| 6. Token Safety + UTF-8 Hardening | v1.2 | 0/5 | Not started | - |
 | 7. Version History Command | v1.2 | 0/? | Not started | - |
