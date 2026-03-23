@@ -130,11 +130,15 @@ curl -sL https://raw.githubusercontent.com/d7rocket/PowerBI-Skill/main/install.s
 
 ### PowerShell (Windows)
 
-```powershell
-# User-level (default) — available in all projects
-irm https://raw.githubusercontent.com/d7rocket/PowerBI-Skill/main/install.ps1 | iex
+User-level (default) — available in all projects:
 
-# Project-level — installs into current directory only
+```powershell
+irm https://raw.githubusercontent.com/d7rocket/PowerBI-Skill/main/install.ps1 | iex
+```
+
+Project-level — installs into current directory only:
+
+```powershell
 & ([scriptblock]::Create((irm https://raw.githubusercontent.com/d7rocket/PowerBI-Skill/main/install.ps1))) -Scope project
 ```
 
