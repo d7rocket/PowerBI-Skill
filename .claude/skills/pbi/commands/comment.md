@@ -21,7 +21,10 @@ If PBIP_MODE=file:
 Use the measure name extracted in Step 2 as the search key.
 
 **If PBIP_FORMAT=tmdl:**
-1. Run bash: `grep -rlF "[MeasureName]" "$PBIP_DIR/definition/tables/" 2>/dev/null`
+1. Run bash:
+   ```bash
+   python ".claude/skills/pbi/scripts/detect.py" search "[MeasureName]" "$PBIP_DIR" 2>/dev/null
+   ```
    - Replace [MeasureName] with the actual extracted measure name.
    - If multiple files returned: output "Measure [Name] found in multiple tables: [list]. Use --table TableName to specify which one." Deliver paste-ready output only. Stop write-back.
    - If no file returned: output "Measure [Name] not found in PBIP project — output is paste-ready for manual addition." Stop write-back.
@@ -53,7 +56,7 @@ Use the measure name extracted in Step 2 as the search key.
    - AUTO_COMMIT=fail: do not output anything (git failure is non-fatal; file write succeeded)
 
 **If PBIP_FORMAT=tmsl:**
-1. Read `$PBIP_DIR/model.bim` using the Read tool.
+1. Read `$PBIP_DIR/model.bim` using the Read tool. If model.bim is >2000 lines, use offset/limit parameters to read in chunks of 1000 lines — read the full file across multiple reads before locating the measure.
 2. Locate the measure JSON object where `"name"` equals the extracted measure name.
    - If not found: output "Measure [Name] not found in PBIP project — output is paste-ready for manual addition." Stop write-back.
 3. Update the measure object:
