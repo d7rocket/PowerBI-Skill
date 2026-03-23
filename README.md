@@ -55,49 +55,40 @@ curl -sL https://raw.githubusercontent.com/d7rocket/PowerBI-Skill/main/install.s
 
 ## Commands
 
-<table>
-<tr>
-<td width="50%" valign="top">
-
-### Paste-in Commands
-*Work anywhere — just paste your DAX*
+### Paste-in — *work anywhere, just paste your DAX*
 
 | Command | What it does |
 |:--------|:------------|
-| `/pbi explain` | Plain-English breakdown of any measure |
-| `/pbi format` | Auto-format via DAX Formatter API |
-| `/pbi optimise` | 13-rule performance scan with diff |
-| `/pbi comment` | Add `//` comments + description field |
-| `/pbi error` | Diagnose errors (7 categories) |
-| `/pbi new` | Scaffold a measure from plain English |
+| `explain` | Plain-English breakdown |
+| `format` | Auto-format via DAX Formatter API |
+| `optimise` | 13-rule performance scan with diff |
+| `comment` | Add `//` comments + description |
+| `error` | Diagnose errors (7 categories) |
+| `new` | Scaffold a measure from plain English |
 
-</td>
-<td width="50%" valign="top">
-
-### PBIP Project Commands
-*Auto-detected when `*.SemanticModel/` exists*
+### PBIP Project — *auto-detected when `*.SemanticModel/` exists*
 
 | Command | What it does |
 |:--------|:------------|
-| `/pbi audit` | Model health scan + auto-fix (19 rules) |
-| `/pbi edit` | Change your model with plain language |
-| `/pbi docs` | Project documentation for stakeholders |
-| `/pbi extract` | Export documentation (3 tiers) |
-| `/pbi diff` | Human-readable change summary |
-| `/pbi commit` | Business-language auto-commits |
-| `/pbi undo` | Revert the last auto-commit |
-| `/pbi changelog` | Generate CHANGELOG from git history |
-| `/pbi comment-batch` | Comment every measure in a table |
+| `audit` | Model health scan + auto-fix (19 rules) |
+| `edit` | Change your model with plain language |
+| `docs` | Project documentation for stakeholders |
+| `extract` | Export documentation (3 tiers) |
+| `diff` | Human-readable change summary |
+| `commit` | Business-language auto-commits |
+| `undo` | Revert the last auto-commit |
+| `changelog` | Generate CHANGELOG from git history |
+| `comment-batch` | Comment every measure in a table |
 
-</td>
-</tr>
-</table>
+### Workflow & Utility
 
 | Command | What it does |
 |:--------|:------------|
-| `/pbi deep` | Guided workflow: intake &rarr; model review &rarr; DAX dev &rarr; verification |
-| `/pbi version` | Full version history with release notes |
-| `/pbi help` | Command reference with update check |
+| `deep` | Guided workflow: intake, model review, DAX dev, verification |
+| `version` | Full version history with release notes |
+| `help` | Command reference with update check |
+
+> All commands are invoked as `/pbi <command>` — e.g. `/pbi audit`
 
 ---
 
