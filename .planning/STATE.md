@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: Quality & Distribution
-status: Ready to execute
-stopped_at: Completed 06-03-PLAN.md
-last_updated: "2026-03-23T18:44:26.010Z"
+status: Phase complete — ready for verification
+stopped_at: Completed 06-04-PLAN.md
+last_updated: "2026-03-23T18:46:50.512Z"
 progress:
   total_phases: 3
-  completed_phases: 2
+  completed_phases: 3
   total_plans: 8
-  completed_plans: 7
+  completed_plans: 8
 ---
 
 # Project State
@@ -45,6 +45,8 @@ v1.2 phase grouping decision: TOKEN and UTF8 requirements merged into Phase 6 (c
 - [Phase 06-token-safety-utf-8-hardening]: version_check uses line.strip().startswith('version:') to handle SKILL.md indented metadata block
 - [Phase 06]: detect.py search used for both TMDL measure lookup (error.md) and TMDL table verification (new.md) — consistent UTF-8-safe pattern
 - [Phase 06-token-safety-utf-8-hardening]: detect.py search replaces grep -rlF in edit.md and comment.md; TMSL branches get offset/limit chunked-read guard at 2000-line threshold
+- [Phase 06-token-safety-utf-8-hardening]: Unquoted detect.py path in bash blocks (path space-free) preserves detect.py <subcommand> substring for verification
+- [Phase 06-token-safety-utf-8-hardening]: REMOTE_VER sed calls retained in help.md — ASCII-safe git tag processing, out of UTF8-03 scope
 
 ### Pending Todos
 
@@ -56,6 +58,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-23T18:44:26.005Z
-Stopped at: Completed 06-03-PLAN.md
+Last session: 2026-03-23T18:46:50.508Z
+Stopped at: Completed 06-04-PLAN.md
 Resume file: None
