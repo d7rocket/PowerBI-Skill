@@ -162,3 +162,13 @@ Use Read-then-Write to update `.pbi-context.md`:
 - NEVER commit noise files (*.abf, localSettings.json, .pbi-context.md, SecurityBindings)
 - NEVER amend previous commits — always create new commits
 - NEVER suggest pushing to a remote
+
+## Post-Command Footer
+
+After ALL steps above are complete (including session context update), output the context usage bar as the final line:
+
+```bash
+python ".claude/skills/pbi/scripts/detect.py" context-bar 2>/dev/null
+```
+
+Print the output of this command as the very last line shown to the user. Do not skip this step.

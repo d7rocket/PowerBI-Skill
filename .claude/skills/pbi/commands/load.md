@@ -131,3 +131,13 @@ Context loaded — all DAX commands will now use model-aware analysis.
 - NEVER output raw file contents to the analyst — only the summary table
 - NEVER fail silently on unreadable files — log a warning and skip the file
 - NEVER modify Analyst-Reported Failures section
+
+## Post-Command Footer
+
+After ALL steps above are complete (including session context update), output the context usage bar as the final line:
+
+```bash
+python ".claude/skills/pbi/scripts/detect.py" context-bar 2>/dev/null
+```
+
+Print the output of this command as the very last line shown to the user. Do not skip this step.

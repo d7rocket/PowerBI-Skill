@@ -349,3 +349,13 @@ Use Read-then-Write to update `.pbi-context.md`:
 - NEVER change relationship direction without asking which direction to keep
 - NEVER add, remove, rename, or rewrite measure expressions during audit — auto-fix only touches structural properties (isHidden, crossFilteringBehavior)
 - NEVER report findings without severity classification (CRITICAL/WARN/INFO)
+
+## Post-Command Footer
+
+After ALL steps above are complete (including session context update), output the context usage bar as the final line:
+
+```bash
+python ".claude/skills/pbi/scripts/detect.py" context-bar 2>/dev/null
+```
+
+Print the output of this command as the very last line shown to the user. Do not skip this step.

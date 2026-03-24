@@ -3,6 +3,18 @@
 All notable changes to the PBI skill are documented here.
 Format: [Keep a Changelog](https://keepachangelog.com)
 
+## [4.4.0] — 2026-03-24
+
+### Added
+
+- Context tracker progress bar — every command now outputs a visual context usage indicator as its final line
+- `detect.py context-bar` subcommand — centralized progress bar logic (reads Command History rows from .pbi-context.md)
+- Post-Command Footer added to all 17 command files for reliable context bar output
+
+### Changed
+
+- Post-Command Epilogue in SKILL.md updated to use `detect.py context-bar` instead of inline prose instructions
+
 ## [4.3.0] — 2026-03-23
 
 ### Changed

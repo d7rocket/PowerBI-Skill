@@ -108,3 +108,13 @@ Read `.pbi-context.md` (Read tool), update these sections, then Write the full f
 - NEVER include noise-file changes in the changelog
 - NEVER fabricate changes not present in git history
 - NEVER include merge commits in the changelog output
+
+## Post-Command Footer
+
+After ALL steps above are complete (including session context update), output the context usage bar as the final line:
+
+```bash
+python ".claude/skills/pbi/scripts/detect.py" context-bar 2>/dev/null
+```
+
+Print the output of this command as the very last line shown to the user. Do not skip this step.

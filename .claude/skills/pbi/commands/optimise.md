@@ -319,3 +319,13 @@ After producing output, update `.pbi-context.md` using Read then Write:
 - NEVER change business logic — optimisation must preserve semantics
 - NEVER suggest removing CALCULATE when it controls context transitions
 - NEVER rewrite complex nested iterators without flagging — only rewrite trivially collapsible cases
+
+## Post-Command Footer
+
+After ALL steps above are complete (including session context update), output the context usage bar as the final line:
+
+```bash
+python ".claude/skills/pbi/scripts/detect.py" context-bar 2>/dev/null
+```
+
+Print the output of this command as the very last line shown to the user. Do not skip this step.

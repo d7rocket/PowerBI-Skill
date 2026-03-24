@@ -75,3 +75,13 @@ Read `.pbi-context.md` (Read tool), update these sections, then Write the full f
 - NEVER revert without showing the commit details and getting confirmation
 - NEVER revert more than one commit at a time — use git revert for a single commit only
 - NEVER use git reset --hard — always use git revert to preserve history
+
+## Post-Command Footer
+
+After ALL steps above are complete (including session context update), output the context usage bar as the final line:
+
+```bash
+python ".claude/skills/pbi/scripts/detect.py" context-bar 2>/dev/null
+```
+
+Print the output of this command as the very last line shown to the user. Do not skip this step.

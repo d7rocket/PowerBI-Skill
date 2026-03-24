@@ -165,3 +165,13 @@ After producing the output, update the `.pbi-context.md` file:
 - NEVER remove comments from the original measure
 - NEVER change the measure name
 - NEVER skip the DAX Formatter API check — always try API first
+
+## Post-Command Footer
+
+After ALL steps above are complete (including session context update), output the context usage bar as the final line:
+
+```bash
+python ".claude/skills/pbi/scripts/detect.py" context-bar 2>/dev/null
+```
+
+Print the output of this command as the very last line shown to the user. Do not skip this step.
