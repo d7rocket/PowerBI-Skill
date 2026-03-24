@@ -8,7 +8,7 @@ allowed-tools: Read, Write, Bash, Agent
 argument-hint: "[explain|format|optimise|comment|error|new|load|audit|diff|commit|edit|undo|comment-batch|changelog|deep|extract|docs|help|version]"
 metadata:
   author: d7rocket
-  version: 4.3.0
+  version: 4.4.0
   category: data-analytics
   tags: [power-bi, dax, pbip, semantic-model]
 ---
@@ -215,14 +215,11 @@ After any subcommand completes (including the Solve-First Default handler):
 2. **Skip conditions**: If PBIP_MODE=paste, or GIT=no, or the command did not write any files (e.g., explain in paste mode, help, diff), skip the auto-stage step (but still run context tracking below).
 3. **Auto-committing commands**: Commands that auto-commit (comment, new, edit, error, audit, comment-batch) already run `git add` + `git commit`. The epilogue's `git add` is a harmless no-op in those cases — skip the "Staged locally" output if the command already output an "Auto-committed" message.
 
-4. **Context tracking** — After every command completes, estimate context window usage and output a status line:
-   - Count the total rows in `## Command History` in `.pbi-context.md` (N).
-   - Estimate = min(5 + (N × 5), 100).
-   - Build a 10-block progress bar: filled blocks (█) for used portion, empty blocks (░) for remaining.
-   - Output: `Context: [██████░░░░] ~[estimate]%`
-   - If estimate >= 70: append ` — consider /clear to free up context`
-   - If estimate >= 90: append ` — /clear recommended before continuing`
-   - This line appears after all other command output, as the very last line.
+4. **Context tracking** — After every command completes, run:
+   ```bash
+   python ".claude/skills/pbi/scripts/detect.py" context-bar 2>/dev/null
+   ```
+   Output the result as the very last line of the command's output. This line MUST appear after all other output, including "Staged locally" messages.
 
 ## Shared Rules
 

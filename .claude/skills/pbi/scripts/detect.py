@@ -12,6 +12,7 @@ Usage:
     python detect.py html-parse <tmpfile>  — Strip DAX Formatter HTML to clean DAX text
     python detect.py version-check <skill_file>  — Read version from SKILL.md frontmatter
     python detect.py gitignore-check  — Ensure .gitignore contains all noise-file entries
+    python detect.py context-bar  — Output context window usage progress bar
 """
 import sys
 import os
@@ -195,6 +196,45 @@ def version_check(skill_file):
     print('LOCAL=unknown')
 
 
+def context_bar():
+    """Output context window usage progress bar based on Command History rows.
+
+    Reads .pbi-context.md, counts rows in ## Command History table,
+    estimates context usage, and prints a formatted progress bar.
+    """
+    n = 0
+    try:
+        with open('.pbi-context.md', 'r', encoding='utf-8') as f:
+            in_history = False
+            for line in f:
+                if line.strip() == '## Command History':
+                    in_history = True
+                    continue
+                if in_history:
+                    # Stop at next section heading
+                    if line.startswith('## '):
+                        break
+                    stripped = line.strip()
+                    # Count data rows: starts with | but not header or separator
+                    if stripped.startswith('|') and '---|' not in stripped:
+                        # Skip the header row (contains 'Command' column header)
+                        if '| Command |' not in stripped and '|Command|' not in stripped:
+                            n += 1
+    except FileNotFoundError:
+        print('Context: [\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591] ~5%')
+        return
+
+    estimate = min(5 + (n * 5), 100)
+    filled = round(estimate / 10)
+    bar = '\u2588' * filled + '\u2591' * (10 - filled)
+    line = 'Context: [' + bar + '] ~' + str(estimate) + '%'
+    if estimate >= 90:
+        line += ' \u2014 /clear recommended before continuing'
+    elif estimate >= 70:
+        line += ' \u2014 consider /clear to free up context'
+    print(line)
+
+
 def gitignore_check():
     """Ensure four noise-file entries exist in .gitignore.
 
@@ -251,6 +291,8 @@ if __name__ == '__main__':
         version_check(sys.argv[2])
     elif cmd == 'gitignore-check':
         gitignore_check()
+    elif cmd == 'context-bar':
+        context_bar()
     else:
         print('Unknown command: ' + cmd, file=sys.stderr)
         sys.exit(1)
