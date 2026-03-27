@@ -1,6 +1,63 @@
-# /pbi optimise
+---
+name: pbi:optimise
+description: "Analyse DAX for performance and suggest improvements. Use when user says 'optimise DAX', 'optimize', 'performance', 'speed up', or 'slow'."
+model: sonnet
+allowed-tools: Read, Write, Bash, Agent
+disable-model-invocation: true
+metadata:
+  author: d7rocket
+  version: 4.4.0
+  category: data-analytics
+  tags: [power-bi, dax, pbip, semantic-model]
+---
 
-> Detection context (PBIP_MODE, PBIP_FORMAT, Session Context) is provided by the router.
+## Detection (run once)
+
+**Folder naming:** Real PBIP projects use `<ProjectName>.SemanticModel` and `<ReportName>.Report`. Test fixtures may use `.SemanticModel`. Detection globs for both patterns.
+
+### PBIP Detection
+!`python ".claude/skills/pbi/scripts/detect.py" pbip 2>/dev/null || echo "PBIP_MODE=paste"`
+
+Save the `PBIP_DIR` value from the output — all subsequent steps must use it instead of a hardcoded `.SemanticModel`.
+
+### File Index
+!`python ".claude/skills/pbi/scripts/detect.py" files 2>/dev/null`
+
+### PBIR Detection
+!`python ".claude/skills/pbi/scripts/detect.py" pbir 2>/dev/null || echo "PBIR=no"`
+
+### Git State
+!`python ".claude/skills/pbi/scripts/detect.py" git 2>/dev/null || (echo "GIT=no" && echo "HAS_COMMITS=no")`
+
+### Session Context
+!`python ".claude/skills/pbi/scripts/detect.py" context 2>/dev/null || echo "No prior context found."`
+
+### Auto-Resume
+
+After detection blocks run, apply the following before executing the command:
+
+1. **PBIP_MODE=file, context exists** — Session Context output contains `## Model Context` with a table:
+   - Count the table rows in the Model Context table.
+   - Output on a single line: `Context resumed — [N] tables loaded`
+   - Skip any "Model Context Check" (Step 0.5) below — context is already available.
+
+2. **PBIP_MODE=file, no context yet** — Session Context has no `## Model Context` or `.pbi-context.md` does not exist:
+   - Output: `No model context — auto-loading project...`
+   - Read all files from File Index, extract table/measure/column/relationship structure, build the Model Context markdown block, write it to `.pbi-context.md`.
+   - Output the summary table and: `Auto-loaded [N] tables. Context ready.`
+
+3. **PBIP_MODE=paste — nearby folder check**:
+   Run: `python ".claude/skills/pbi/scripts/detect.py" nearby 2>/dev/null`
+   - If NEARBY_PBIP is found: output: `No PBIP project here, but found one at [NEARBY_PBIP]. Run cd "[NEARBY_PBIP]" first.`
+   - If NEARBY_PBIP is empty: skip silently. Paste-in commands still work.
+
+After auto-resume completes, proceed to the command instructions below.
+
+
+---
+
+# /pbi:optimise
+
 
 ## Instructions
 
@@ -251,7 +308,7 @@ Format:
 
 ### Step 7 — Complexity Inference
 
-Infer complexity using the same rules as `/pbi explain`:
+Infer complexity using the same rules as `/pbi:explain`:
 - **Simple**: SUM, DIVIDE, basic CALCULATE with one filter, straightforward arithmetic
 - **Intermediate**: CALCULATE with multiple filters, time intelligence (DATESYTD, SAMEPERIODLASTYEAR), RELATED, basic iterators (SUMX over a column)
 - **Advanced**: Context transitions, nested iterators, EARLIER, ALLEXCEPT, USERELATIONSHIP, multiple nested CALCULATE, iterator-over-measure-reference patterns
@@ -292,7 +349,7 @@ If no rules apply, write: "No optimisation opportunities detected. This measure 
 - [Nested iterator warning — if detected]
 
 ---
-**Next steps:** `/pbi explain` · `/pbi format` · `/pbi comment` · `/pbi error`
+**Next steps:** `/pbi:explain` · `/pbi:format` · `/pbi:comment` · `/pbi:error`
 ```
 
 If no Flags apply, omit the Flags section entirely.
@@ -305,12 +362,12 @@ After producing output, update `.pbi-context.md` using Read then Write:
 
 1. Read the current `.pbi-context.md`
 2. Update the **Last Command** section with these four lines in this exact order:
-   - Command: /pbi optimise
+   - Command: /pbi:optimise
    - Timestamp: [current UTC ISO 8601]
    - Measure: [measure name]
    - Outcome: Optimised — [list of rule numbers applied, e.g. Rule 1, Rule 2]; Flags: [flags raised, or "None"]
 3. Append a new row to **Command History**. Keep history to the last 20 rows. If there are already 20 rows, remove the oldest before appending.
-   - Format: `| [timestamp] | /pbi optimise | [measure name] | Optimised — [rules applied] |`
+   - Format: `| [timestamp] | /pbi:optimise | [measure name] | Optimised — [rules applied] |`
 4. Do not modify the **Analyst-Reported Failures** section.
 5. Write the updated file back to `.pbi-context.md`.
 
@@ -329,3 +386,16 @@ python ".claude/skills/pbi/scripts/detect.py" context-bar 2>/dev/null
 ```
 
 Print the output of this command as the very last line shown to the user. Do not skip this step.
+
+
+## Shared Rules
+
+- **PYTHON-FIRST FILE OPERATIONS (CRITICAL):** All file read/write and text search operations MUST use Python with `encoding='utf-8'` to correctly handle accented characters (French: é, è, ê, ç, à, ù, etc.). Do NOT use `grep`, `cat`, `sed`, `awk`, or shell redirects for reading/writing model files. For measure name search, use `python ".claude/skills/pbi/scripts/detect.py" search "MeasureName" "$PBIP_DIR"` instead of `grep -rlF`. Shell/bash is allowed ONLY for: git CLI commands and Python script invocation.
+- **PBIP folder naming:** Always use the `PBIP_DIR` value from detection (e.g., `Sales.SemanticModel`) — never hardcode `.SemanticModel`. Same for Report: use `PBIR_DIR` (e.g., `Sales.Report`).
+- All bash paths must be double-quoted (e.g., `"$VAR"`, `"$SM_DIR/"`)
+- Session context: Read-then-Write `.pbi-context.md`, 20 row max Command History, never touch Analyst-Reported Failures
+- TMDL: tabs only for indentation
+- TMSL expression format: preserve original form (string vs array); use array if expression has line breaks
+- Escalation state: `## Escalation State` in `.pbi-context.md` tracks gathered context during escalation.
+- **LOCAL-FIRST GIT POLICY (CRITICAL):** NEVER `git pull`, `git fetch`, `git merge`, `git rebase`, `git push`, or create PRs. Allowed: `git init`, `git add`, `git commit`, `git diff`, `git log`, `git status`, `git revert`, `git rev-parse`.
+- **Post-write staging:** After any command writes files to `$PBIP_DIR/` (and PBIP_MODE=file, GIT=yes), auto-stage: `git add "$PBIP_DIR/" 2>/dev/null`. Skip if the command already auto-committed.

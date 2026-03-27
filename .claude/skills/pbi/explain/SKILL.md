@@ -1,6 +1,63 @@
-# /pbi explain
+---
+name: pbi:explain
+description: "Break down a DAX measure into plain English with filter context, row context, and performance notes. Use when user says 'explain this measure', 'what does this DAX do', or 'understand DAX'."
+model: sonnet
+allowed-tools: Read, Write, Bash, Agent
+disable-model-invocation: true
+metadata:
+  author: d7rocket
+  version: 4.4.0
+  category: data-analytics
+  tags: [power-bi, dax, pbip, semantic-model]
+---
 
-> Detection context (PBIP_MODE, PBIP_FORMAT, File Index, Session Context) is provided by the router.
+## Detection (run once)
+
+**Folder naming:** Real PBIP projects use `<ProjectName>.SemanticModel` and `<ReportName>.Report`. Test fixtures may use `.SemanticModel`. Detection globs for both patterns.
+
+### PBIP Detection
+!`python ".claude/skills/pbi/scripts/detect.py" pbip 2>/dev/null || echo "PBIP_MODE=paste"`
+
+Save the `PBIP_DIR` value from the output — all subsequent steps must use it instead of a hardcoded `.SemanticModel`.
+
+### File Index
+!`python ".claude/skills/pbi/scripts/detect.py" files 2>/dev/null`
+
+### PBIR Detection
+!`python ".claude/skills/pbi/scripts/detect.py" pbir 2>/dev/null || echo "PBIR=no"`
+
+### Git State
+!`python ".claude/skills/pbi/scripts/detect.py" git 2>/dev/null || (echo "GIT=no" && echo "HAS_COMMITS=no")`
+
+### Session Context
+!`python ".claude/skills/pbi/scripts/detect.py" context 2>/dev/null || echo "No prior context found."`
+
+### Auto-Resume
+
+After detection blocks run, apply the following before executing the command:
+
+1. **PBIP_MODE=file, context exists** — Session Context output contains `## Model Context` with a table:
+   - Count the table rows in the Model Context table.
+   - Output on a single line: `Context resumed — [N] tables loaded`
+   - Skip any "Model Context Check" (Step 0.5) below — context is already available.
+
+2. **PBIP_MODE=file, no context yet** — Session Context has no `## Model Context` or `.pbi-context.md` does not exist:
+   - Output: `No model context — auto-loading project...`
+   - Read all files from File Index, extract table/measure/column/relationship structure, build the Model Context markdown block, write it to `.pbi-context.md`.
+   - Output the summary table and: `Auto-loaded [N] tables. Context ready.`
+
+3. **PBIP_MODE=paste — nearby folder check**:
+   Run: `python ".claude/skills/pbi/scripts/detect.py" nearby 2>/dev/null`
+   - If NEARBY_PBIP is found: output: `No PBIP project here, but found one at [NEARBY_PBIP]. Run cd "[NEARBY_PBIP]" first.`
+   - If NEARBY_PBIP is empty: skip silently. Paste-in commands still work.
+
+After auto-resume completes, proceed to the command instructions below.
+
+
+---
+
+# /pbi:explain
+
 
 ## Instructions
 
@@ -96,10 +153,10 @@ _Complexity: [Simple | Intermediate | Advanced]_
 [If CALCULATE is present or an iterator calls a measure reference, explain the context transition. For Simple measures with no iterator/measure-ref, write: "No context transition — this measure evaluates in filter context only." For Advanced measures with iterator-over-measure-ref, write: "Context transition present: [MeasureName] is called inside [Iterator], which converts the row context to filter context via an implicit CALCULATE."]
 
 ### Performance Notes
-[Brief note on any performance implications. If no concern, write: "No performance concerns for this pattern." For slow patterns (FILTER on entire table, nested iterators, RANKX over large tables), name the concern and note that /pbi optimise can suggest improvements.]
+[Brief note on any performance implications. If no concern, write: "No performance concerns for this pattern." For slow patterns (FILTER on entire table, nested iterators, RANKX over large tables), name the concern and note that /pbi:optimise can suggest improvements.]
 
 ---
-**Next steps:** `/pbi format` · `/pbi optimise` · `/pbi comment` · `/pbi error`
+**Next steps:** `/pbi:format` · `/pbi:optimise` · `/pbi:comment` · `/pbi:error`
 ```
 
 ---
@@ -111,12 +168,12 @@ After producing the output, update `.pbi-context.md` using the following steps:
 1. Use the **Read** tool to read the current contents of `.pbi-context.md`.
 2. Modify the file in memory:
    - **"## Last Command" section:** Set all four fields:
-     - `Command: /pbi explain`
+     - `Command: /pbi:explain`
      - `Timestamp: [current ISO 8601 timestamp, e.g. 2026-03-12T10:30:00Z]`
      - `Measure: [extracted measure name]`
      - `Outcome: Success — [one-line summary of what was explained, e.g. "Year-to-date revenue using DATESYTD"]`
    - **"## Command History" table:** Prepend a new row at the top of the table body:
-     `| [timestamp] | /pbi explain | [measure name] | Success |`
+     `| [timestamp] | /pbi:explain | [measure name] | Success |`
    - **Keep Command History to the last 20 rows** — if the table has more than 20 data rows after adding the new one, drop the oldest rows until exactly 20 remain.
    - **Do NOT modify the "## Analyst-Reported Failures" section** — the analyst manages that section manually.
 3. Use the **Write** tool to write the full updated file back to `.pbi-context.md`.
@@ -138,3 +195,16 @@ python ".claude/skills/pbi/scripts/detect.py" context-bar 2>/dev/null
 ```
 
 Print the output of this command as the very last line shown to the user. Do not skip this step.
+
+
+## Shared Rules
+
+- **PYTHON-FIRST FILE OPERATIONS (CRITICAL):** All file read/write and text search operations MUST use Python with `encoding='utf-8'` to correctly handle accented characters (French: é, è, ê, ç, à, ù, etc.). Do NOT use `grep`, `cat`, `sed`, `awk`, or shell redirects for reading/writing model files. For measure name search, use `python ".claude/skills/pbi/scripts/detect.py" search "MeasureName" "$PBIP_DIR"` instead of `grep -rlF`. Shell/bash is allowed ONLY for: git CLI commands and Python script invocation.
+- **PBIP folder naming:** Always use the `PBIP_DIR` value from detection (e.g., `Sales.SemanticModel`) — never hardcode `.SemanticModel`. Same for Report: use `PBIR_DIR` (e.g., `Sales.Report`).
+- All bash paths must be double-quoted (e.g., `"$VAR"`, `"$SM_DIR/"`)
+- Session context: Read-then-Write `.pbi-context.md`, 20 row max Command History, never touch Analyst-Reported Failures
+- TMDL: tabs only for indentation
+- TMSL expression format: preserve original form (string vs array); use array if expression has line breaks
+- Escalation state: `## Escalation State` in `.pbi-context.md` tracks gathered context during escalation.
+- **LOCAL-FIRST GIT POLICY (CRITICAL):** NEVER `git pull`, `git fetch`, `git merge`, `git rebase`, `git push`, or create PRs. Allowed: `git init`, `git add`, `git commit`, `git diff`, `git log`, `git status`, `git revert`, `git rev-parse`.
+- **Post-write staging:** After any command writes files to `$PBIP_DIR/` (and PBIP_MODE=file, GIT=yes), auto-stage: `git add "$PBIP_DIR/" 2>/dev/null`. Skip if the command already auto-committed.

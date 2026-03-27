@@ -1,19 +1,18 @@
 ---
 name: pbi
-description: Power BI DAX co-pilot. Explains, formats, optimises, comments, and scaffolds DAX measures. Audits PBIP semantic models for hidden columns, bidirectional filters, and naming issues with auto-fix. Tracks model changes with local git versioning. Use when user mentions "DAX", "Power BI", "PBIP", "semantic model", asks to "explain this measure", "format DAX", "optimise DAX", "audit my model", "create a measure", "comment DAX", "fix DAX error", "edit measure", "diff changes", "undo last change", "extract project summary", or works with .tmdl/.bim files. Supports both TMDL and TMSL formats.
+description: Power BI DAX co-pilot — menu, free-text solver, and backward-compatible router. Use when user mentions "DAX", "Power BI", "PBIP", "semantic model", asks to "explain this measure", "format DAX", "optimise DAX", "audit my model", "create a measure", "comment DAX", "fix DAX error", "edit measure", "diff changes", "undo last change", "extract project summary", or works with .tmdl/.bim files. Individual commands are also available as /pbi:<cmd>.
 license: MIT
 disable-model-invocation: true
 model: sonnet
 allowed-tools: Read, Write, Bash, Agent
-argument-hint: "[explain|format|optimise|comment|error|new|load|audit|diff|commit|edit|undo|comment-batch|changelog|deep|extract|docs|help|version]"
 metadata:
   author: d7rocket
-  version: 4.4.0
+  version: 5.0.0
   category: data-analytics
   tags: [power-bi, dax, pbip, semantic-model]
 ---
 
-## Detection Blocks (run once, shared by all subcommands)
+## Detection Blocks (run once, shared by all paths)
 
 **Folder naming:** Real PBIP projects use `<ProjectName>.SemanticModel` and `<ReportName>.Report` (e.g., `Sales.SemanticModel`, `Sales.Report`). Test fixtures may use `.SemanticModel`. Detection globs for both patterns.
 
@@ -41,17 +40,16 @@ After detection blocks run, apply the following before routing:
 1. **PBIP_MODE=file, context exists** — Session Context output contains `## Model Context` with a table:
    - Count the table rows in the Model Context table.
    - Output on a single line: `Context resumed — [N] tables loaded`
-   - All subcommands can skip their "Model Context Check" (Step 0.5) — context is already available.
 
 2. **PBIP_MODE=file, no context yet** — Session Context has no `## Model Context` or `.pbi-context.md` does not exist:
    - Output: `No model context — auto-loading project...`
-   - Execute `/pbi load` Steps 2–4 inline: read all files from File Index, extract table/measure/column/relationship structure, build the Model Context markdown block, write it to `.pbi-context.md`.
+   - Read all files from File Index, extract table/measure/column/relationship structure, build the Model Context markdown block, write it to `.pbi-context.md`.
    - Output the summary table and: `Auto-loaded [N] tables. Context ready.`
 
-3. **PBIP_MODE=paste — nearby folder check**: Check parent directories for a PBIP project:
+3. **PBIP_MODE=paste — nearby folder check**:
    Run: `python ".claude/skills/pbi/scripts/detect.py" nearby 2>/dev/null`
-   - If NEARBY_PBIP is found (non-empty value): output: `No PBIP project here, but found one at [NEARBY_PBIP]. Run cd "[NEARBY_PBIP]" first.`
-   - If NEARBY_PBIP is empty: skip silently. Paste-in commands still work.
+   - If NEARBY_PBIP is found: output: `No PBIP project here, but found one at [NEARBY_PBIP]. Run cd "[NEARBY_PBIP]" first.`
+   - If NEARBY_PBIP is empty: skip silently.
 
 After auto-resume completes, proceed to Routing.
 
@@ -59,45 +57,39 @@ After auto-resume completes, proceed to Routing.
 
 Parse `$ARGUMENTS` first word/keyword to determine the subcommand. Match against these patterns:
 
-| Keyword(s) | Subcommand | Execution |
-|------------|-----------|-----------|
-| explain, "what does", understand, "how does" | commands/explain.md | sonnet direct |
-| format, "clean up", prettify, style | commands/format.md | sonnet direct |
-| optimise, optimize, performance, "speed up", slow | commands/optimise.md | sonnet direct |
-| comment (not "comment-batch"/"comment all"), annotate, document, describe | commands/comment.md | sonnet direct |
-| error, fix, diagnose, broken, failing | commands/error.md | sonnet direct |
-| new, create, "add measure", scaffold | commands/new.md | sonnet direct |
-| edit, rename, update, change, modify | commands/edit.md | sonnet direct |
-| "comment-batch", "comment all", "batch comment", "document all" | commands/comment-batch.md | sonnet direct |
-| audit, "health check", "review model", "find issues" | commands/audit.md | sonnet direct (spawns haiku agents for 5+ table models) |
-| load, context, "model context", "load project" | commands/load.md | haiku Agent |
-| diff, "what changed", changes, "show changes" | commands/diff.md | haiku Agent |
-| commit, save, snapshot, git | commands/commit.md | haiku Agent |
-| undo, revert, "go back" | commands/undo.md | haiku Agent |
-| changelog, "release notes", history, "what shipped" | commands/changelog.md | haiku Agent |
-| deep | commands/deep.md | sonnet direct |
-| extract, "project summary", "model summary", "export model" | commands/extract.md | sonnet direct |
-| docs, documentation, "generate docs", "document project", "project docs" | commands/docs.md | sonnet direct |
-| help, commands, "what can you do", "list commands" | commands/help.md | sonnet direct |
-| version, "version history", "what version" | commands/version.md | sonnet direct |
-| (no keyword match — free-text) | Solve-first handler (inline below) | sonnet direct |
+| Keyword(s) | Sub-skill |
+|------------|-----------|
+| explain, "what does", understand, "how does" | `/pbi:explain` |
+| format, "clean up", prettify, style | `/pbi:format` |
+| optimise, optimize, performance, "speed up", slow | `/pbi:optimise` |
+| comment (not "comment-batch"/"comment all"), annotate, document, describe | `/pbi:comment` |
+| error, fix, diagnose, broken, failing | `/pbi:error` |
+| new, create, "add measure", scaffold | `/pbi:new` |
+| edit, rename, update, change, modify | `/pbi:edit` |
+| "comment-batch", "comment all", "batch comment", "document all" | `/pbi:comment-batch` |
+| audit, "health check", "review model", "find issues" | `/pbi:audit` |
+| load, context, "model context", "load project" | `/pbi:load` |
+| diff, "what changed", changes, "show changes" | `/pbi:diff` |
+| commit, save, snapshot, git | `/pbi:commit` |
+| undo, revert, "go back" | `/pbi:undo` |
+| changelog, "release notes", history, "what shipped" | `/pbi:changelog` |
+| deep | `/pbi:deep` |
+| extract, "project summary", "model summary", "export model" | `/pbi:extract` |
+| docs, documentation, "generate docs", "document project", "project docs" | `/pbi:docs` |
+| help, commands, "what can you do", "list commands" | `/pbi:help` |
+| version, "version history", "what version" | `/pbi:version` |
+| (no keyword match — free-text) | Solve-first handler (inline below) |
 
-If intent is ambiguous between two commands: pick the most specific match and note it — "Routing to /pbi edit (you can also use /pbi comment if you only need to add comments)."
+If intent is ambiguous between two commands: pick the most specific match and note it — "Routing to /pbi:edit (you can also use /pbi:comment if you only need to add comments)."
 
 ### Execution
 
-**For sonnet subcommands** (explain, format, optimise, comment, error, new, edit, comment-batch, audit, deep, extract, docs, help):
-1. Determine the skill directory: find where this SKILL.md file is located (typically `.claude/skills/pbi/` relative to the project root). Use the Glob tool to find the skill directory if needed: `**/.claude/skills/pbi/commands/[cmd].md`.
-2. Use the Read tool to load the command file at that path (e.g., `.claude/skills/pbi/commands/explain.md`).
-3. Execute the loaded instructions directly in the current context. Pass through the detection block outputs above and any remaining `$ARGUMENTS` after the subcommand keyword. **All file operations (Read, Write, Bash) must target the user's CWD (their project folder), NOT the skill directory.**
+When a keyword match is found:
 
-**For haiku subcommands** (load, diff, commit, undo, changelog):
-1. Determine the skill directory as above and use the Read tool to load the command file (e.g., `.claude/skills/pbi/commands/load.md`).
-2. Spawn a **haiku Agent** with:
-   - The full command file content as instructions
-   - The detection block outputs above (PBIP_MODE, PBIP_FORMAT, File Index, Git State, Session Context)
-   - Any remaining `$ARGUMENTS` after the subcommand keyword
-   - Description: "pbi [cmd] — [one-line summary]"
+1. Use the Glob tool to find the sub-skill file: `.claude/skills/pbi/<cmd>/SKILL.md`
+2. Use the Read tool to load the sub-skill SKILL.md.
+3. Execute the instructions from the loaded file. The detection block outputs from this SKILL.md (above) are already available — skip the sub-skill's detection section (it's redundant since this router already ran detection). Execute the command instructions, starting from the first `## Instructions` or `## File Mode Branch` or `## Phase A` heading in the loaded file.
+4. Pass through any remaining `$ARGUMENTS` after the subcommand keyword.
 
 ### Empty $ARGUMENTS — Category Menu
 
@@ -107,28 +99,28 @@ If `$ARGUMENTS` is empty or absent, output the following category menu exactly:
 What would you like to do?
 
 **A — Work on a DAX measure**
-  explain · format · optimise · comment · new
+  /pbi:explain · /pbi:format · /pbi:optimise · /pbi:comment · /pbi:new
 
 **B — Audit the model**
-  audit (includes hidden column hygiene, auto-fix, and PBIR visual audit)
+  /pbi:audit (includes hidden column hygiene, auto-fix, and PBIR visual audit)
 
 **C — See, commit, or undo changes**
-  diff · commit · undo · changelog
+  /pbi:diff · /pbi:commit · /pbi:undo · /pbi:changelog
 
 **D — Edit a model file**
-  edit · comment-batch
+  /pbi:edit · /pbi:comment-batch
 
 **E — Deep mode**
-  Full structured workflow with upfront context gathering
+  /pbi:deep — Full structured workflow with upfront context gathering
 
 **F — Extract project summary**
-  extract (overview · standard · deep-dive)
+  /pbi:extract (overview · standard · deep-dive)
 
 **G — Generate project documentation**
-  docs (polished, stakeholder-ready model documentation)
+  /pbi:docs (polished, stakeholder-ready model documentation)
 
 **? — Help**
-  List all commands
+  /pbi:help — List all commands
 
 Type A, B, C, D, E, F, G, or ? — or describe what you need and I'll route you directly.
 
@@ -136,16 +128,16 @@ Type A, B, C, D, E, F, G, or ? — or describe what you need and I'll route you 
 
 On analyst response:
 
-- "A": Ask — "Which DAX command? **explain** · **format** · **optimise** · **comment** · **new**" — then route.
-- "B": Route directly to audit. Output "Routing to /pbi audit — running a full model health check." then proceed.
+- "A": Ask — "Which DAX command? **explain** · **format** · **optimise** · **comment** · **new**" — then route to the matching `/pbi:<cmd>`.
+- "B": Route directly to `/pbi:audit`. Output "Routing to /pbi:audit — running a full model health check." then proceed.
 - "C": Ask — "Which command? **diff** — see what changed · **commit** — save a snapshot · **undo** — revert the last commit · **changelog** — generate release notes" — then route.
 - "D": Ask — "Which command? **edit** — change a specific entity · **comment-batch** — comment all measures at once" — then route.
-- "E": Route to `/pbi deep`.
-- "F": Route to `/pbi extract`.
-- "G": Route to `/pbi docs`. Output "Routing to /pbi docs — generating project documentation." then proceed.
-- "?": Route to `/pbi help`.
-- Free-text response: Apply the keyword matching from the Routing table above. If no keyword matches, route to **Solve-First Default** handler and treat the text as the request.
-- Any response that does not match A/B/C/D/E/F/G/? or a recognisable keyword: Output "I didn't catch that — type A, B, C, D, E, F, G, or ? — or describe what you need."
+- "E": Route to `/pbi:deep`.
+- "F": Route to `/pbi:extract`.
+- "G": Route to `/pbi:docs`. Output "Routing to /pbi:docs — generating project documentation." then proceed.
+- "?": Route to `/pbi:help`.
+- Free-text response: Apply the keyword matching from the Routing table above. If no keyword matches, route to **Solve-First Default** handler.
+- Unrecognised response: Output "I didn't catch that — type A, B, C, D, E, F, G, or ? — or describe what you need."
 
 ## Solve-First Default
 
@@ -246,17 +238,17 @@ After any subcommand completes (including the Solve-First Default handler):
 ### Git not initialized
 **Symptom:** GIT=no — commands like diff, commit, undo, and changelog are unavailable.
 **Cause:** The project directory has no git repository.
-**Solution:** Run `/pbi commit` — it will auto-initialize a git repo and create the first commit.
+**Solution:** Run `/pbi:commit` — it will auto-initialize a git repo and create the first commit.
 
 ### Context file stale or corrupted
 **Symptom:** Auto-resume shows outdated tables/measures, or commands reference entities that no longer exist.
 **Cause:** `.pbi-context.md` is out of sync with the actual model files.
-**Solution:** Run `/pbi load` to rebuild context from scratch. This overwrites the existing context file.
+**Solution:** Run `/pbi:load` to rebuild context from scratch. This overwrites the existing context file.
 
 ### TMDL indentation broken after edit
 **Symptom:** Power BI Desktop shows parse errors after a skill edit.
 **Cause:** Spaces were used instead of tabs in TMDL files.
-**Solution:** The skill enforces tab indentation, but if an external edit introduced spaces, fix with: `sed -i 's/^    /\t/g' <file>.tmdl` (replace 4-space runs with tabs). Then run `/pbi diff` to verify.
+**Solution:** The skill enforces tab indentation, but if an external edit introduced spaces, fix with: `sed -i 's/^    /\t/g' <file>.tmdl` (replace 4-space runs with tabs). Then run `/pbi:diff` to verify.
 
 ### Measure name not found
 **Symptom:** A command says a measure doesn't exist, but it does.

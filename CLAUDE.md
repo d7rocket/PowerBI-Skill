@@ -2,41 +2,45 @@
 
 ## Overview
 
-This repo contains a single Claude Code skill (`/pbi`) that turns Claude into a Power BI DAX co-pilot. The skill is a markdown file in `.claude/skills/pbi/` with subcommand files in `commands/`. Claude Code discovers the skill automatically.
+This repo contains a Claude Code skill namespace (`/pbi`) that turns Claude into a Power BI DAX co-pilot. Each command is an individual skill invoked as `/pbi:<command>` (e.g., `/pbi:explain`, `/pbi:audit`). The base `/pbi` provides a menu, catch-all solver, and backward-compatible routing.
 
-## Skill Architecture (v3.0)
+## Skill Architecture (v5.0)
 
-### Single-skill router
+### Individual sub-skills
 
-All commands are accessed via `/pbi [subcommand]` (e.g., `/pbi explain`, `/pbi audit`). The router in `SKILL.md` runs detection blocks once, then loads the appropriate command file from `commands/`.
+Each command is a self-contained skill at `.claude/skills/pbi/<cmd>/SKILL.md`, directly invocable as `/pbi:<cmd>`. Each sub-skill includes its own detection blocks, auto-resume logic, command instructions, and shared rules.
 
-### Subcommand types
+The base `/pbi` (at `.claude/skills/pbi/SKILL.md`) serves as:
+- **Menu** — shows categories when invoked with no arguments
+- **Catch-all solver** — handles free-text DAX questions directly
+- **Backward-compatible router** — `/pbi explain` still works, routing to `/pbi:explain`
 
-- **Paste-in** (work anywhere): explain, format, optimise, comment, error, new
-- **PBIP** (require `*.SemanticModel/` directory): load, audit, diff, commit, edit, undo, comment-batch, changelog, extract, docs
-- **Utility** (work anywhere): help, version
+### Command types
+
+- **Paste-in** (work anywhere): `/pbi:explain`, `/pbi:format`, `/pbi:optimise`, `/pbi:comment`, `/pbi:error`, `/pbi:new`
+- **PBIP** (require `*.SemanticModel/` directory): `/pbi:load`, `/pbi:audit`, `/pbi:diff`, `/pbi:commit`, `/pbi:edit`, `/pbi:undo`, `/pbi:comment-batch`, `/pbi:changelog`, `/pbi:extract`, `/pbi:docs`
+- **Workflow**: `/pbi:deep`
+- **Utility** (work anywhere): `/pbi:help`, `/pbi:version`
 
 ### Model selection
 
-- **Sonnet** (default): DAX reasoning subcommands — explain, format, optimise, comment, error, new, edit, comment-batch, audit, docs, version, help
-- **Haiku** (via Agent spawn): file/git-heavy subcommands — load, diff, commit, undo, changelog; also extract simple tier
+- **Sonnet** (default): DAX reasoning commands — explain, format, optimise, comment, error, new, edit, comment-batch, audit, docs, deep, extract, help, version
+- **Haiku** (set in frontmatter): file/git-heavy commands — load, diff, commit, undo, changelog
 - **Opus** (via Agent spawn): extract detailed tier (high token usage, deep analysis)
 
 ### Detection
 
-Detection blocks run once in `SKILL.md` and are shared by all subcommands:
+Each sub-skill runs its own detection blocks on load via `!` backtick syntax:
 - **PBIP detection**: globs for `*.SemanticModel` or `.SemanticModel` directories, outputs `PBIP_DIR=<actual folder name>`, then checks format (`model.bim` → TMSL, `definition/tables/` → TMDL)
 - **File Index**: lists all `.tmdl` files or model.bim under `$PBIP_DIR`
 - **PBIR detection**: globs for `*.Report` or `.Report` directories, outputs `PBIR_DIR=<actual folder name>`
 - **Git state**: checks if inside a git repo with commits
 - **Session context**: reads `.pbi-context.md`
 
-Desktop detection (`tasklist`) has been removed — file-mode commands always write to disk.
-
 ### Conventions
 
 - **Session context**: all commands read/write `.pbi-context.md` using Read-then-Write (never bash append). Keep Command History to 20 rows max. Never modify the Analyst-Reported Failures section.
-- **Auto-resume**: every `/pbi` invocation auto-loads project context from `.pbi-context.md`. If no context exists but a PBIP project is detected, auto-runs a lightweight load. No explicit `/pbi load` required.
+- **Auto-resume**: every skill invocation auto-loads project context from `.pbi-context.md`. If no context exists but a PBIP project is detected, auto-runs a lightweight load. No explicit `/pbi:load` required.
 - **Auto-commit**: edit, comment, error, and new auto-commit after successful writes. Use undo to revert. All commits are LOCAL only.
 - **Post-command staging**: after every command that writes to `$PBIP_DIR/`, changes are auto-staged (`git add`) and the user is notified.
 - **LOCAL-FIRST GIT POLICY (CRITICAL)**: NEVER `git pull`, `git fetch`, `git merge`, `git push`, or create PRs. Local files are always the source of truth. Pulling has previously overwritten PBIP changes and broken relationships. Git is used only for local version control (`init`, `add`, `commit`, `diff`, `log`, `status`, `revert`).
@@ -53,31 +57,31 @@ Desktop detection (`tasklist`) has been removed — file-mode commands always wr
 
 ```
 .claude/skills/pbi/
-  SKILL.md              ← router + detection blocks (v3.0)
-  commands/
-    explain.md          ← DAX explanation (sonnet)
-    format.md           ← DAX formatting (sonnet)
-    optimise.md         ← DAX optimisation (sonnet)
-    comment.md          ← DAX commenting (sonnet)
-    error.md            ← error diagnosis (sonnet)
-    new.md              ← measure scaffolding (sonnet)
-    load.md             ← PBIP context loader (haiku)
-    audit.md            ← model audit + auto-fix (sonnet, parallel agents)
-    diff.md             ← model change summary (haiku)
-    commit.md           ← git commit (haiku)
-    edit.md             ← plain-language model editing (sonnet)
-    undo.md             ← revert last auto-commit (haiku)
-    comment-batch.md    ← batch commenting (sonnet)
-    changelog.md        ← changelog generation (haiku)
-    extract.md          ← project extraction (haiku/sonnet/opus by tier)
-    docs.md             ← project documentation generator (sonnet)
-    version.md          ← version history display (sonnet)
-    help.md             ← command reference (sonnet)
+  SKILL.md              ← base /pbi (menu + catch-all + backward-compatible router)
+  explain/SKILL.md      ← /pbi:explain (sonnet)
+  format/SKILL.md       ← /pbi:format (sonnet)
+  optimise/SKILL.md     ← /pbi:optimise (sonnet)
+  comment/SKILL.md      ← /pbi:comment (sonnet)
+  error/SKILL.md        ← /pbi:error (sonnet)
+  new/SKILL.md          ← /pbi:new (sonnet)
+  load/SKILL.md         ← /pbi:load (haiku)
+  audit/SKILL.md        ← /pbi:audit (sonnet, parallel agents for 5+ table models)
+  diff/SKILL.md         ← /pbi:diff (haiku)
+  commit/SKILL.md       ← /pbi:commit (haiku)
+  edit/SKILL.md         ← /pbi:edit (sonnet)
+  undo/SKILL.md         ← /pbi:undo (haiku)
+  comment-batch/SKILL.md ← /pbi:comment-batch (sonnet)
+  changelog/SKILL.md    ← /pbi:changelog (haiku)
+  deep/SKILL.md         ← /pbi:deep (sonnet)
+  extract/SKILL.md      ← /pbi:extract (sonnet, agents for opus tier)
+  docs/SKILL.md         ← /pbi:docs (sonnet)
+  help/SKILL.md         ← /pbi:help (sonnet)
+  version/SKILL.md      ← /pbi:version (sonnet)
   scripts/
     detect.py           ← Python detection, search, HTML parsing, version check, gitignore (UTF-8 safe, 10 subcommands)
   shared/
     api-notes.md        ← DAX Formatter API reference
-    CHANGELOG.md        ← version history (read by /pbi version)
+    CHANGELOG.md        ← version history (read by /pbi:version)
 ```
 
 ## Testing
@@ -97,4 +101,4 @@ Test fixtures are in `tests/fixtures/`:
 
 ## Version
 
-Current: 4.3.0 (set in `pbi/SKILL.md` frontmatter)
+Current: 5.0.0 (set in `pbi/SKILL.md` frontmatter)

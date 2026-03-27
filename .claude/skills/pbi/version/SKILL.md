@@ -1,6 +1,18 @@
-# /pbi version
+---
+name: pbi:version
+description: "Display version history and changelog. Use when user says 'version', 'version history', or 'what version'."
+model: sonnet
+allowed-tools: Read, Write, Bash, Agent
+disable-model-invocation: true
+metadata:
+  author: d7rocket
+  version: 4.4.0
+  category: data-analytics
+  tags: [power-bi, dax, pbip, semantic-model]
+---
 
-> No detection context needed — this command is self-contained.
+# /pbi:version
+
 
 ## Instructions
 
