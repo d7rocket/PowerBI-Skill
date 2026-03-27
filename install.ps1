@@ -16,6 +16,11 @@ if ($Scope -eq "user") {
 $scriptsDir = Join-Path $skillBase "scripts"
 $sharedDir  = Join-Path $skillBase "shared"
 
+# Commands directory — always user-level for discoverability
+$userHome2 = $env:USERPROFILE
+if (-not $userHome2) { $userHome2 = $HOME }
+$cmdsDir = Join-Path $userHome2 ".claude\commands\pbi"
+
 $base = "https://raw.githubusercontent.com/d7rocket/PowerBI-Skill/main"
 $isUpdate = Test-Path $skillBase
 
@@ -59,7 +64,7 @@ if (Test-Path $oldCmdsDir) {
 }
 
 # ── Download base skill ────────────────────────────────────────────
-Write-Host "  [1/4] Base skill" -ForegroundColor Cyan
+Write-Host "  [1/5] Base skill" -ForegroundColor Cyan
 try {
     Invoke-WebRequest -Uri "$base/.claude/skills/pbi/SKILL.md" -OutFile (Join-Path $skillBase "SKILL.md") -UseBasicParsing
     Write-Host "        SKILL.md" -ForegroundColor DarkGray
@@ -75,7 +80,7 @@ $version = "unknown"
 if ($versionLine) { $version = ($versionLine -split ':\s+')[1].Trim() }
 
 # ── Download sub-skills ────────────────────────────────────────────
-Write-Host "  [2/4] Sub-skills" -ForegroundColor Cyan
+Write-Host "  [2/5] Sub-skills" -ForegroundColor Cyan
 $commands = @(
     "explain","format","optimise","comment","error","new",
     "load","audit","diff","commit","edit","undo",
@@ -101,7 +106,7 @@ foreach ($cmd in $commands) {
 Write-Host "`r        $($([string][char]9608) * 20) done — $total sub-skills     "
 
 # ── Download scripts ───────────────────────────────────────────────
-Write-Host "  [3/4] Scripts" -ForegroundColor Cyan
+Write-Host "  [3/5] Scripts" -ForegroundColor Cyan
 try {
     Invoke-WebRequest -Uri "$base/.claude/skills/pbi/scripts/detect.py" -OutFile (Join-Path $scriptsDir "detect.py") -UseBasicParsing
     Write-Host "        detect.py" -ForegroundColor DarkGray
@@ -111,8 +116,28 @@ try {
     exit 1
 }
 
+# ── Download commands (for /pbi:cmd discovery) ────────────────────
+Write-Host "  [4/5] Commands" -ForegroundColor Cyan
+New-Item -ItemType Directory -Force -Path $cmdsDir | Out-Null
+$i2 = 0
+$failed2 = @()
+foreach ($cmd in $commands) {
+    $i2++
+    $pct2 = [math]::Round(($i2 / $total) * 100)
+    $filled2 = [math]::Floor($pct2 / 5)
+    $bar2 = ([string][char]9608) * $filled2 + ([string][char]9617) * (20 - $filled2)
+    Write-Host "`r        $bar2 $pct2%%  " -NoNewline
+    try {
+        Invoke-WebRequest -Uri "$base/.claude/commands/pbi/$cmd.md" -OutFile (Join-Path $cmdsDir "$cmd.md") -UseBasicParsing
+    } catch {
+        $failed2 += $cmd
+    }
+}
+Write-Host "`r        $($([string][char]9608) * 20) done — $total commands     "
+if ($failed2.Count -gt 0) { $failed += $failed2 }
+
 # ── Download shared ────────────────────────────────────────────────
-Write-Host "  [4/4] Shared resources" -ForegroundColor Cyan
+Write-Host "  [5/5] Shared resources" -ForegroundColor Cyan
 try {
     Invoke-WebRequest -Uri "$base/.claude/skills/pbi/shared/api-notes.md" -OutFile (Join-Path $sharedDir "api-notes.md") -UseBasicParsing
     Write-Host "        api-notes.md" -ForegroundColor DarkGray

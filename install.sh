@@ -59,7 +59,7 @@ if [ -d "$SKILL_DIR/commands" ]; then
 fi
 
 # ── Download base skill ────────────────────────────────────────────
-echo -e "${CYAN}  [1/4] Base skill${RESET}"
+echo -e "${CYAN}  [1/5] Base skill${RESET}"
 if curl -sL "$BASE/.claude/skills/pbi/SKILL.md" -o "$SKILL_DIR/SKILL.md" 2>/dev/null; then
     echo -e "${GRAY}        SKILL.md${RESET}"
 else
@@ -69,7 +69,7 @@ else
 fi
 
 # ── Download sub-skills ────────────────────────────────────────────
-echo -e "${CYAN}  [2/4] Sub-skills${RESET}"
+echo -e "${CYAN}  [2/5] Sub-skills${RESET}"
 commands=(explain format optimise comment error new load audit diff commit edit undo comment-batch changelog extract deep docs help version)
 total=${#commands[@]}
 i=0
@@ -89,8 +89,27 @@ for cmd in "${commands[@]}"; do
 done
 printf "\r        ████████████████████ done — %d sub-skills     \n" "$total"
 
+# ── Download commands (for /pbi:cmd discovery) ────────────────────
+echo -e "${CYAN}  [3/5] Commands${RESET}"
+CMDS_DIR="$HOME/.claude/commands/pbi"
+mkdir -p "$CMDS_DIR"
+i=0
+for cmd in "${commands[@]}"; do
+    i=$((i + 1))
+    pct=$((i * 100 / total))
+    filled=$((pct / 5))
+    bar=""
+    for ((f=0; f<filled; f++)); do bar="${bar}█"; done
+    for ((e=0; e<20-filled; e++)); do bar="${bar}░"; done
+    printf "\r        %s %d%%  " "$bar" "$pct"
+    if ! curl -sL "$BASE/.claude/commands/pbi/$cmd.md" -o "$CMDS_DIR/$cmd.md" 2>/dev/null; then
+        failed+=("$cmd")
+    fi
+done
+printf "\r        ████████████████████ done — %d commands     \n" "$total"
+
 # ── Download scripts ───────────────────────────────────────────────
-echo -e "${CYAN}  [3/4] Scripts${RESET}"
+echo -e "${CYAN}  [4/5] Scripts${RESET}"
 if curl -sL "$BASE/.claude/skills/pbi/scripts/detect.py" -o "$SKILL_DIR/scripts/detect.py" 2>/dev/null; then
     echo -e "${GRAY}        detect.py${RESET}"
 else
@@ -100,7 +119,7 @@ else
 fi
 
 # ── Download shared ────────────────────────────────────────────────
-echo -e "${CYAN}  [4/4] Shared resources${RESET}"
+echo -e "${CYAN}  [5/5] Shared resources${RESET}"
 if curl -sL "$BASE/.claude/skills/pbi/shared/api-notes.md" -o "$SKILL_DIR/shared/api-notes.md" 2>/dev/null; then
     echo -e "${GRAY}        api-notes.md${RESET}"
 else
