@@ -2,8 +2,8 @@
 set -e
 
 TARGET="${1:-.}"
-VERSION="4.1.0"
-BASE="https://raw.githubusercontent.com/deveshd7/PowerBI-Skill/main"
+VERSION="5.0.0"
+BASE="https://raw.githubusercontent.com/d7rocket/PowerBI-Skill/main"
 SKILL_DIR="$TARGET/.claude/skills/pbi"
 
 IS_UPDATE=false
@@ -50,21 +50,27 @@ if ! curl -s --head --connect-timeout 5 "https://raw.githubusercontent.com" >/de
     exit 1
 fi
 
-mkdir -p "$SKILL_DIR/commands" "$SKILL_DIR/shared"
+mkdir -p "$SKILL_DIR/scripts" "$SKILL_DIR/shared"
 
-# ── Download router ─────────────────────────────────────────────────
-echo -e "${CYAN}  [1/3] Skill router${RESET}"
+# ── Clean up old commands/ directory if upgrading from v4 ──────────
+if [ -d "$SKILL_DIR/commands" ]; then
+    echo -e "${GRAY}  Removing old commands/ directory (v4 → v5 migration)...${RESET}"
+    rm -rf "$SKILL_DIR/commands"
+fi
+
+# ── Download base skill ────────────────────────────────────────────
+echo -e "${CYAN}  [1/4] Base skill${RESET}"
 if curl -sL "$BASE/.claude/skills/pbi/SKILL.md" -o "$SKILL_DIR/SKILL.md" 2>/dev/null; then
     echo -e "${GRAY}        SKILL.md${RESET}"
 else
     echo -e "${RED}        SKILL.md — FAILED${RESET}"
-    echo -e "${RED}  Cannot continue without the router. Check your network.${RESET}"
+    echo -e "${RED}  Cannot continue without the base skill. Check your network.${RESET}"
     exit 1
 fi
 
-# ── Download commands ───────────────────────────────────────────────
-echo -e "${CYAN}  [2/3] Commands${RESET}"
-commands=(explain format optimise comment error new load audit diff commit edit undo comment-batch changelog extract deep help)
+# ── Download sub-skills ────────────────────────────────────────────
+echo -e "${CYAN}  [2/4] Sub-skills${RESET}"
+commands=(explain format optimise comment error new load audit diff commit edit undo comment-batch changelog extract deep docs help version)
 total=${#commands[@]}
 i=0
 failed=()
@@ -76,18 +82,34 @@ for cmd in "${commands[@]}"; do
     for ((f=0; f<filled; f++)); do bar="${bar}█"; done
     for ((e=0; e<20-filled; e++)); do bar="${bar}░"; done
     printf "\r        %s %d%%  " "$bar" "$pct"
-    if ! curl -sL "$BASE/.claude/skills/pbi/commands/$cmd.md" -o "$SKILL_DIR/commands/$cmd.md" 2>/dev/null; then
+    mkdir -p "$SKILL_DIR/$cmd"
+    if ! curl -sL "$BASE/.claude/skills/pbi/$cmd/SKILL.md" -o "$SKILL_DIR/$cmd/SKILL.md" 2>/dev/null; then
         failed+=("$cmd")
     fi
 done
-printf "\r        ████████████████████ done — %d commands     \n" "$total"
+printf "\r        ████████████████████ done — %d sub-skills     \n" "$total"
 
-# ── Download shared ─────────────────────────────────────────────────
-echo -e "${CYAN}  [3/3] Shared resources${RESET}"
+# ── Download scripts ───────────────────────────────────────────────
+echo -e "${CYAN}  [3/4] Scripts${RESET}"
+if curl -sL "$BASE/.claude/skills/pbi/scripts/detect.py" -o "$SKILL_DIR/scripts/detect.py" 2>/dev/null; then
+    echo -e "${GRAY}        detect.py${RESET}"
+else
+    echo -e "${RED}        detect.py — FAILED${RESET}"
+    echo -e "${RED}  Cannot continue without detect.py. Check your network.${RESET}"
+    exit 1
+fi
+
+# ── Download shared ────────────────────────────────────────────────
+echo -e "${CYAN}  [4/4] Shared resources${RESET}"
 if curl -sL "$BASE/.claude/skills/pbi/shared/api-notes.md" -o "$SKILL_DIR/shared/api-notes.md" 2>/dev/null; then
     echo -e "${GRAY}        api-notes.md${RESET}"
 else
     echo -e "${YELLOW}        api-notes.md — skipped (non-critical)${RESET}"
+fi
+if curl -sL "$BASE/.claude/skills/pbi/shared/CHANGELOG.md" -o "$SKILL_DIR/shared/CHANGELOG.md" 2>/dev/null; then
+    echo -e "${GRAY}        CHANGELOG.md${RESET}"
+else
+    echo -e "${YELLOW}        CHANGELOG.md — skipped (non-critical)${RESET}"
 fi
 
 # ── Verify ──────────────────────────────────────────────────────────
@@ -112,7 +134,7 @@ echo -e "${GREEN}  ║                                          ║${RESET}"
 echo -e "${GREEN}  ║  ${file_count} files installed                       ║${RESET}"
 echo -e "${GREEN}  ║  Version ${VERSION}                          ║${RESET}"
 echo -e "${GREEN}  ║                                          ║${RESET}"
-echo -e "${GREEN}  ║  Open Claude Code and type /pbi           ║${RESET}"
+echo -e "${GREEN}  ║  Open Claude Code and type /pbi:help      ║${RESET}"
 echo -e "${GREEN}  ╚══════════════════════════════════════════╝${RESET}"
 echo ""
 echo -e "${GRAY}  Installed to: $resolved${RESET}"
