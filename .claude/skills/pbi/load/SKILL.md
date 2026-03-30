@@ -32,21 +32,22 @@ Save the `PBIP_DIR` value from the output — all subsequent steps must use it i
 ### Session Context
 !`python ".claude/skills/pbi/scripts/detect.py" context 2>/dev/null || echo "No prior context found."`
 
-### Auto-Resume
+### Auto-Resume (session-aware)
 
 After detection blocks run, apply the following before executing the command:
 
-1. **PBIP_MODE=file, context exists** — Session Context output contains `## Model Context` with a table:
-   - Count the table rows in the Model Context table.
-   - Output on a single line: `Context resumed — [N] tables loaded`
-   - Skip any "Model Context Check" (Step 0.5) below — context is already available.
+1. **PBIP_MODE=file — session load check**:
+   Run: `python ".claude/skills/pbi/scripts/detect.py" session-check 2>/dev/null`
+   - If output is `SESSION=active` — context was already loaded this session:
+     - Output on a single line: `Context resumed — [N] tables loaded` (count from Session Context)
+     - Skip any "Model Context Check" (Step 0.5) below — context is already available.
+   - If output is `SESSION=new` — first command this session:
+     - Output: `Loading model context (first command this session)...`
+     - Read all files from File Index, extract table/measure/column/relationship structure, build the Model Context markdown block, write it to `.pbi-context.md`.
+     - Write `## Session Start` with current UTC timestamp to `.pbi-context.md`.
+     - Output the summary table and: `Context loaded — [N] tables. Ready.`
 
-2. **PBIP_MODE=file, no context yet** — Session Context has no `## Model Context` or `.pbi-context.md` does not exist:
-   - Output: `No model context — auto-loading project...`
-   - Read all files from File Index, extract table/measure/column/relationship structure, build the Model Context markdown block, write it to `.pbi-context.md`.
-   - Output the summary table and: `Auto-loaded [N] tables. Context ready.`
-
-3. **PBIP_MODE=paste — nearby folder check**:
+2. **PBIP_MODE=paste — nearby folder check**:
    Run: `python ".claude/skills/pbi/scripts/detect.py" nearby 2>/dev/null`
    - If NEARBY_PBIP is found: output: `No PBIP project here, but found one at [NEARBY_PBIP]. Run cd "[NEARBY_PBIP]" first.`
    - If NEARBY_PBIP is empty: skip silently. Paste-in commands still work.
@@ -159,14 +160,15 @@ Perform a single Read-then-Write pass to update `.pbi-context.md`:
 
 1. **Read** `.pbi-context.md` using the Read tool.
 
-2. **Build the updated file content** — in one pass, update three things:
+2. **Build the updated file content** — in one pass, update four things:
    a. **`## Model Context` section:** If it already exists, replace everything from `## Model Context` through the end of that section (up to the next `##` heading or end of file) with the new Model Context block. If it does not exist, append the new Model Context block after the last existing section.
-   b. **`## Last Command` section:** Update with:
+   b. **`## Session Start` line:** Add or replace `**Session-Start:** [current UTC time in ISO 8601]` immediately after the `## Model Context` section heading line. This marks the session as active so subsequent commands skip re-loading.
+   c. **`## Last Command` section:** Update with:
       - Command: `/pbi:load`
       - Timestamp: current UTC time
       - Measure: `[N tables loaded]` where N is the count of tables found
       - Outcome: `Model context loaded ([FORMAT])`
-   c. **`## Command History` section:** Append a row with the same values. Keep history to 20 rows max — remove the oldest row if the count exceeds 20.
+   d. **`## Command History` section:** Append a row with the same values. Keep history to 20 rows max — remove the oldest row if the count exceeds 20.
 
 3. **CRITICAL:** Do not remove or modify `## Analyst-Reported Failures` or any other sections not listed above. Only `## Model Context`, `## Last Command`, and `## Command History` are updated.
 
@@ -195,17 +197,6 @@ Context loaded — all DAX commands will now use model-aware analysis.
 - NEVER output raw file contents to the analyst — only the summary table
 - NEVER fail silently on unreadable files — log a warning and skip the file
 - NEVER modify Analyst-Reported Failures section
-
-## Post-Command Footer
-
-After ALL steps above are complete (including session context update), output the context usage bar as the final line:
-
-```bash
-python ".claude/skills/pbi/scripts/detect.py" context-bar 2>/dev/null
-```
-
-Print the output of this command as the very last line shown to the user. Do not skip this step.
-
 
 ## Shared Rules
 

@@ -7,7 +7,7 @@ model: sonnet
 allowed-tools: Read, Write, Bash, Agent
 metadata:
   author: d7rocket
-  version: 6.0.0
+  version: 6.1.0
   category: data-analytics
   tags: [power-bi, dax, pbip, semantic-model]
 ---
@@ -33,20 +33,22 @@ Save the `PBIP_DIR` value from the output — all subsequent commands must use i
 ### Session Context
 !`python ".claude/skills/pbi/scripts/detect.py" context 2>/dev/null || echo "No prior context found."`
 
-### Auto-Resume (every invocation)
+### Auto-Resume (session-aware)
 
 After detection blocks run, apply the following before routing:
 
-1. **PBIP_MODE=file, context exists** — Session Context output contains `## Model Context` with a table:
-   - Count the table rows in the Model Context table.
-   - Output on a single line: `Context resumed — [N] tables loaded`
+1. **PBIP_MODE=file — session load check**:
+   Run: `python ".claude/skills/pbi/scripts/detect.py" session-check 2>/dev/null`
+   - If output is `SESSION=active` — context was already loaded this session:
+     - Count the table rows in the Model Context table from Session Context.
+     - Output on a single line: `Context resumed — [N] tables loaded`
+   - If output is `SESSION=new` — first command this session:
+     - Output: `Loading model context (first command this session)...`
+     - Read all files from File Index, extract table/measure/column/relationship structure, build the Model Context markdown block, write it to `.pbi-context.md`.
+     - Write `## Session Start` with current UTC timestamp to `.pbi-context.md`.
+     - Output the summary table and: `Context loaded — [N] tables. Ready.`
 
-2. **PBIP_MODE=file, no context yet** — Session Context has no `## Model Context` or `.pbi-context.md` does not exist:
-   - Output: `No model context — auto-loading project...`
-   - Read all files from File Index, extract table/measure/column/relationship structure, build the Model Context markdown block, write it to `.pbi-context.md`.
-   - Output the summary table and: `Auto-loaded [N] tables. Context ready.`
-
-3. **PBIP_MODE=paste — nearby folder check**:
+2. **PBIP_MODE=paste — nearby folder check**:
    Run: `python ".claude/skills/pbi/scripts/detect.py" nearby 2>/dev/null`
    - If NEARBY_PBIP is found: output: `No PBIP project here, but found one at [NEARBY_PBIP]. Run cd "[NEARBY_PBIP]" first.`
    - If NEARBY_PBIP is empty: skip silently.
@@ -212,11 +214,6 @@ After any subcommand completes (including the Solve-First Default handler):
 2. **Skip conditions**: If PBIP_MODE=paste, or GIT=no, or the command did not write any files (e.g., explain in paste mode, help, diff), skip the auto-stage step (but still run context tracking below).
 3. **Auto-committing commands**: Commands that auto-commit (comment, new, edit, error, audit, comment-batch) already run `git add` + `git commit`. The epilogue's `git add` is a harmless no-op in those cases — skip the "Staged locally" output if the command already output an "Auto-committed" message.
 
-4. **Context tracking** — After every command completes, run:
-   ```bash
-   python ".claude/skills/pbi/scripts/detect.py" context-bar 2>/dev/null
-   ```
-   Output the result as the very last line of the command's output. This line MUST appear after all other output, including "Staged locally" messages.
 
 ## Shared Rules
 
@@ -228,7 +225,7 @@ After any subcommand completes (including the Solve-First Default handler):
 - TMSL expression format: preserve original form (string vs array); use array if expression has line breaks
 - Escalation state: `## Escalation State` in `.pbi-context.md` tracks gathered context during escalation. Read before solving (use existing context), write after asking escalation questions. Clear at session start if stale.
 - **LOCAL-FIRST GIT POLICY (CRITICAL):** The local copy of all files is ALWAYS the source of truth. The skill MUST NEVER run `git pull`, `git fetch`, `git merge`, `git rebase`, or any command that downloads or overwrites local files with remote content. The skill MUST NEVER suggest or run `git push`, and MUST NEVER create pull requests. Allowed git operations: `git init`, `git add`, `git commit`, `git diff`, `git log`, `git status`, `git revert`, `git rev-parse`. If the user manually asks to push or pull, they do it themselves outside the skill. This policy exists because pulling has previously overwritten local PBIP changes and broken relationships.
-- **Auto-Resume:** Every `/pbi` invocation loads project context automatically (see Auto-Resume section above). Individual commands should skip their "Model Context Check" (Step 0.5) if Auto-Resume already loaded context.
+- **Auto-Resume (session-aware):** The first `/pbi` command in each session always runs a fresh load to ensure data is current. Subsequent commands in the same session resume from the cached context. Individual commands should skip their "Model Context Check" (Step 0.5) if Auto-Resume already loaded context.
 
 ## Troubleshooting
 

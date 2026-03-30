@@ -171,16 +171,6 @@ Write back with Write tool.
 - NEVER output partial state — if a section exists in context, display it fully
 - NEVER run /pbi:load automatically — only suggest it if context is stale
 
-## Post-Command Footer
-
-After ALL steps above are complete, output the context usage bar as the final line:
-
-```bash
-python ".claude/skills/pbi/scripts/detect.py" context-bar 2>/dev/null
-```
-
-Print the output of this command as the very last line shown to the user.
-
 ## Shared Rules
 
 - **PYTHON-FIRST FILE OPERATIONS (CRITICAL):** All file read/write and text search operations MUST use Python with `encoding='utf-8'` to correctly handle accented characters (French: é, è, ê, ç, à, ù, etc.). Do NOT use `grep`, `cat`, `sed`, `awk`, or shell redirects for reading/writing model files. For measure name search, use `python ".claude/skills/pbi/scripts/detect.py" search "MeasureName" "$PBIP_DIR"` instead of `grep -rlF`. Shell/bash is allowed ONLY for: git CLI commands and Python script invocation.

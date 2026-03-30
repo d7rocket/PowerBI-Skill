@@ -3,6 +3,24 @@
 All notable changes to the PBI skill are documented here.
 Format: [Keep a Changelog](https://keepachangelog.com)
 
+## [6.1.0] — 2026-03-30
+
+### Added
+
+- Session-aware auto-load — first `/pbi` command in each session runs a fresh model load to ensure data is current; subsequent commands resume from cache (2-hour session window)
+- `detect.py session-check` subcommand — reads `**Session-Start:**` timestamp from `.pbi-context.md` and outputs `SESSION=active` or `SESSION=new`
+
+### Removed
+
+- Context usage bar (`detect.py context-bar`) — removed from all 20 commands and the Post-Command Epilogue
+- `## Post-Command Footer` sections removed from all sub-skill and command files
+- Context bar references removed from `ui-brand.md`
+
+### Changed
+
+- Auto-Resume logic across all sub-skills now checks session state before deciding whether to load or resume
+- `/pbi:load` now writes `**Session-Start:**` timestamp to `.pbi-context.md` to mark the session as active
+
 ## [6.0.0] — 2026-03-28
 
 ### Added

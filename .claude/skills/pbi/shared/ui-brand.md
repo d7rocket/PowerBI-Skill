@@ -65,10 +65,6 @@ Processing: ████████████░░░░░░░░ 60%  (6
 - Filled: `█` (U+2588), Empty: `░` (U+2591)
 - Show percentage AND count
 
-## Context Bar
-
-Every command ends with the context usage bar (run by detect.py context-bar).
-This appears as the very last line after all other output including Next Steps.
 
 ## Anti-Patterns
 
@@ -79,4 +75,3 @@ This appears as the very last line after all other output including Next Steps.
 - Missing Next Steps block after command completion
 - Using status symbols not in the approved set above
 - Inconsistent separator styles (mixing ` · ` with `, ` or ` | `)
-- Omitting the context bar as the final line

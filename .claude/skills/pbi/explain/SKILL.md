@@ -32,21 +32,22 @@ Save the `PBIP_DIR` value from the output — all subsequent steps must use it i
 ### Session Context
 !`python ".claude/skills/pbi/scripts/detect.py" context 2>/dev/null || echo "No prior context found."`
 
-### Auto-Resume
+### Auto-Resume (session-aware)
 
 After detection blocks run, apply the following before executing the command:
 
-1. **PBIP_MODE=file, context exists** — Session Context output contains `## Model Context` with a table:
-   - Count the table rows in the Model Context table.
-   - Output on a single line: `Context resumed — [N] tables loaded`
-   - Skip any "Model Context Check" (Step 0.5) below — context is already available.
+1. **PBIP_MODE=file — session load check**:
+   Run: `python ".claude/skills/pbi/scripts/detect.py" session-check 2>/dev/null`
+   - If output is `SESSION=active` — context was already loaded this session:
+     - Output on a single line: `Context resumed — [N] tables loaded` (count from Session Context)
+     - Skip any "Model Context Check" (Step 0.5) below — context is already available.
+   - If output is `SESSION=new` — first command this session:
+     - Output: `Loading model context (first command this session)...`
+     - Read all files from File Index, extract table/measure/column/relationship structure, build the Model Context markdown block, write it to `.pbi-context.md`.
+     - Write `## Session Start` with current UTC timestamp to `.pbi-context.md`.
+     - Output the summary table and: `Context loaded — [N] tables. Ready.`
 
-2. **PBIP_MODE=file, no context yet** — Session Context has no `## Model Context` or `.pbi-context.md` does not exist:
-   - Output: `No model context — auto-loading project...`
-   - Read all files from File Index, extract table/measure/column/relationship structure, build the Model Context markdown block, write it to `.pbi-context.md`.
-   - Output the summary table and: `Auto-loaded [N] tables. Context ready.`
-
-3. **PBIP_MODE=paste — nearby folder check**:
+2. **PBIP_MODE=paste — nearby folder check**:
    Run: `python ".claude/skills/pbi/scripts/detect.py" nearby 2>/dev/null`
    - If NEARBY_PBIP is found: output: `No PBIP project here, but found one at [NEARBY_PBIP]. Run cd "[NEARBY_PBIP]" first.`
    - If NEARBY_PBIP is empty: skip silently. Paste-in commands still work.
@@ -192,17 +193,6 @@ Do NOT use bash append commands — always Read then Write to avoid malformed st
 - NEVER skip complexity inference — always classify before explaining
 - NEVER reference columns not in Model Context when model-aware context is available
 - NEVER modify or rewrite the measure — explain only
-
-## Post-Command Footer
-
-After ALL steps above are complete (including session context update), output the context usage bar as the final line:
-
-```bash
-python ".claude/skills/pbi/scripts/detect.py" context-bar 2>/dev/null
-```
-
-Print the output of this command as the very last line shown to the user. Do not skip this step.
-
 
 ## Shared Rules
 
