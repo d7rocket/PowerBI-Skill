@@ -2,7 +2,7 @@
 set -e
 
 TARGET="${1:-.}"
-VERSION="6.0.0"
+VERSION="6.1.0"
 BASE="https://raw.githubusercontent.com/d7rocket/PowerBI-Skill/main"
 SKILL_DIR="$TARGET/.claude/skills/pbi"
 

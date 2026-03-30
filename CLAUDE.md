@@ -80,7 +80,7 @@ Each sub-skill runs its own detection blocks on load via `!` backtick syntax:
   version/SKILL.md      ← /pbi:version (sonnet)
   resume/SKILL.md       ← /pbi:resume (haiku)
   scripts/
-    detect.py           ← Python detection, search, HTML parsing, version check, gitignore (UTF-8 safe, 10 subcommands)
+    detect.py           ← Python detection, search, HTML parsing, version check, session check, gitignore (UTF-8 safe, 11 subcommands)
   shared/
     api-notes.md        ← DAX Formatter API reference
     CHANGELOG.md        ← version history (read by /pbi:version)
@@ -104,4 +104,4 @@ Test fixtures are in `tests/fixtures/`:
 
 ## Version
 
-Current: 6.0.0 (set in `pbi/SKILL.md` frontmatter)
+Current: 6.1.0 (set in `pbi/SKILL.md` frontmatter)

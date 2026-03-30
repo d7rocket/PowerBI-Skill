@@ -1,6 +1,6 @@
 <p align="center">
   <img src="https://img.shields.io/badge/Claude_Code-Skill-blueviolet?style=for-the-badge&logo=data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHBhdGggZmlsbD0id2hpdGUiIGQ9Ik0xMiAyQzYuNDggMiAyIDYuNDggMiAxMnM0LjQ4IDEwIDEwIDEwIDEwLTQuNDggMTAtMTBTMTcuNTIgMiAxMiAyem0tMiAxNWwtNS01IDEuNDEtMS40MUwxMCAxNC4xN2w3LjU5LTcuNTlMMTkgOGwtOSA5eiIvPjwvc3ZnPg==" alt="Claude Code Skill">
-  <img src="https://img.shields.io/badge/version-6.0-blue?style=for-the-badge" alt="Version 6.0">
+  <img src="https://img.shields.io/badge/version-6.1-blue?style=for-the-badge" alt="Version 6.1">
   <img src="https://img.shields.io/badge/license-MIT-green?style=for-the-badge" alt="MIT License">
   <img src="https://img.shields.io/badge/Power_BI-DAX-F2C811?style=for-the-badge&logo=powerbi&logoColor=black" alt="Power BI DAX">
 </p>
@@ -13,7 +13,7 @@
   ██████╔╝██████╔╝██║   Power BI DAX Co-pilot
   ██╔═══╝ ██╔══██╗██║   for Claude Code
   ██║     ██████╔╝██║
-  ╚═╝     ╚═════╝ ╚═╝   v6.0
+  ╚═╝     ╚═════╝ ╚═╝   v6.1
 ```
 
 **Explain, format, optimise, audit, and edit DAX measures — directly from your terminal.**
@@ -40,14 +40,14 @@ curl -sL https://raw.githubusercontent.com/d7rocket/PowerBI-Skill/main/install.s
 
 ---
 
-## What's New in v6.0
+## What's New in v6.1
 
 | Feature | Details |
 |:--------|:--------|
-| **Session resume** | New `/pbi:resume` command restores context across sessions — model state, command history, in-progress workflows, and git state in one view. |
-| **Rich command descriptions** | Every command now has `<purpose>` and `<core_principle>` blocks explaining WHY it exists and HOW it makes decisions. |
-| **Visual branding** | Consistent output format with stage banners, approved status symbols, severity tags, and next-steps blocks across all commands. |
-| **Improved context persistence** | Better `.pbi-context.md` management with freshness tracking, workflow state preservation, and escalation state continuity. |
+| **Session-aware auto-load** | First `/pbi` command in each session runs a fresh model load automatically — no stale context. Subsequent commands resume from cache (2-hour session window). |
+| **Cleaner output** | Removed the context usage bar from all commands — less noise, more signal. |
+| **Session resume** | `/pbi:resume` restores context across sessions — model state, command history, in-progress workflows, and git state. |
+| **Visual branding** | Consistent output format with stage banners, approved status symbols, severity tags, and next-steps blocks. |
 
 ---
 
@@ -116,7 +116,7 @@ curl -sL https://raw.githubusercontent.com/d7rocket/PowerBI-Skill/main/install.s
 
 | Feature | How |
 |:--------|:----|
-| **Auto-Resume** | Context loads automatically — no `/pbi:load` needed |
+| **Session Auto-Load** | First command each session refreshes model context automatically |
 | **Local-First Git** | Never pulls, pushes, or creates PRs. Your files are the source of truth. |
 | **Session Memory** | `.pbi-context.md` persists model context, command history, failure flags |
 | **Smart Routing** | Sonnet for DAX reasoning, Haiku for file ops, Opus for deep extraction |
@@ -186,7 +186,7 @@ cp -r /tmp/pbi-skill/.claude your-project/.claude
   help/SKILL.md
   version/SKILL.md
   resume/SKILL.md       Session resume and context restoration
-  scripts/detect.py     UTF-8 detection + search (10 subcommands)
+  scripts/detect.py     UTF-8 detection + search (11 subcommands)
   shared/
     api-notes.md        DAX Formatter API reference
     CHANGELOG.md        Version history
@@ -282,6 +282,7 @@ All commits are local only.
 - [x] Installer overhaul, token safety, `/pbi:version`
 - [x] Sub-skill architecture — each command is its own `/pbi:<cmd>` skill
 - [x] Session resume, visual branding, rich command descriptions
+- [x] Session-aware auto-load, context bar removal
 - [ ] Cross-measure dependency graph
 - [ ] Side-by-side measure comparison
 - [ ] Calculated column support
