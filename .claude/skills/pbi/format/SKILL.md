@@ -1,12 +1,12 @@
 ---
 name: pbi:format
-description: "Reformat DAX for readability using DAX Formatter API. Use when user says 'format DAX', 'clean up DAX', 'prettify', or 'style DAX'."
+description: "Reformat DAX expressions for maximum readability using the DAX Formatter API (daxformatter.com). Handles long expressions, nested functions, and multi-line VAR/RETURN blocks. Preserves semantic meaning while applying consistent indentation and spacing. Auto-applies to PBIP files when detected."
 model: sonnet
 allowed-tools: Read, Write, Bash, Agent
 disable-model-invocation: true
 metadata:
   author: d7rocket
-  version: 4.4.0
+  version: 6.0.0
   category: data-analytics
   tags: [power-bi, dax, pbip, semantic-model]
 ---
@@ -57,6 +57,14 @@ After auto-resume completes, proceed to the command instructions below.
 ---
 
 # /pbi:format
+
+<purpose>
+Consistent formatting makes DAX scannable and reviewable. Unformatted DAX hides logic in walls of text — formatted DAX reveals structure at a glance.
+</purpose>
+
+<core_principle>
+Use the external DAX Formatter API for consistent, community-standard formatting. Never invent formatting rules — defer to the API. If the API is unavailable, format manually following DAX Formatter conventions.
+</core_principle>
 
 > DAX Formatter API reference is in `shared/api-notes.md` (read if needed).
 

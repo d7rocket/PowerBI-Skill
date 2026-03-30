@@ -1,12 +1,12 @@
 ---
 name: pbi:new
-description: "Scaffold a new DAX measure from a plain-English description. Use when user says 'create a measure', 'new measure', 'add measure', or 'scaffold'."
+description: "Generate a complete DAX measure from a plain-English business requirement. Produces the expression, format string, display folder, and description property. Validates against model context when available. Auto-writes to TMDL/TMSL files and auto-commits."
 model: sonnet
 allowed-tools: Read, Write, Bash, Agent
 disable-model-invocation: true
 metadata:
   author: d7rocket
-  version: 4.4.0
+  version: 6.0.0
   category: data-analytics
   tags: [power-bi, dax, pbip, semantic-model]
 ---
@@ -58,6 +58,13 @@ After auto-resume completes, proceed to the command instructions below.
 
 # /pbi:new
 
+<purpose>
+Writing DAX from scratch requires knowing both the business requirement and the model structure. This command handles the translation — the analyst describes WHAT they need, the skill produces HOW in DAX.
+</purpose>
+
+<core_principle>
+Generate correct, idiomatic DAX that follows the model's existing patterns. Match naming conventions, display folder structure, and format string patterns already in use. Never generate DAX that references tables or columns not in the model.
+</core_principle>
 
 ## Instructions
 

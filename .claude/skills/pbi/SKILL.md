@@ -7,7 +7,7 @@ model: sonnet
 allowed-tools: Read, Write, Bash, Agent
 metadata:
   author: d7rocket
-  version: 5.0.0
+  version: 6.0.0
   category: data-analytics
   tags: [power-bi, dax, pbip, semantic-model]
 ---
@@ -77,6 +77,7 @@ Parse `$ARGUMENTS` first word/keyword to determine the subcommand. Match against
 | extract, "project summary", "model summary", "export model" | `/pbi:extract` |
 | docs, documentation, "generate docs", "document project", "project docs" | `/pbi:docs` |
 | help, commands, "what can you do", "list commands" | `/pbi:help` |
+| resume, "pick up where I left off", "what was I doing", "continue", "restore context" | `/pbi:resume` |
 | version, "version history", "what version" | `/pbi:version` |
 | (no keyword match — free-text) | Solve-first handler (inline below) |
 
@@ -119,10 +120,13 @@ What would you like to do?
 **G — Generate project documentation**
   /pbi:docs (polished, stakeholder-ready model documentation)
 
+**H — Resume session**
+  /pbi:resume — Restore context and see where you left off
+
 **? — Help**
   /pbi:help — List all commands
 
-Type A, B, C, D, E, F, G, or ? — or describe what you need and I'll route you directly.
+Type A, B, C, D, E, F, G, H, or ? — or describe what you need and I'll route you directly.
 
 ---
 
@@ -135,6 +139,7 @@ On analyst response:
 - "E": Route to `/pbi:deep`.
 - "F": Route to `/pbi:extract`.
 - "G": Route to `/pbi:docs`. Output "Routing to /pbi:docs — generating project documentation." then proceed.
+- "H": Route to `/pbi:resume`. Output "Routing to /pbi:resume — restoring session context." then proceed.
 - "?": Route to `/pbi:help`.
 - Free-text response: Apply the keyword matching from the Routing table above. If no keyword matches, route to **Solve-First Default** handler.
 - Unrecognised response: Output "I didn't catch that — type A, B, C, D, E, F, G, or ? — or describe what you need."

@@ -1,12 +1,12 @@
 ---
 name: pbi:diff
-description: "Summarise uncommitted model changes. Use when user says 'diff', 'what changed', 'changes', or 'show changes'."
+description: "Generate a human-readable summary of all uncommitted changes in the semantic model since the last git commit. Groups changes by type (measures added/modified/removed, columns changed, relationships altered). Translates raw git diffs into business-language descriptions."
 model: haiku
 allowed-tools: Read, Write, Bash, Agent
 disable-model-invocation: true
 metadata:
   author: d7rocket
-  version: 4.4.0
+  version: 6.0.0
   category: data-analytics
   tags: [power-bi, dax, pbip, semantic-model]
 ---
@@ -58,6 +58,13 @@ After auto-resume completes, proceed to the command instructions below.
 
 # /pbi:diff
 
+<purpose>
+Raw git diffs of TMDL/TMSL files are unreadable — JSON fragments and tab-indented blocks obscure what actually changed. This command translates file-level diffs into model-level changes that anyone can understand.
+</purpose>
+
+<core_principle>
+Summarize at the model level, not the file level. "Added measure [Revenue YTD] to Sales table" is useful. "Modified Sales.tmdl lines 45-52" is not.
+</core_principle>
 
 ## Instructions
 

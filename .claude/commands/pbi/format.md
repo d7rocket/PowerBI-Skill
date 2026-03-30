@@ -1,6 +1,6 @@
 ---
 name: pbi:format
-description: "Reformat DAX for readability using DAX Formatter API"
+description: "Reformat DAX for readability using DAX Formatter API with consistent indentation and spacing"
 allowed-tools:
   - Read
   - Write

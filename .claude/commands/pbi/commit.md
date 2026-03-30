@@ -1,6 +1,6 @@
 ---
 name: pbi:commit
-description: "Stage and commit model changes with a generated message"
+description: "Auto-generated business-language commits for semantic model changes (local only, never pushes)"
 allowed-tools:
   - Read
   - Write

@@ -1,6 +1,6 @@
 ---
 name: pbi:explain
-description: "Break down a DAX measure into plain English with filter context, row context, and performance notes"
+description: "Structured plain-English breakdown of any DAX measure with filter context, row context, context transitions, and performance notes"
 allowed-tools:
   - Read
   - Write

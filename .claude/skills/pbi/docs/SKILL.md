@@ -1,12 +1,12 @@
 ---
 name: pbi:docs
-description: "Generate polished, stakeholder-ready project documentation. Use when user says 'docs', 'documentation', 'generate docs', or 'document project'."
+description: "Generate polished, stakeholder-ready project documentation combining model metadata, measure catalog, relationship diagram, data dictionary, and usage guidelines. Formatted for direct sharing — no technical jargon, clear section headers, executive summary."
 model: sonnet
 allowed-tools: Read, Write, Bash, Agent
 disable-model-invocation: true
 metadata:
   author: d7rocket
-  version: 4.4.0
+  version: 6.0.0
   category: data-analytics
   tags: [power-bi, dax, pbip, semantic-model]
 ---
@@ -58,6 +58,13 @@ After auto-resume completes, proceed to the command instructions below.
 
 # /pbi:docs
 
+<purpose>
+Stakeholders need to understand the model without opening Power BI Desktop. This command produces documentation that answers "what does this model do?" for anyone in the organization.
+</purpose>
+
+<core_principle>
+Write for business stakeholders, not developers. Every section should be understandable by someone who has never opened Power BI Desktop. Include an executive summary. Organize by business domain, not by table structure.
+</core_principle>
 
 ## Instructions
 

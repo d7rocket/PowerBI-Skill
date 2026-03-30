@@ -1,6 +1,6 @@
 ---
 name: pbi:optimise
-description: "Analyse DAX for performance and suggest improvements (13-rule scan)"
+description: "13-rule performance scan with severity-graded findings and before/after diffs"
 allowed-tools:
   - Read
   - Write

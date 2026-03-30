@@ -1,6 +1,6 @@
 ---
 name: pbi:error
-description: "Diagnose a DAX error and suggest fixes with file-mode auto-apply"
+description: "Diagnose DAX errors across 7 categories with root cause analysis, fix suggestions, and auto-apply"
 allowed-tools:
   - Read
   - Write

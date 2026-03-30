@@ -1,6 +1,6 @@
 ---
 name: pbi:comment
-description: "Add inline comments and description to a single DAX measure"
+description: "Add inline // comments and description property to a single DAX measure for Power BI tooltips"
 allowed-tools:
   - Read
   - Write

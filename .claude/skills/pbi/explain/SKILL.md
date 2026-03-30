@@ -1,12 +1,12 @@
 ---
 name: pbi:explain
-description: "Break down a DAX measure into plain English with filter context, row context, and performance notes. Use when user says 'explain this measure', 'what does this DAX do', or 'understand DAX'."
+description: "Deconstruct any DAX measure into a structured plain-English breakdown covering business logic, filter context propagation, row context scope, context transitions, and performance implications. Adapts depth to measure complexity (Simple/Intermediate/Advanced). Works with pasted DAX or reads from PBIP model files."
 model: sonnet
 allowed-tools: Read, Write, Bash, Agent
 disable-model-invocation: true
 metadata:
   author: d7rocket
-  version: 4.4.0
+  version: 6.0.0
   category: data-analytics
   tags: [power-bi, dax, pbip, semantic-model]
 ---
@@ -58,6 +58,13 @@ After auto-resume completes, proceed to the command instructions below.
 
 # /pbi:explain
 
+<purpose>
+Turn opaque DAX into clear, actionable understanding. Analysts need to know WHAT a measure does, WHY it behaves the way it does in visuals, and WHERE performance bottlenecks hide — without reading DAX syntax.
+</purpose>
+
+<core_principle>
+Explain intent and behavior, not syntax. The output should help someone who has never seen this measure understand its business purpose, its interaction with filter context, and any hidden complexity.
+</core_principle>
 
 ## Instructions
 

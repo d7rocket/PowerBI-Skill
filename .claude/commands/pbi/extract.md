@@ -1,6 +1,6 @@
 ---
 name: pbi:extract
-description: "Export a structured summary of your PBIP project (overview, standard, or deep-dive)"
+description: "Export model summary at three detail levels: overview, standard, and deep-dive (Opus agent)"
 allowed-tools:
   - Read
   - Write

@@ -1,12 +1,12 @@
 ---
 name: pbi:deep
-description: "Guided multi-phase DAX workflow: intake, model review, DAX development, verification. Use when user says 'deep' or needs a structured multi-step session."
+description: "Run a structured four-phase DAX development workflow with hard gates between phases. Phase A: business context intake. Phase B: model review. Phase C: DAX development. Phase D: verification. Each phase must complete before the next begins. Designed for complex multi-measure work."
 model: sonnet
 allowed-tools: Read, Write, Bash, Agent
 disable-model-invocation: true
 metadata:
   author: d7rocket
-  version: 4.4.0
+  version: 6.0.0
   category: data-analytics
   tags: [power-bi, dax, pbip, semantic-model]
 ---
@@ -58,6 +58,13 @@ After auto-resume completes, proceed to the command instructions below.
 
 # /pbi:deep
 
+<purpose>
+Complex DAX work fails when context is gathered piecemeal. Deep mode front-loads ALL context gathering before any DAX is written — eliminating the "oh wait, I also need..." iteration loop that wastes tokens and analyst patience.
+</purpose>
+
+<core_principle>
+Front-load context, then execute. Never write DAX before completing intake and model review. Hard gates between phases prevent premature solutions. The business question drives everything — every measure must trace back to a stated business need.
+</core_principle>
 
 ## Instructions
 

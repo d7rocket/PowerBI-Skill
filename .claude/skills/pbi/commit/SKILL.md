@@ -1,12 +1,12 @@
 ---
 name: pbi:commit
-description: "Stage and commit model changes with a generated message. Use when user says 'commit', 'save', 'snapshot', or 'git'."
+description: "Stage all semantic model changes and create a local git commit with an auto-generated business-language message. Analyzes diffs to produce messages like 'feat: add Revenue YTD measure'. Auto-initializes git if needed. All commits are LOCAL only — never pushes."
 model: haiku
 allowed-tools: Read, Write, Bash, Agent
 disable-model-invocation: true
 metadata:
   author: d7rocket
-  version: 4.4.0
+  version: 6.0.0
   category: data-analytics
   tags: [power-bi, dax, pbip, semantic-model]
 ---
@@ -58,6 +58,13 @@ After auto-resume completes, proceed to the command instructions below.
 
 # /pbi:commit
 
+<purpose>
+Version control for PBIP projects should describe business changes, not file changes. Auto-generated messages ensure every commit is meaningful and searchable by business context.
+</purpose>
+
+<core_principle>
+Commit messages describe business impact. Use conventional commit prefixes (feat, fix, refactor, docs). Never push, pull, or interact with remotes — local-first policy protects against overwriting PBIP relationships.
+</core_principle>
 
 > **LOCAL-FIRST POLICY (CRITICAL):** All commits are local only. NEVER run `git pull`, `git fetch`, `git push`, `git merge`, or any command that syncs with a remote. NEVER suggest pushing or pulling. NEVER create pull requests. The local copy is ALWAYS the source of truth. If a remote exists and is ahead, that is irrelevant — local wins.
 

@@ -1,6 +1,6 @@
 ---
 name: pbi:undo
-description: "Revert the last auto-commit"
+description: "Safely revert the last PBI auto-commit using git revert to preserve history"
 allowed-tools:
   - Read
   - Write

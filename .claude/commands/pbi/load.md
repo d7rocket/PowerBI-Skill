@@ -1,6 +1,6 @@
 ---
 name: pbi:load
-description: "Read PBIP project structure into session context"
+description: "Parse PBIP semantic model and build structured session context with tables, measures, columns, and relationships"
 allowed-tools:
   - Read
   - Write

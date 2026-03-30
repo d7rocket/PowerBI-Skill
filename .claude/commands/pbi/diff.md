@@ -1,6 +1,6 @@
 ---
 name: pbi:diff
-description: "Summarise uncommitted model changes since last commit"
+description: "Human-readable summary of uncommitted model changes grouped by entity type"
 allowed-tools:
   - Read
   - Write

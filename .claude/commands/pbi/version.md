@@ -1,6 +1,6 @@
 ---
 name: pbi:version
-description: "Display version history and changelog"
+description: "Display installed version and full changelog history (offline-only)"
 allowed-tools:
   - Read
   - Write

@@ -1,12 +1,12 @@
 ---
 name: pbi:edit
-description: "Modify model entities (measures, columns, tables) from plain-English instructions. Use when user says 'edit', 'rename', 'update', 'change', or 'modify'."
+description: "Modify any model entity (measures, columns, tables, properties) using plain-English instructions. Supports rename, expression change, property update, move between tables, and bulk operations. Shows before/after preview before writing. Uses UTF-8 search for French accent handling. Auto-commits."
 model: sonnet
 allowed-tools: Read, Write, Bash, Agent
 disable-model-invocation: true
 metadata:
   author: d7rocket
-  version: 4.4.0
+  version: 6.0.0
   category: data-analytics
   tags: [power-bi, dax, pbip, semantic-model]
 ---
@@ -58,6 +58,13 @@ After auto-resume completes, proceed to the command instructions below.
 
 # /pbi:edit
 
+<purpose>
+Editing TMDL/TMSL files manually is error-prone — wrong indentation breaks TMDL, wrong JSON structure breaks TMSL. This command handles the file format complexity so the analyst focuses on the business change.
+</purpose>
+
+<core_principle>
+Always show before/after preview before writing. Never write without confirmation. Resolve entity names using detect.py search for UTF-8 accuracy. Preserve file format conventions (tabs for TMDL, correct JSON structure for TMSL).
+</core_principle>
 
 ## Instructions
 

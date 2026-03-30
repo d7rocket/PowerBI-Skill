@@ -1,6 +1,6 @@
 ---
 name: pbi:new
-description: "Scaffold a new DAX measure from a plain-English description"
+description: "Generate a complete DAX measure from plain English with expression, format string, display folder, and description"
 allowed-tools:
   - Read
   - Write

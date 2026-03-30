@@ -1,6 +1,6 @@
 ---
 name: pbi:help
-description: "Show command reference with version check"
+description: "Complete command reference with version check and remote update detection"
 allowed-tools:
   - Read
   - Write

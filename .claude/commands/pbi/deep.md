@@ -1,6 +1,6 @@
 ---
 name: pbi:deep
-description: "Guided multi-phase DAX workflow: intake, model review, DAX development, verification"
+description: "Four-phase guided DAX workflow with hard gates: intake, model review, DAX development, verification"
 allowed-tools:
   - Read
   - Write

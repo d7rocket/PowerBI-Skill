@@ -1,12 +1,12 @@
 ---
 name: pbi:error
-description: "Diagnose a DAX error and suggest fixes with file-mode auto-apply. Use when user says 'fix DAX error', 'diagnose', 'broken', or 'failing'."
+description: "Diagnose DAX errors across 7 categories (syntax, type mismatch, circular dependency, missing column, ambiguous name, filter context, runtime). Produces root cause analysis with fix suggestions. In PBIP file mode, auto-applies the fix and commits. Checks prior failures to avoid repeating failed approaches."
 model: sonnet
 allowed-tools: Read, Write, Bash, Agent
 disable-model-invocation: true
 metadata:
   author: d7rocket
-  version: 4.4.0
+  version: 6.0.0
   category: data-analytics
   tags: [power-bi, dax, pbip, semantic-model]
 ---
@@ -58,6 +58,13 @@ After auto-resume completes, proceed to the command instructions below.
 
 # /pbi:error
 
+<purpose>
+DAX errors are cryptic — the Power BI error bar gives a message but rarely the root cause. This command bridges that gap, going from error message to working measure in one step.
+</purpose>
+
+<core_principle>
+Diagnose the root cause, not the symptom. A "type mismatch" error may actually be a missing relationship. A "circular dependency" may be an unintended context transition. Always trace back to the underlying model issue.
+</core_principle>
 
 You are a Power BI error diagnosis expert. Your job is to take a pasted error message or error log and identify the root cause and actionable fix, using session context to make your diagnosis specific.
 

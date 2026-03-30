@@ -1,12 +1,12 @@
 ---
 name: pbi:changelog
-description: "Generate release notes from recent commits. Use when user says 'changelog', 'release notes', 'history', or 'what shipped'."
+description: "Generate structured release notes from local git history in Keep a Changelog format. Groups commits by type (Added, Changed, Fixed, Removed). Covers a configurable range. Writes to CHANGELOG.md. Translates commit messages into user-facing release notes."
 model: haiku
 allowed-tools: Read, Write, Bash, Agent
 disable-model-invocation: true
 metadata:
   author: d7rocket
-  version: 4.4.0
+  version: 6.0.0
   category: data-analytics
   tags: [power-bi, dax, pbip, semantic-model]
 ---
@@ -58,6 +58,13 @@ After auto-resume completes, proceed to the command instructions below.
 
 # /pbi:changelog
 
+<purpose>
+Stakeholders need to know what changed in the model without reading git logs. This command turns commit history into polished release notes that anyone can understand.
+</purpose>
+
+<core_principle>
+Write for stakeholders, not developers. "Added year-to-date revenue measure" is useful. "feat: add Revenue YTD to Sales table via /pbi:new" is not. Strip technical prefixes and translate to business language.
+</core_principle>
 
 ## Git Log
 !`git log --oneline --no-decorate -50 2>/dev/null || echo "NO_LOG"`

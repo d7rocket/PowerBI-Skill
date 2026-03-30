@@ -1,6 +1,6 @@
 ---
 name: pbi:audit
-description: "Full model health check (19 rules) with auto-fix for critical issues"
+description: "19-rule health check across 8 domains with severity grading (CRITICAL/WARN/INFO) and auto-fix for structural issues"
 allowed-tools:
   - Read
   - Write

@@ -1,18 +1,25 @@
 ---
 name: pbi:version
-description: "Display version history and changelog. Use when user says 'version', 'version history', or 'what version'."
+description: "Display the installed PBI skill version and full changelog history from the bundled CHANGELOG.md. Offline-only — never makes network calls. Shows complete release history with dates, features, and changes."
 model: sonnet
 allowed-tools: Read, Write, Bash, Agent
 disable-model-invocation: true
 metadata:
   author: d7rocket
-  version: 4.4.0
+  version: 6.0.0
   category: data-analytics
   tags: [power-bi, dax, pbip, semantic-model]
 ---
 
 # /pbi:version
 
+<purpose>
+Know what version is installed and what changed in each release. Useful for troubleshooting and understanding when a feature was added.
+</purpose>
+
+<core_principle>
+Offline-only. Read from the bundled CHANGELOG.md — never make network calls. The /pbi:help command handles update checking separately.
+</core_principle>
 
 ## Instructions
 

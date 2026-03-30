@@ -2,7 +2,7 @@
 set -e
 
 TARGET="${1:-.}"
-VERSION="5.0.0"
+VERSION="6.0.0"
 BASE="https://raw.githubusercontent.com/d7rocket/PowerBI-Skill/main"
 SKILL_DIR="$TARGET/.claude/skills/pbi"
 
@@ -70,7 +70,7 @@ fi
 
 # ── Download sub-skills ────────────────────────────────────────────
 echo -e "${CYAN}  [2/5] Sub-skills${RESET}"
-commands=(explain format optimise comment error new load audit diff commit edit undo comment-batch changelog extract deep docs help version)
+commands=(explain format optimise comment error new load audit diff commit edit undo comment-batch changelog extract deep docs help version resume)
 total=${#commands[@]}
 i=0
 failed=()
@@ -129,6 +129,11 @@ if curl -sL "$BASE/.claude/skills/pbi/shared/CHANGELOG.md" -o "$SKILL_DIR/shared
     echo -e "${GRAY}        CHANGELOG.md${RESET}"
 else
     echo -e "${YELLOW}        CHANGELOG.md — skipped (non-critical)${RESET}"
+fi
+if curl -sL "$BASE/.claude/skills/pbi/shared/ui-brand.md" -o "$SKILL_DIR/shared/ui-brand.md" 2>/dev/null; then
+    echo -e "${GRAY}        ui-brand.md${RESET}"
+else
+    echo -e "${YELLOW}        ui-brand.md — skipped (non-critical)${RESET}"
 fi
 
 # ── Verify ──────────────────────────────────────────────────────────

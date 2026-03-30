@@ -1,12 +1,12 @@
 ---
 name: pbi:load
-description: "Read PBIP project structure into session context. Use when user says 'load project', 'load context', or 'model context'."
+description: "Parse the full PBIP semantic model (TMDL or TMSL format) and build structured session context. Extracts all tables, measures, columns, relationships, data categories, and hidden state. Writes to .pbi-context.md for reuse across all subsequent commands."
 model: haiku
 allowed-tools: Read, Write, Bash, Agent
 disable-model-invocation: true
 metadata:
   author: d7rocket
-  version: 4.4.0
+  version: 6.0.0
   category: data-analytics
   tags: [power-bi, dax, pbip, semantic-model]
 ---
@@ -58,6 +58,13 @@ After auto-resume completes, proceed to the command instructions below.
 
 # /pbi:load
 
+<purpose>
+Every PBIP command needs model awareness — which tables exist, how they relate, what measures are defined. Loading once and caching in .pbi-context.md prevents re-reading dozens of files on every command invocation.
+</purpose>
+
+<core_principle>
+Extract structure, not content. The context cache stores table names, column lists, and relationship topology — not full measure expressions. Keep the context file small enough to fit in any command's context window.
+</core_principle>
 
 ## Instructions
 

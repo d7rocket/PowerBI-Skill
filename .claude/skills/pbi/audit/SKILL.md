@@ -1,12 +1,12 @@
 ---
 name: pbi:audit
-description: "Full model health check with auto-fix for bidirectional filters and hidden columns. Use when user says 'audit', 'health check', 'review model', or 'find issues'."
+description: "Run a comprehensive 19-rule health check across 8 domains: relationships, naming, date table, measure quality, hidden columns, report layer, advanced features, and performance. Severity-graded output (CRITICAL/WARN/INFO) with auto-fix for structural issues. Parallel agents for 5+ table models."
 model: sonnet
 allowed-tools: Read, Write, Bash, Agent
 disable-model-invocation: true
 metadata:
   author: d7rocket
-  version: 4.4.0
+  version: 6.0.0
   category: data-analytics
   tags: [power-bi, dax, pbip, semantic-model]
 ---
@@ -58,6 +58,13 @@ After auto-resume completes, proceed to the command instructions below.
 
 # /pbi:audit
 
+<purpose>
+Model quality degrades silently — bidirectional filters create ambiguity, unhidden keys clutter filter panes, missing format strings confuse report consumers. This command surfaces problems before they reach stakeholders.
+</purpose>
+
+<core_principle>
+Grade by impact, not count. One CRITICAL bidirectional filter matters more than ten INFO findings. Auto-fix only touches structural properties (isHidden, crossFilteringBehavior) — never modify measure expressions during audit.
+</core_principle>
 
 ## Instructions
 

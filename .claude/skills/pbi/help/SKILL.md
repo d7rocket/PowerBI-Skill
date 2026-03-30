@@ -1,18 +1,25 @@
 ---
 name: pbi:help
-description: "Show command reference with version check. Use when user says 'help', 'commands', 'what can you do', or 'list commands'."
+description: "Display the complete PBI skill command reference with version check, organized by category (paste-in, PBIP, workflow, utility). Shows model assignment for each command. Checks for remote updates."
 model: sonnet
 allowed-tools: Read, Write, Bash, Agent
 disable-model-invocation: true
 metadata:
   author: d7rocket
-  version: 4.4.0
+  version: 6.0.0
   category: data-analytics
   tags: [power-bi, dax, pbip, semantic-model]
 ---
 
 # /pbi:help
 
+<purpose>
+Quick reference for all available commands with enough context to choose the right one. The version check ensures users know when updates are available.
+</purpose>
+
+<core_principle>
+Show everything in one view. No pagination, no "type help <cmd> for details". The help output is a complete reference that fits on one screen.
+</core_principle>
 
 ## Instructions
 
@@ -84,6 +91,9 @@ Output the following, inserting the version line from Step 1:
 | Command | Description | Model |
 |---------|-------------|-------|
 | `/pbi:deep` | Guided multi-phase workflow: intake → model review → DAX dev → verification | Sonnet |
+| `/pbi:resume` | Restore session context and continue from where you left off | Haiku |
+| `/pbi:version` | Display installed version and full changelog | Sonnet |
+| `/pbi:docs` | Generate polished, stakeholder-ready project documentation | Sonnet |
 | `/pbi:help` | Show this reference with version check | — |
 
 ## Quick Start
@@ -95,7 +105,7 @@ Output the following, inserting the version line from Step 1:
 
 ## Tips
 
-- All commands read `.pbi-context.md` for session state — run `/pbi:load` once to prime it.
+- All commands read `.pbi-context.md` for session state. Use `/pbi:resume` to see current state, or `/pbi:load` to refresh.
 - `/pbi:audit` can auto-fix critical issues (bidirectional filters, unhidden key columns).
 - Free-text works too — just type `/pbi <your question>` and it will be solved directly.
 - Model selection is automatic: Haiku for file/git ops, Sonnet for DAX reasoning, Opus for deep extraction.

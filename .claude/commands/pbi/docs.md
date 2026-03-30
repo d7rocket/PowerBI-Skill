@@ -1,6 +1,6 @@
 ---
 name: pbi:docs
-description: "Generate polished, stakeholder-ready project documentation"
+description: "Generate polished, stakeholder-ready project documentation with executive summary and data dictionary"
 allowed-tools:
   - Read
   - Write

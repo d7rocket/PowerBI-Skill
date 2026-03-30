@@ -1,12 +1,12 @@
 ---
 name: pbi:comment
-description: "Add inline comments to a single DAX measure. Use when user says 'comment DAX', 'annotate', 'document measure', or 'describe measure'."
+description: "Add inline // comments and a structured description property to a single DAX measure. Comments explain business logic at each logical block. The description property provides a one-line summary visible in Power BI Desktop tooltips. Auto-writes to PBIP and auto-commits when detected."
 model: sonnet
 allowed-tools: Read, Write, Bash, Agent
 disable-model-invocation: true
 metadata:
   author: d7rocket
-  version: 4.4.0
+  version: 6.0.0
   category: data-analytics
   tags: [power-bi, dax, pbip, semantic-model]
 ---
@@ -58,6 +58,13 @@ After auto-resume completes, proceed to the command instructions below.
 
 # /pbi:comment
 
+<purpose>
+Uncommented measures are technical debt. When a measure breaks six months later, the comments are the first thing the next developer reads. Good comments explain WHY, not WHAT.
+</purpose>
+
+<core_principle>
+Comment business intent, not DAX syntax. "Filter to current year" is useful. "CALCULATE with DATESYTD filter" is noise. Write comments that help someone unfamiliar with the business domain understand the measure.
+</core_principle>
 
 ## File Mode Branch
 

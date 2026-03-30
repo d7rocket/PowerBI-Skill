@@ -1,6 +1,6 @@
 ---
 name: pbi:changelog
-description: "Generate release notes from recent commits"
+description: "Generate structured release notes from git history in Keep a Changelog format"
 allowed-tools:
   - Read
   - Write

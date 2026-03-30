@@ -1,6 +1,6 @@
 ---
 name: pbi:comment-batch
-description: "Add descriptions to all undocumented measures in the model"
+description: "Add descriptions to every undocumented measure in the model with contextually accurate summaries"
 allowed-tools:
   - Read
   - Write

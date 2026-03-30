@@ -84,7 +84,7 @@ Write-Host "  [2/5] Sub-skills" -ForegroundColor Cyan
 $commands = @(
     "explain","format","optimise","comment","error","new",
     "load","audit","diff","commit","edit","undo",
-    "comment-batch","changelog","extract","deep","docs","help","version"
+    "comment-batch","changelog","extract","deep","docs","help","version","resume"
 )
 $total = $commands.Count
 $i = 0
@@ -149,6 +149,12 @@ try {
     Write-Host "        CHANGELOG.md" -ForegroundColor DarkGray
 } catch {
     Write-Host "        CHANGELOG.md — skipped (non-critical)" -ForegroundColor Yellow
+}
+try {
+    Invoke-WebRequest -Uri "$base/.claude/skills/pbi/shared/ui-brand.md" -OutFile (Join-Path $sharedDir "ui-brand.md") -UseBasicParsing
+    Write-Host "        ui-brand.md" -ForegroundColor DarkGray
+} catch {
+    Write-Host "        ui-brand.md — skipped (non-critical)" -ForegroundColor Yellow
 }
 
 # ── Verify ──────────────────────────────────────────────────────────

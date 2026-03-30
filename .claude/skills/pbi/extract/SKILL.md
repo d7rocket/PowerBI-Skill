@@ -1,12 +1,12 @@
 ---
 name: pbi:extract
-description: "Export a structured summary of your PBIP project (overview, standard, or deep-dive tiers). Use when user says 'extract', 'project summary', 'model summary', or 'export model'."
+description: "Generate a structured documentation export of the PBIP project at three detail levels. Overview: one-page model summary. Standard: full model documentation with expressions. Deep-dive: comprehensive analysis with lineage and dependencies (spawns Opus agent). Writes to project-summary.md."
 model: sonnet
 allowed-tools: Read, Write, Bash, Agent
 disable-model-invocation: true
 metadata:
   author: d7rocket
-  version: 4.4.0
+  version: 6.0.0
   category: data-analytics
   tags: [power-bi, dax, pbip, semantic-model]
 ---
@@ -58,6 +58,13 @@ After auto-resume completes, proceed to the command instructions below.
 
 # /pbi:extract
 
+<purpose>
+Model documentation is needed at different depths for different audiences. Overview for executives, standard for analysts, deep-dive for developers. One command serves all three.
+</purpose>
+
+<core_principle>
+Match detail level to audience. Overview fits on one page. Standard covers everything an analyst needs. Deep-dive is exhaustive — use Opus for the analysis depth required. Always write to a file so the output can be shared.
+</core_principle>
 
 ## Instructions
 

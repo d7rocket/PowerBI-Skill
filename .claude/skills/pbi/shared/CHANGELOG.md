@@ -3,6 +3,23 @@
 All notable changes to the PBI skill are documented here.
 Format: [Keep a Changelog](https://keepachangelog.com)
 
+## [6.0.0] — 2026-03-28
+
+### Added
+
+- `/pbi:resume` command — restore session context across sessions with model state, command history, workflow progress, and git state summary
+- `<purpose>` and `<core_principle>` blocks on all 20 commands — explains WHY each command exists and HOW it makes decisions
+- `shared/ui-brand.md` — visual output standards reference (stage banners, status symbols, severity tags, progress bars)
+- Context freshness tracking — resume command shows whether cached context is Current, Recent, or Stale
+- Conditional workflow state display — resume shows active deep-mode phase and pending escalation questions
+
+### Changed
+
+- All 20 sub-skill descriptions rewritten with specific capabilities, not just trigger phrases
+- Help command updated with resume, version, and docs in the command table
+- Base router menu expanded with category H (Resume session)
+- Installers updated to download resume skill and ui-brand.md shared resource
+
 ## [4.4.0] — 2026-03-24
 
 ### Added

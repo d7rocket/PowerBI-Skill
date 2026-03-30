@@ -122,3 +122,12 @@ None - no external service configuration required.
 ---
 *Phase: 06-token-safety-utf-8-hardening*
 *Completed: 2026-03-23*
+
+## Self-Check: PASSED
+
+- FOUND: .claude/skills/pbi/scripts/detect.py
+- FOUND: .gitignore
+- FOUND: .planning/phases/06-token-safety-utf-8-hardening/06-01-SUMMARY.md
+- FOUND commit: 2757ef2 (Task 1)
+- FOUND commit: 7558811 (Task 2)
+- FOUND commit: c3a9ad3 (metadata)

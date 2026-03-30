@@ -4,7 +4,7 @@
 
 This repo contains a Claude Code skill namespace (`/pbi`) that turns Claude into a Power BI DAX co-pilot. Each command is an individual skill invoked as `/pbi:<command>` (e.g., `/pbi:explain`, `/pbi:audit`). The base `/pbi` provides a menu, catch-all solver, and backward-compatible routing.
 
-## Skill Architecture (v5.0)
+## Skill Architecture (v6.0)
 
 ### Individual sub-skills
 
@@ -20,12 +20,13 @@ The base `/pbi` (at `.claude/skills/pbi/SKILL.md`) serves as:
 - **Paste-in** (work anywhere): `/pbi:explain`, `/pbi:format`, `/pbi:optimise`, `/pbi:comment`, `/pbi:error`, `/pbi:new`
 - **PBIP** (require `*.SemanticModel/` directory): `/pbi:load`, `/pbi:audit`, `/pbi:diff`, `/pbi:commit`, `/pbi:edit`, `/pbi:undo`, `/pbi:comment-batch`, `/pbi:changelog`, `/pbi:extract`, `/pbi:docs`
 - **Workflow**: `/pbi:deep`
+- **Session**: `/pbi:resume`
 - **Utility** (work anywhere): `/pbi:help`, `/pbi:version`
 
 ### Model selection
 
 - **Sonnet** (default): DAX reasoning commands — explain, format, optimise, comment, error, new, edit, comment-batch, audit, docs, deep, extract, help, version
-- **Haiku** (set in frontmatter): file/git-heavy commands — load, diff, commit, undo, changelog
+- **Haiku** (set in frontmatter): file/git-heavy commands — load, diff, commit, undo, changelog, resume
 - **Opus** (via Agent spawn): extract detailed tier (high token usage, deep analysis)
 
 ### Detection
@@ -77,11 +78,13 @@ Each sub-skill runs its own detection blocks on load via `!` backtick syntax:
   docs/SKILL.md         ← /pbi:docs (sonnet)
   help/SKILL.md         ← /pbi:help (sonnet)
   version/SKILL.md      ← /pbi:version (sonnet)
+  resume/SKILL.md       ← /pbi:resume (haiku)
   scripts/
     detect.py           ← Python detection, search, HTML parsing, version check, gitignore (UTF-8 safe, 10 subcommands)
   shared/
     api-notes.md        ← DAX Formatter API reference
     CHANGELOG.md        ← version history (read by /pbi:version)
+    ui-brand.md         ← visual output standards reference
 ```
 
 ## Testing
@@ -101,4 +104,4 @@ Test fixtures are in `tests/fixtures/`:
 
 ## Version
 
-Current: 5.0.0 (set in `pbi/SKILL.md` frontmatter)
+Current: 6.0.0 (set in `pbi/SKILL.md` frontmatter)

@@ -1,12 +1,12 @@
 ---
 name: pbi:comment-batch
-description: "Add descriptions to all undocumented measures in the model. Use when user says 'comment-batch', 'comment all', 'batch comment', or 'document all'."
+description: "Scan the entire semantic model and add description properties to every measure that lacks one. Generates contextually accurate descriptions by analyzing each measure's expression, format string, and relationships. Processes table-by-table with progress tracking. Auto-commits."
 model: sonnet
 allowed-tools: Read, Write, Bash, Agent
 disable-model-invocation: true
 metadata:
   author: d7rocket
-  version: 4.4.0
+  version: 6.0.0
   category: data-analytics
   tags: [power-bi, dax, pbip, semantic-model]
 ---
@@ -58,6 +58,13 @@ After auto-resume completes, proceed to the command instructions below.
 
 # /pbi:comment-batch
 
+<purpose>
+Undocumented measures are invisible to report consumers — Power BI Desktop shows blank tooltips. Batch commenting brings the entire model to documentation parity in one pass.
+</purpose>
+
+<core_principle>
+Generate descriptions for report CONSUMERS, not DAX developers. "Shows total revenue for the current fiscal year" is useful. "Uses CALCULATE with DATESYTD to sum the Amount column" is not.
+</core_principle>
 
 ## Instructions
 

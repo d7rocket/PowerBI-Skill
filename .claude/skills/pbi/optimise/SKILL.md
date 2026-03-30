@@ -1,12 +1,12 @@
 ---
 name: pbi:optimise
-description: "Analyse DAX for performance and suggest improvements. Use when user says 'optimise DAX', 'optimize', 'performance', 'speed up', or 'slow'."
+description: "Run a 13-rule performance scan on any DAX measure, identifying anti-patterns like unnecessary iterators, FILTER on full tables, nested CALCULATE chains, and missing variable extraction. Produces a severity-graded report with before/after diffs. Works with pasted DAX and PBIP-embedded measures."
 model: sonnet
 allowed-tools: Read, Write, Bash, Agent
 disable-model-invocation: true
 metadata:
   author: d7rocket
-  version: 4.4.0
+  version: 6.0.0
   category: data-analytics
   tags: [power-bi, dax, pbip, semantic-model]
 ---
@@ -58,6 +58,13 @@ After auto-resume completes, proceed to the command instructions below.
 
 # /pbi:optimise
 
+<purpose>
+Slow measures degrade the entire report experience. This command catches the patterns that cause 90% of DAX performance problems — before they reach production.
+</purpose>
+
+<core_principle>
+Suggest only changes with measurable performance impact. Never recommend changes that sacrifice readability for marginal gains. Always show before/after diffs so the analyst can judge the trade-off.
+</core_principle>
 
 ## Instructions
 

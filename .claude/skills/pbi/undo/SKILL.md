@@ -1,12 +1,12 @@
 ---
 name: pbi:undo
-description: "Revert the last auto-commit. Use when user says 'undo', 'revert', or 'go back'."
+description: "Revert the most recent auto-commit created by any PBI skill command (edit, comment, error, new, audit). Uses git revert to preserve history. Shows what will be reverted before executing. Only reverts PBI auto-commits."
 model: haiku
 allowed-tools: Read, Write, Bash, Agent
 disable-model-invocation: true
 metadata:
   author: d7rocket
-  version: 4.4.0
+  version: 6.0.0
   category: data-analytics
   tags: [power-bi, dax, pbip, semantic-model]
 ---
@@ -58,6 +58,13 @@ After auto-resume completes, proceed to the command instructions below.
 
 # /pbi:undo
 
+<purpose>
+Auto-commits are convenient but sometimes wrong. One-command undo makes auto-commit safe — the analyst can always roll back without understanding git internals.
+</purpose>
+
+<core_principle>
+Use git revert (not git reset) to preserve history. Only revert commits made by PBI skill commands — never revert manual commits. Show the diff before reverting.
+</core_principle>
 
 ## Instructions
 

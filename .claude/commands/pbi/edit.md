@@ -1,6 +1,6 @@
 ---
 name: pbi:edit
-description: "Modify model entities (measures, columns, tables) from plain-English instructions"
+description: "Modify measures, columns, and tables using plain-English instructions with before/after preview and auto-commit"
 allowed-tools:
   - Read
   - Write
