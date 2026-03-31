@@ -94,3 +94,16 @@ Plans:
 | 5. Installer Overhaul | v1.2 | 0/1 | Complete    | 2026-03-23 |
 | 6. Token Safety + UTF-8 Hardening | v1.2 | 5/5 | Complete    | 2026-03-23 |
 | 7. Version History Command | v1.2 | 2/2 | Complete    | 2026-03-23 |
+| 8. Audit & Settings Sub-skill | v1.2 | 1/3 | In Progress|  |
+
+### Phase 8: Audit pbi skill blindspots and implement pbi-settings sub-skill
+
+**Goal:** `/pbi:settings` is a dedicated slash command; all commands directory files are synced to v6.1 (correct context path, detection steps, session-start format); sub-skill version metadata and housekeeping are up to date.
+**Requirements**: SETTINGS-01, SETTINGS-02, SYNC-01, SYNC-02
+**Depends on:** Phase 7
+**Plans:** 1/3 plans executed
+
+Plans:
+- [x] 08-01-PLAN.md — Create settings sub-skill (settings/SKILL.md, commands stub, installer update)
+- [ ] 08-02-PLAN.md — Sync all 20 commands directory files to v6.1 (context path, detection, session-check)
+- [ ] 08-03-PLAN.md — Fix session-start format in all sub-skills, bump versions to 6.1.0, housekeeping
