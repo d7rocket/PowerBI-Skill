@@ -84,7 +84,8 @@ Write-Host "  [2/5] Sub-skills" -ForegroundColor Cyan
 $commands = @(
     "explain","format","optimise","comment","error","new",
     "load","audit","diff","commit","edit","undo",
-    "comment-batch","changelog","extract","deep","docs","help","version","resume"
+    "comment-batch","changelog","extract","deep","docs","help","version","resume",
+    "settings"
 )
 $total = $commands.Count
 $i = 0
