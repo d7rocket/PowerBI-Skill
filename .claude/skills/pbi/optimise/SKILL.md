@@ -6,7 +6,7 @@ allowed-tools: Read, Write, Bash, Agent
 disable-model-invocation: true
 metadata:
   author: d7rocket
-  version: 6.0.0
+  version: 6.1.0
   category: data-analytics
   tags: [power-bi, dax, pbip, semantic-model]
 ---

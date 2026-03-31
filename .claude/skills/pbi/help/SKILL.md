@@ -6,7 +6,7 @@ allowed-tools: Read, Write, Bash, Agent
 disable-model-invocation: true
 metadata:
   author: d7rocket
-  version: 6.0.0
+  version: 6.1.0
   category: data-analytics
   tags: [power-bi, dax, pbip, semantic-model]
 ---
@@ -105,7 +105,7 @@ Output the following, inserting the version line from Step 1:
 
 ## Tips
 
-- All commands read `.pbi-context.md` for session state. Use `/pbi:resume` to see current state, or `/pbi:load` to refresh.
+- All commands read `.pbi/context.md` for session state. Use `/pbi:resume` to see current state, or `/pbi:load` to refresh.
 - `/pbi:audit` can auto-fix critical issues (bidirectional filters, unhidden key columns).
 - Free-text works too — just type `/pbi <your question>` and it will be solved directly.
 - Model selection is automatic: Haiku for file/git ops, Sonnet for DAX reasoning, Opus for deep extraction.

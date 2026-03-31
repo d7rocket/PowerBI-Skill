@@ -1,18 +1,18 @@
 ---
 name: pbi:resume
-description: "Restore session context and continue from where you left off. Reads .pbi-context.md to reconstruct model state, command history, in-progress workflows, and git state. Use when starting a new session, after /clear, or when resuming interrupted work."
+description: "Restore session context and continue from where you left off. Reads .pbi/context.md to reconstruct model state, command history, in-progress workflows, and git state. Use when starting a new session, after /clear, or when resuming interrupted work."
 model: haiku
 allowed-tools: Read, Write, Bash, Agent
 disable-model-invocation: true
 metadata:
   author: d7rocket
-  version: 6.0.0
+  version: 6.1.0
   category: data-analytics
   tags: [power-bi, dax, pbip, semantic-model]
 ---
 
 <purpose>
-Claude Code sessions are ephemeral — /clear or a new terminal loses all accumulated context. Resume bridges that gap by reading the persisted .pbi-context.md file and reconstructing the working state, so the analyst can continue where they left off without re-running /pbi:load or re-explaining the project.
+Claude Code sessions are ephemeral — /clear or a new terminal loses all accumulated context. Resume bridges that gap by reading the persisted .pbi/context.md file and reconstructing the working state, so the analyst can continue where they left off without re-running /pbi:load or re-explaining the project.
 </purpose>
 
 <core_principle>
@@ -22,6 +22,9 @@ Restore, don't re-run. Read the cached context file to understand what was done 
 ## Detection (run once)
 
 **Folder naming:** Real PBIP projects use `<ProjectName>.SemanticModel` and `<ReportName>.Report`. Detection globs for both patterns.
+
+### PBI Directory Setup
+!`python ".claude/skills/pbi/scripts/detect.py" ensure-dir 2>/dev/null && python ".claude/skills/pbi/scripts/detect.py" migrate 2>/dev/null`
 
 ### PBIP Detection
 !`python ".claude/skills/pbi/scripts/detect.py" pbip 2>/dev/null || echo "PBIP_MODE=paste"`
@@ -34,6 +37,11 @@ Save the `PBIP_DIR` value from the output.
 ### Session Context
 !`python ".claude/skills/pbi/scripts/detect.py" context 2>/dev/null || echo "No prior context found."`
 
+### Settings
+!`python ".claude/skills/pbi/scripts/detect.py" settings 2>/dev/null || echo "PBI_CONFIRM=true"`
+
+Save the `PBI_CONFIRM` value — commands use it to decide whether to ask before writing files.
+
 ---
 
 # /pbi:resume
@@ -43,7 +51,7 @@ Save the `PBIP_DIR` value from the output.
 
 ### Step 1 — Check for context file
 
-Check if `.pbi-context.md` exists and has content beyond the template headers.
+Check if `.pbi/context.md` exists and has content beyond the template headers.
 
 - **No file or empty:** Output the following and stop:
   > No session context found. Run `/pbi:load` to initialize the project, or use any `/pbi:` command — context is created automatically on first use.
@@ -54,7 +62,7 @@ Check if `.pbi-context.md` exists and has content beyond the template headers.
 
 ### Step 2 — Parse context file
 
-Read `.pbi-context.md` with the Read tool. Extract the following sections if present:
+Read `.pbi/context.md` with the Read tool. Extract the following sections if present:
 
 1. **Last Command** — Command name, timestamp, measure, and outcome
 2. **Model Context** — Count tables, total measures across all tables, total relationships
@@ -154,7 +162,7 @@ Ready to continue. Type any /pbi: command or describe what you need.
 
 ### Step 6 — Update session context
 
-Read `.pbi-context.md` with Read tool and update:
+Read `.pbi/context.md` with Read tool and update:
 
 - `## Last Command`: Set Command = `/pbi:resume`, Timestamp = current ISO 8601, Measure = `—`, Outcome = `Session resumed — [N] tables, context [freshness]`
 - `## Command History`: Prepend row `| [timestamp] | /pbi:resume | — | Session resumed |`
@@ -176,9 +184,10 @@ Write back with Write tool.
 - **PYTHON-FIRST FILE OPERATIONS (CRITICAL):** All file read/write and text search operations MUST use Python with `encoding='utf-8'` to correctly handle accented characters (French: é, è, ê, ç, à, ù, etc.). Do NOT use `grep`, `cat`, `sed`, `awk`, or shell redirects for reading/writing model files. For measure name search, use `python ".claude/skills/pbi/scripts/detect.py" search "MeasureName" "$PBIP_DIR"` instead of `grep -rlF`. Shell/bash is allowed ONLY for: git CLI commands and Python script invocation.
 - **PBIP folder naming:** Always use the `PBIP_DIR` value from detection (e.g., `Sales.SemanticModel`) — never hardcode `.SemanticModel`. Same for Report: use `PBIR_DIR` (e.g., `Sales.Report`).
 - All bash paths must be double-quoted (e.g., `"$VAR"`, `"$SM_DIR/"`)
-- Session context: Read-then-Write `.pbi-context.md`, 20 row max Command History, never touch Analyst-Reported Failures
+- Session context: Read-then-Write `.pbi/context.md`, 20 row max Command History, never touch Analyst-Reported Failures
 - TMDL: tabs only for indentation
 - TMSL expression format: preserve original form (string vs array); use array if expression has line breaks
-- Escalation state: `## Escalation State` in `.pbi-context.md` tracks gathered context during escalation.
+- Escalation state: `## Escalation State` in `.pbi/context.md` tracks gathered context during escalation.
 - **LOCAL-FIRST GIT POLICY (CRITICAL):** NEVER `git pull`, `git fetch`, `git merge`, `git rebase`, `git push`, or create PRs. Allowed: `git init`, `git add`, `git commit`, `git diff`, `git log`, `git status`, `git revert`, `git rev-parse`.
 - **Post-write staging:** After any command writes files to `$PBIP_DIR/` (and PBIP_MODE=file, GIT=yes), auto-stage: `git add "$PBIP_DIR/" 2>/dev/null`. Skip if the command already auto-committed.
+- **Confirm mode (PBI_CONFIRM):** When `PBI_CONFIRM=true`: show preview and ask `(y/N)` before writing model files or output files. When `PBI_CONFIRM=false`: write directly without asking. Commands that already have a `(y/N)` prompt respect this — if PBI_CONFIRM=false, skip the prompt and proceed.
