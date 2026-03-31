@@ -53,7 +53,7 @@ After detection blocks run, apply the following before routing:
    - If output is `SESSION=new` — first command this session:
      - Output: `Loading model context (first command this session)...`
      - Read all files from File Index, extract table/measure/column/relationship structure, build the Model Context markdown block, write it to `.pbi/context.md`.
-     - Write `## Session Start` with current UTC timestamp to `.pbi/context.md`.
+     - Write `**Session-Start:** [current UTC time in ISO 8601]` immediately after the `## Model Context` heading line in `.pbi/context.md`.
      - Output the summary table and: `Context loaded — [N] tables. Ready.`
 
 2. **PBIP_MODE=paste — nearby folder check**:
