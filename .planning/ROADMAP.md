@@ -105,5 +105,5 @@ Plans:
 
 Plans:
 - [x] 08-01-PLAN.md — Create settings sub-skill (settings/SKILL.md, commands stub, installer update)
-- [ ] 08-02-PLAN.md — Sync all 20 commands directory files to v6.1 (context path, detection, session-check)
+- [x] 08-02-PLAN.md — Sync all 20 commands directory files to v6.1 (context path, detection, session-check)
 - [ ] 08-03-PLAN.md — Fix session-start format in all sub-skills, bump versions to 6.1.0, housekeeping

@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: Quality & Distribution
 status: Ready to execute
-stopped_at: Completed 08-01 (settings sub-skill)
-last_updated: "2026-03-31T19:53:40.146Z"
+stopped_at: Completed 08-02-PLAN.md (sync commands directory to v6.1)
+last_updated: "2026-03-31T20:29:40.904Z"
 last_activity: 2026-03-31
 progress:
   total_phases: 6
   completed_phases: 4
   total_plans: 13
-  completed_plans: 11
+  completed_plans: 12
 ---
 
 # Project State
@@ -25,7 +25,7 @@ See: .planning/PROJECT.md (updated 2026-03-23 after v1.2 milestone start)
 ## Current Position
 
 Phase: 08 (audit-and-settings) — EXECUTING
-Plan: 2 of 3
+Plan: 3 of 3
 
 ## Performance Metrics
 
@@ -52,6 +52,7 @@ v1.2 phase grouping decision: TOKEN and UTF8 requirements merged into Phase 6 (c
 - [Phase 07-version-history-command]: CHANGELOG.md bundled in shared/ directory for fully offline /pbi version command — no network dependency at runtime
 - [Phase 08-audit-and-settings]: Use disable-model-invocation: true for settings sub-skill — utility command runs Python scripts only, no LLM reasoning needed
 - [Phase 08-audit-and-settings]: Extracted inline Settings Handler from base SKILL.md into dedicated settings/SKILL.md — consistent with sub-skill pattern
+- [Phase 08-audit-and-settings]: Combined Tasks 1-3 per file to minimize writes: ensure-dir/migrate/settings + session-check + path replacement applied in single pass per commands file
 
 ### Roadmap Evolution
 
@@ -71,9 +72,10 @@ None.
 |---|-------------|------|--------|-----------|
 | 260324-drr | Add context tracker for Claude Desktop context window management | 2026-03-24 | 4f16e57 | [260324-drr-add-context-tracker-for-claude-desktop-c](./quick/260324-drr-add-context-tracker-for-claude-desktop-c/) |
 | Phase 08-audit-and-settings P01 | 8 | 3 tasks | 4 files |
+| Phase 08-audit-and-settings P02 | 35 | 3 tasks | 20 files |
 
 ## Session Continuity
 
 Last activity: 2026-03-31
-Stopped at: Completed 08-01 (settings sub-skill)
+Stopped at: Completed 08-02-PLAN.md (sync commands directory to v6.1)
 Resume file: None
