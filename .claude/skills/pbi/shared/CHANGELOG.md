@@ -3,6 +3,20 @@
 All notable changes to the PBI skill are documented here.
 Format: [Keep a Changelog](https://keepachangelog.com)
 
+## [6.2.0] — 2026-03-31
+
+### Added
+- `/pbi:settings` is now a dedicated slash command — directly invocable as `/pbi:settings` (previously only accessible as a keyword via `/pbi settings`)
+- `settings/SKILL.md` sub-skill with proper frontmatter (model: sonnet, version: 6.1.0)
+- `.claude/commands/pbi/settings.md` command stub added to installer
+
+### Fixed
+- All 20 `.claude/commands/pbi/*.md` files updated to v6.1: now write context to `.pbi/context.md` (previously wrote to stale `.pbi-context.md` path)
+- All 20 commands files now include `ensure-dir`, `migrate`, and `settings` detection steps
+- All 20 commands files now use `detect.py session-check` auto-resume logic (SESSION=active/new) instead of checking `## Model Context` presence
+- Session-start format standardised across all sub-skills: auto-resume blocks now write `**Session-Start:** [ISO timestamp]` (the format `detect.py session_check()` expects), replacing the ambiguous `## Session Start` heading that could produce a two-line write
+- All 20 sub-skill `version:` metadata updated from `6.0.0` to `6.1.0`
+
 ## [6.1.0] — 2026-03-30
 
 ### Added
