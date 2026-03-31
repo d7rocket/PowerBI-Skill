@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: Quality & Distribution
-status: Ready to execute
-stopped_at: Completed 08-02-PLAN.md (sync commands directory to v6.1)
-last_updated: "2026-03-31T20:29:40.904Z"
+status: Phase complete — ready for verification
+stopped_at: Completed 08-03-PLAN.md (fix session-start format and housekeeping)
+last_updated: "2026-03-31T20:48:22.300Z"
 last_activity: 2026-03-31
 progress:
   total_phases: 6
-  completed_phases: 4
+  completed_phases: 5
   total_plans: 13
-  completed_plans: 12
+  completed_plans: 13
 ---
 
 # Project State
@@ -53,6 +53,8 @@ v1.2 phase grouping decision: TOKEN and UTF8 requirements merged into Phase 6 (c
 - [Phase 08-audit-and-settings]: Use disable-model-invocation: true for settings sub-skill — utility command runs Python scripts only, no LLM reasoning needed
 - [Phase 08-audit-and-settings]: Extracted inline Settings Handler from base SKILL.md into dedicated settings/SKILL.md — consistent with sub-skill pattern
 - [Phase 08-audit-and-settings]: Combined Tasks 1-3 per file to minimize writes: ensure-dir/migrate/settings + session-check + path replacement applied in single pass per commands file
+- [Phase 08-audit-and-settings]: Session-start format fix applied to all 17 sub-skills with auto-resume blocks plus base SKILL.md — help/version/resume had no auto-resume block and required no session-start change
+- [Phase 08-audit-and-settings]: version/SKILL.md and resume/SKILL.md version bumped to 6.1.0 even though they lacked auto-resume blocks — version bump is metadata-only
 
 ### Roadmap Evolution
 
@@ -73,9 +75,10 @@ None.
 | 260324-drr | Add context tracker for Claude Desktop context window management | 2026-03-24 | 4f16e57 | [260324-drr-add-context-tracker-for-claude-desktop-c](./quick/260324-drr-add-context-tracker-for-claude-desktop-c/) |
 | Phase 08-audit-and-settings P01 | 8 | 3 tasks | 4 files |
 | Phase 08-audit-and-settings P02 | 35 | 3 tasks | 20 files |
+| Phase 08-audit-and-settings P03 | 5 | 3 tasks | 23 files |
 
 ## Session Continuity
 
 Last activity: 2026-03-31
-Stopped at: Completed 08-02-PLAN.md (sync commands directory to v6.1)
+Stopped at: Completed 08-03-PLAN.md (fix session-start format and housekeeping)
 Resume file: None
