@@ -34,7 +34,7 @@ Never block a data analyst — solve immediately, interrogate only when stuck or
 
 ### Active
 
-- [ ] Installer reliably installs/updates all skill files with per-project vs user-level scope choice (INST-01–04)
+- ✓ Installer reliably installs/updates all skill files with per-project vs user-level scope choice (INST-01–04) — Validated in Phase 8: audit-and-settings
 - [ ] Large command files stay under token limits during skill execution (TOKEN-01–02)
 - [ ] All file operations use Python with UTF-8 encoding — no grep/sed on model files (UTF8-01–03)
 - [ ] `/pbi version` command shows full version history from bundled changelog (HIST-01)
@@ -58,9 +58,9 @@ Never block a data analyst — solve immediately, interrogate only when stuck or
 
 ## Context
 
-**Shipped v1.1** with 4 phases, 11 plans total, ~3,200 LOC across skill markdown files. Current version: v4.3.0.
+**Shipped v1.1** with 4 phases, 11 plans total, ~3,200 LOC across skill markdown files. Phase 8 complete — `/pbi:settings` now a dedicated slash command, all commands files synced to v6.1, session-start format standardized. Current version: v6.2.0.
 
-**Tech stack:** Claude Code skill markdown, `.pbi-context.md` for session state, TMDL/TMSL file support, Python detection script (`detect.py`).
+**Tech stack:** Claude Code skill markdown, `.pbi/context.md` for session state, TMDL/TMSL file support, Python detection script (`detect.py`).
 
 **v1.2 drivers:** install.ps1 is out of sync (v4.1.0 vs SKILL.md v4.3.0), missing `docs.md` and `detect.py` from download list. Several command files (audit 16KB, optimise 14KB, error 13KB) trigger 10K token errors. Four commands still use `grep -rlF` instead of `detect.py search` for measure lookups. French accented characters in model files require consistent Python/UTF-8 handling.
 
