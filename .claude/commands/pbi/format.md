@@ -14,6 +14,12 @@ allowed-tools:
 
 Run ALL of the following detection commands using the Bash tool before proceeding. Save the output — subsequent steps reference these values.
 
+Ensure .pbi/ directory exists and migrate legacy root-level files.
+```bash
+python ".claude/skills/pbi/scripts/detect.py" ensure-dir 2>/dev/null
+python ".claude/skills/pbi/scripts/detect.py" migrate 2>/dev/null
+```
+
 ```bash
 python ".claude/skills/pbi/scripts/detect.py" pbip 2>/dev/null || echo "PBIP_MODE=paste"
 ```
@@ -36,22 +42,35 @@ python ".claude/skills/pbi/scripts/detect.py" git 2>/dev/null || (echo "GIT=no" 
 python ".claude/skills/pbi/scripts/detect.py" context 2>/dev/null || echo "No prior context found."
 ```
 
-### Auto-Resume
+Save the PBI_CONFIRM value — use it to decide whether to ask before writing files.
+```bash
+python ".claude/skills/pbi/scripts/detect.py" settings 2>/dev/null || echo "PBI_CONFIRM=true"
+```
+
+### Auto-Resume (session-aware)
 
 After detection, apply the following before executing the command:
 
-1. **PBIP_MODE=file, context exists** — Session Context output contains `## Model Context` with a table:
-   - Count the table rows in the Model Context table.
-   - Output on a single line: `Context resumed — [N] tables loaded`
-   - Skip any "Model Context Check" (Step 0.5) below — context is already available.
+1. **PBIP_MODE=file — session load check**:
+   Run:
+   ```bash
+   python ".claude/skills/pbi/scripts/detect.py" session-check 2>/dev/null
+   ```
+   - If output is `SESSION=active` — context was already loaded this session:
+     - Count the table rows in the Model Context table from Session Context.
+     - Output on a single line: `Context resumed — [N] tables loaded`
+     - Skip any "Model Context Check" (Step 0.5) below — context is already available.
+   - If output is `SESSION=new` — first command this session:
+     - Output: `Loading model context (first command this session)...`
+     - Read all files from File Index, extract table/measure/column/relationship structure, build the Model Context markdown block, write it to `.pbi/context.md`.
+     - Write `**Session-Start:** [current UTC time in ISO 8601]` immediately after the `## Model Context` heading line in `.pbi/context.md`.
+     - Output the summary table and: `Context loaded — [N] tables. Ready.`
 
-2. **PBIP_MODE=file, no context yet** — Session Context has no `## Model Context` or `.pbi-context.md` does not exist:
-   - Output: `No model context — auto-loading project...`
-   - Read all files from File Index, extract table/measure/column/relationship structure, build the Model Context markdown block, write it to `.pbi-context.md`.
-   - Output the summary table and: `Auto-loaded [N] tables. Context ready.`
-
-3. **PBIP_MODE=paste — nearby folder check**:
-   Run: `python ".claude/skills/pbi/scripts/detect.py" nearby 2>/dev/null`
+2. **PBIP_MODE=paste — nearby folder check**:
+   Run:
+   ```bash
+   python ".claude/skills/pbi/scripts/detect.py" nearby 2>/dev/null
+   ```
    - If NEARBY_PBIP is found: output: `No PBIP project here, but found one at [NEARBY_PBIP]. Run cd "[NEARBY_PBIP]" first.`
    - If NEARBY_PBIP is empty: skip silently. Paste-in commands still work.
 
@@ -81,7 +100,7 @@ Read Session Context for `## Model Context` section.
 - If `## Model Context` is present and non-empty: note the table context. Use it when inferring display folder in Step 5 output. Proceed to Step 1.
 - If `## Model Context` is absent or empty:
   - Ask: "Which table does this measure belong to? (optional — skip if you just want formatting)"
-  - If the analyst answers: Read `.pbi-context.md` with Read tool. Add `## Model Context` section with the answer. Write back with Write tool. Use the table context in output.
+  - If the analyst answers: Read `.pbi/context.md` with Read tool. Add `## Model Context` section with the answer. Write back with Write tool. Use the table context in output.
   - If the analyst skips or says "skip": note "Table context not available — formatting pasted measure as-is." Proceed to Step 1 without blocking.
 
 ### Step 1 — Measure Extraction
@@ -184,11 +203,11 @@ Present the output in this order:
 4. The formatted measure in a fenced `dax` code block
 5. Next steps line: `**Next steps:** /pbi:explain · /pbi:optimise · /pbi:comment · /pbi:error`
 
-### Step 6 — Update .pbi-context.md
+### Step 6 — Update .pbi/context.md
 
-After producing the output, update the `.pbi-context.md` file:
+After producing the output, update the `.pbi/context.md` file:
 
-1. Use the Read tool to read the current contents of `.pbi-context.md`
+1. Use the Read tool to read the current contents of `.pbi/context.md`
 2. If the file does not exist or is empty, start with the full schema below
 3. Update the `## Last Command` section with:
    - Command: /pbi:format
@@ -198,7 +217,7 @@ After producing the output, update the `.pbi-context.md` file:
 4. Append a new row to the `## Command History` table with the same info
 5. If the Command History table has more than 20 rows, remove the oldest rows to keep it at 20
 6. Do NOT modify the `## Analyst-Reported Failures` section
-7. Use the Write tool to write the complete updated file back to `.pbi-context.md`
+7. Use the Write tool to write the complete updated file back to `.pbi/context.md`
 
 **Full schema for new file creation:**
 ```markdown

@@ -10,6 +10,43 @@ allowed-tools:
   - Grep
 ---
 
+## Detection
+
+Run ALL of the following detection commands using the Bash tool before proceeding. Save the output — subsequent steps reference these values.
+
+Ensure .pbi/ directory exists and migrate legacy root-level files.
+```bash
+python ".claude/skills/pbi/scripts/detect.py" ensure-dir 2>/dev/null
+python ".claude/skills/pbi/scripts/detect.py" migrate 2>/dev/null
+```
+
+```bash
+python ".claude/skills/pbi/scripts/detect.py" context 2>/dev/null || echo "No prior context found."
+```
+
+Save the PBI_CONFIRM value — use it to decide whether to ask before writing files.
+```bash
+python ".claude/skills/pbi/scripts/detect.py" settings 2>/dev/null || echo "PBI_CONFIRM=true"
+```
+
+### Auto-Resume (session-aware)
+
+After detection, apply the following before executing the command:
+
+1. **PBIP_MODE=file — session load check**:
+   Run:
+   ```bash
+   python ".claude/skills/pbi/scripts/detect.py" session-check 2>/dev/null
+   ```
+   - If output is `SESSION=active` — context was already loaded this session: skip any reload.
+   - If output is `SESSION=new` — first command this session: write `**Session-Start:** [current UTC time in ISO 8601]` to `.pbi/context.md` if a PBIP project is active. Proceed normally.
+
+2. **PBIP_MODE=paste — nearby folder check**: skip silently for help command.
+
+After auto-resume completes, proceed to the command instructions below.
+
+---
+
 # /pbi:help
 
 
@@ -94,7 +131,7 @@ Output the following, inserting the version line from Step 1:
 
 ## Tips
 
-- All commands read `.pbi-context.md` for session state — run `/pbi:load` once to prime it.
+- All commands read `.pbi/context.md` for session state — run `/pbi:load` once to prime it.
 - `/pbi:audit` can auto-fix critical issues (bidirectional filters, unhidden key columns).
 - Free-text works too — just type `/pbi <your question>` and it will be solved directly.
 - Model selection is automatic: Haiku for file/git ops, Sonnet for DAX reasoning, Opus for deep extraction.

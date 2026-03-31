@@ -14,6 +14,12 @@ allowed-tools:
 
 Run ALL of the following detection commands using the Bash tool before proceeding. Save the output — subsequent steps reference these values.
 
+Ensure .pbi/ directory exists and migrate legacy root-level files.
+```bash
+python ".claude/skills/pbi/scripts/detect.py" ensure-dir 2>/dev/null
+python ".claude/skills/pbi/scripts/detect.py" migrate 2>/dev/null
+```
+
 ```bash
 python ".claude/skills/pbi/scripts/detect.py" pbip 2>/dev/null || echo "PBIP_MODE=paste"
 ```
@@ -36,22 +42,35 @@ python ".claude/skills/pbi/scripts/detect.py" git 2>/dev/null || (echo "GIT=no" 
 python ".claude/skills/pbi/scripts/detect.py" context 2>/dev/null || echo "No prior context found."
 ```
 
-### Auto-Resume
+Save the PBI_CONFIRM value — use it to decide whether to ask before writing files.
+```bash
+python ".claude/skills/pbi/scripts/detect.py" settings 2>/dev/null || echo "PBI_CONFIRM=true"
+```
+
+### Auto-Resume (session-aware)
 
 After detection, apply the following before executing the command:
 
-1. **PBIP_MODE=file, context exists** — Session Context output contains `## Model Context` with a table:
-   - Count the table rows in the Model Context table.
-   - Output on a single line: `Context resumed — [N] tables loaded`
-   - Skip any "Model Context Check" (Step 0.5) below — context is already available.
+1. **PBIP_MODE=file — session load check**:
+   Run:
+   ```bash
+   python ".claude/skills/pbi/scripts/detect.py" session-check 2>/dev/null
+   ```
+   - If output is `SESSION=active` — context was already loaded this session:
+     - Count the table rows in the Model Context table from Session Context.
+     - Output on a single line: `Context resumed — [N] tables loaded`
+     - Skip any "Model Context Check" (Step 0.5) below — context is already available.
+   - If output is `SESSION=new` — first command this session:
+     - Output: `Loading model context (first command this session)...`
+     - Read all files from File Index, extract table/measure/column/relationship structure, build the Model Context markdown block, write it to `.pbi/context.md`.
+     - Write `**Session-Start:** [current UTC time in ISO 8601]` immediately after the `## Model Context` heading line in `.pbi/context.md`.
+     - Output the summary table and: `Context loaded — [N] tables. Ready.`
 
-2. **PBIP_MODE=file, no context yet** — Session Context has no `## Model Context` or `.pbi-context.md` does not exist:
-   - Output: `No model context — auto-loading project...`
-   - Read all files from File Index, extract table/measure/column/relationship structure, build the Model Context markdown block, write it to `.pbi-context.md`.
-   - Output the summary table and: `Auto-loaded [N] tables. Context ready.`
-
-3. **PBIP_MODE=paste — nearby folder check**:
-   Run: `python ".claude/skills/pbi/scripts/detect.py" nearby 2>/dev/null`
+2. **PBIP_MODE=paste — nearby folder check**:
+   Run:
+   ```bash
+   python ".claude/skills/pbi/scripts/detect.py" nearby 2>/dev/null
+   ```
    - If NEARBY_PBIP is found: output: `No PBIP project here, but found one at [NEARBY_PBIP]. Run cd "[NEARBY_PBIP]" first.`
    - If NEARBY_PBIP is empty: skip silently. Paste-in commands still work.
 
@@ -88,7 +107,7 @@ Read Session Context for `## Model Context` section.
 - If `## Model Context` is absent or empty:
   - Ask: "Which table should this measure go in, and which columns are relevant?"
   - Wait for the analyst's answer.
-  - Read `.pbi-context.md` with Read tool. Add `## Model Context` section with the analyst's answer. Write back with Write tool.
+  - Read `.pbi/context.md` with Read tool. Add `## Model Context` section with the analyst's answer. Write back with Write tool.
   - Proceed to Step 1 using the newly stored context.
 
 Note: If model context was provided via `/pbi:load` prior to this session, it will already be present — do not overwrite it.
@@ -152,7 +171,7 @@ If **pattern detected**:
      Ask before generating:
      > "This measure is filter-sensitive — where will it be placed (e.g., card, table, matrix) and what slicers or date filters will be active?"
      Wait for the analyst's answer.
-     Read `.pbi-context.md` with Read tool. Add `## Visual Context` section:
+     Read `.pbi/context.md` with Read tool. Add `## Visual Context` section:
      ```
      ## Visual Context
      - Visual type: [from analyst's answer]
@@ -289,7 +308,7 @@ fi
 
 ### Step 6 — Update Session Context
 
-Read `.pbi-context.md` (Read tool), update these sections, then Write the full file back:
+Read `.pbi/context.md` (Read tool), update these sections, then Write the full file back:
 - `## Last Command`: Command = `/pbi:new`, Timestamp = current UTC ISO 8601, Measure = [Measure Name] in [TableName], Outcome = `New measure scaffolded`
 - `## Command History`: Append one row `| [timestamp] | /pbi:new | [Measure Name] | New measure scaffolded |`; keep last 20 rows maximum.
 - Do NOT modify `## Analyst-Reported Failures`.

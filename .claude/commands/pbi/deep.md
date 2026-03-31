@@ -14,6 +14,12 @@ allowed-tools:
 
 Run ALL of the following detection commands using the Bash tool before proceeding. Save the output — subsequent steps reference these values.
 
+Ensure .pbi/ directory exists and migrate legacy root-level files.
+```bash
+python ".claude/skills/pbi/scripts/detect.py" ensure-dir 2>/dev/null
+python ".claude/skills/pbi/scripts/detect.py" migrate 2>/dev/null
+```
+
 ```bash
 python ".claude/skills/pbi/scripts/detect.py" pbip 2>/dev/null || echo "PBIP_MODE=paste"
 ```
@@ -36,22 +42,35 @@ python ".claude/skills/pbi/scripts/detect.py" git 2>/dev/null || (echo "GIT=no" 
 python ".claude/skills/pbi/scripts/detect.py" context 2>/dev/null || echo "No prior context found."
 ```
 
-### Auto-Resume
+Save the PBI_CONFIRM value — use it to decide whether to ask before writing files.
+```bash
+python ".claude/skills/pbi/scripts/detect.py" settings 2>/dev/null || echo "PBI_CONFIRM=true"
+```
+
+### Auto-Resume (session-aware)
 
 After detection, apply the following before executing the command:
 
-1. **PBIP_MODE=file, context exists** — Session Context output contains `## Model Context` with a table:
-   - Count the table rows in the Model Context table.
-   - Output on a single line: `Context resumed — [N] tables loaded`
-   - Skip any "Model Context Check" (Step 0.5) below — context is already available.
+1. **PBIP_MODE=file — session load check**:
+   Run:
+   ```bash
+   python ".claude/skills/pbi/scripts/detect.py" session-check 2>/dev/null
+   ```
+   - If output is `SESSION=active` — context was already loaded this session:
+     - Count the table rows in the Model Context table from Session Context.
+     - Output on a single line: `Context resumed — [N] tables loaded`
+     - Skip any "Model Context Check" (Step 0.5) below — context is already available.
+   - If output is `SESSION=new` — first command this session:
+     - Output: `Loading model context (first command this session)...`
+     - Read all files from File Index, extract table/measure/column/relationship structure, build the Model Context markdown block, write it to `.pbi/context.md`.
+     - Write `**Session-Start:** [current UTC time in ISO 8601]` immediately after the `## Model Context` heading line in `.pbi/context.md`.
+     - Output the summary table and: `Context loaded — [N] tables. Ready.`
 
-2. **PBIP_MODE=file, no context yet** — Session Context has no `## Model Context` or `.pbi-context.md` does not exist:
-   - Output: `No model context — auto-loading project...`
-   - Read all files from File Index, extract table/measure/column/relationship structure, build the Model Context markdown block, write it to `.pbi-context.md`.
-   - Output the summary table and: `Auto-loaded [N] tables. Context ready.`
-
-3. **PBIP_MODE=paste — nearby folder check**:
-   Run: `python ".claude/skills/pbi/scripts/detect.py" nearby 2>/dev/null`
+2. **PBIP_MODE=paste — nearby folder check**:
+   Run:
+   ```bash
+   python ".claude/skills/pbi/scripts/detect.py" nearby 2>/dev/null
+   ```
    - If NEARBY_PBIP is found: output: `No PBIP project here, but found one at [NEARBY_PBIP]. Run cd "[NEARBY_PBIP]" first.`
    - If NEARBY_PBIP is empty: skip silently. Paste-in commands still work.
 
@@ -70,7 +89,7 @@ After auto-resume completes, proceed to the command instructions below.
 
 ### Step 0 — Check Existing Context
 
-Read Session Context from detection output. Check `.pbi-context.md` for existing sections:
+Read Session Context from detection output. Check `.pbi/context.md` for existing sections:
 - `## Business Question` — if present, display: "Business question on file: [content]" and ask "Still the focus, or something new?"
 - `## Model Context` — if present, display: "Model context loaded from prior /pbi:load."
 - `## Existing Measures` — if present, display: "Existing measures on file: [summary]"
@@ -81,7 +100,7 @@ For any section that exists with content, skip asking that question in Step 1.
 
 ### Step 1 — Full Upfront Intake
 
-Collect all three context dimensions. For each one NOT already in `.pbi-context.md`, ask the question. Ask them ONE AT A TIME (not all at once) to keep the conversation focused.
+Collect all three context dimensions. For each one NOT already in `.pbi/context.md`, ask the question. Ask them ONE AT A TIME (not all at once) to keep the conversation focused.
 
 **Question 1 — Business Question:**
 "What business question are we solving? (e.g., 'Compare regional sales performance month-over-month' or 'Track customer retention by cohort')"
@@ -102,7 +121,7 @@ Wait for answer.
 
 ### Step 2 — Write Context
 
-Read `.pbi-context.md` with Read tool. If the file does not exist, create it with a blank template containing these section headers: `## Business Question`, `## Model Context`, `## Existing Measures`, `## Last Command`, `## Command History`, `## Analyst-Reported Failures`. Then add or update these sections with the gathered answers:
+Read `.pbi/context.md` with Read tool. If the file does not exist, create it with a blank template containing these section headers: `## Business Question`, `## Model Context`, `## Existing Measures`, `## Last Command`, `## Command History`, `## Analyst-Reported Failures`. Then add or update these sections with the gathered answers:
 
 - `## Business Question`: The stated business question, verbatim from user
 - `## Existing Measures`: The user's answer about existing measures
@@ -136,7 +155,7 @@ Wait for the analyst's response.
 
 ### Step B1 — Context Summary
 
-Read `.pbi-context.md`. Output:
+Read `.pbi/context.md`. Output:
 
 > **Current session context:**
 > - Business question: [## Business Question content, or "(not set)"]
@@ -149,7 +168,7 @@ If any field is "(not set)": pause and collect it before continuing (re-run the 
 
 ### Step B2 — Analyze Described Model
 
-Read `.pbi-context.md ## Model Context`. Analyze the described model conversationally for health issues.
+Read `.pbi/context.md ## Model Context`. Analyze the described model conversationally for health issues.
 
 **This review operates on the described model context only. Do NOT read `$PBIP_DIR/` files. For file-level audit, direct the user to `/pbi:audit`.**
 
@@ -200,7 +219,7 @@ Wait for the analyst's response.
 
 ### Step C1 — Context Summary
 
-Read `.pbi-context.md`. Output:
+Read `.pbi/context.md`. Output:
 
 > **Current session context:**
 > - Business question: [## Business Question content, or "(not set)"]
@@ -216,7 +235,7 @@ If any field is "(not set)": pause and collect it before continuing (re-run the 
 Output:
 
 > **DAX Development phase:**
-> Context saved to .pbi-context.md. All /pbi commands will use this context going forward.
+> Context saved to .pbi/context.md. All /pbi commands will use this context going forward.
 >
 > Available commands: **explain** · **format** · **optimise** · **comment** · **new** · **error** · **edit** · **audit** · **diff** · **commit** (see `/pbi:help` for full list)
 >
@@ -239,7 +258,7 @@ This phase activates ONLY when the analyst signals completion of the measures ph
 
 ### Step D1 — Context Summary
 
-Read `.pbi-context.md`. Output:
+Read `.pbi/context.md`. Output:
 
 > **Current session context:**
 > - Business question: [## Business Question content, or "(not set)"]
@@ -250,7 +269,7 @@ Read `.pbi-context.md`. Output:
 
 ### Step D2 — Final Verification Gate
 
-Read `.pbi-context.md`. Collect:
+Read `.pbi/context.md`. Collect:
 - `## Business Question` — verbatim content
 - All rows from `## Command History` where Command = `/pbi:new`
 
@@ -286,7 +305,7 @@ Wait for confirm/cancel response.
 
 - NEVER enter deep mode unless the user explicitly typed `/pbi:deep` — no automatic upgrade
 - NEVER ask all 3 intake questions at once — ask one, wait, ask next
-- NEVER re-ask a question if the answer is already in `.pbi-context.md`
+- NEVER re-ask a question if the answer is already in `.pbi/context.md`
 - NEVER advance past a phase gate on vague input ("ok", "sounds good", "yes") — the response must contain "continue" (case-insensitive). Re-output the gate.
 - NEVER run model review against `$PBIP_DIR/` files — Phase B operates on described context only. For file-level audit, direct the user to `/pbi:audit`.
 - NEVER generate DAX before Gate A→B is confirmed — model review must complete first

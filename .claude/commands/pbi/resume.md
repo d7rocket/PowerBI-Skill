@@ -14,6 +14,12 @@ allowed-tools:
 
 Run ALL of the following detection commands using the Bash tool before proceeding. Save the output.
 
+Ensure .pbi/ directory exists and migrate legacy root-level files.
+```bash
+python ".claude/skills/pbi/scripts/detect.py" ensure-dir 2>/dev/null
+python ".claude/skills/pbi/scripts/detect.py" migrate 2>/dev/null
+```
+
 ```bash
 python ".claude/skills/pbi/scripts/detect.py" pbip 2>/dev/null || echo "PBIP_MODE=paste"
 ```
@@ -28,12 +34,33 @@ python ".claude/skills/pbi/scripts/detect.py" git 2>/dev/null || (echo "GIT=no" 
 python ".claude/skills/pbi/scripts/detect.py" context 2>/dev/null || echo "No prior context found."
 ```
 
+Save the PBI_CONFIRM value — use it to decide whether to ask before writing files.
+```bash
+python ".claude/skills/pbi/scripts/detect.py" settings 2>/dev/null || echo "PBI_CONFIRM=true"
+```
+
+### Auto-Resume (session-aware)
+
+After detection, apply the following before executing the command:
+
+1. **PBIP_MODE=file — session load check**:
+   Run:
+   ```bash
+   python ".claude/skills/pbi/scripts/detect.py" session-check 2>/dev/null
+   ```
+   - If output is `SESSION=active` — context was already loaded this session: proceed directly to the command instructions.
+   - If output is `SESSION=new` — first command this session: write `**Session-Start:** [current UTC time in ISO 8601]` to `.pbi/context.md` if a PBIP project is active. Proceed to the command instructions (resume reads the cached context file, not model files).
+
+2. **PBIP_MODE=paste — nearby folder check**: skip silently for resume command.
+
+After auto-resume completes, proceed to the command instructions below.
+
 ---
 
 # /pbi:resume
 
 <purpose>
-Claude Code sessions are ephemeral — /clear or a new terminal loses all accumulated context. Resume bridges that gap by reading the persisted .pbi-context.md file and reconstructing the working state, so the analyst can continue where they left off without re-running /pbi:load or re-explaining the project.
+Claude Code sessions are ephemeral — /clear or a new terminal loses all accumulated context. Resume bridges that gap by reading the persisted .pbi/context.md file and reconstructing the working state, so the analyst can continue where they left off without re-running /pbi:load or re-explaining the project.
 </purpose>
 
 <core_principle>
@@ -44,7 +71,7 @@ Restore, don't re-run. Read the cached context file to understand what was done 
 
 ### Step 1 — Check for context file
 
-Check if `.pbi-context.md` exists and has content beyond the template headers.
+Check if `.pbi/context.md` exists and has content beyond the template headers.
 
 - **No file or empty:** Output and stop:
   > No session context found. Run `/pbi:load` to initialize the project, or use any `/pbi:` command — context is created automatically on first use.
@@ -55,7 +82,7 @@ Check if `.pbi-context.md` exists and has content beyond the template headers.
 
 ### Step 2 — Parse context file
 
-Read `.pbi-context.md` with the Read tool. Extract:
+Read `.pbi/context.md` with the Read tool. Extract:
 
 1. **Last Command** — Command name, timestamp, measure, and outcome
 2. **Model Context** — Count tables, total measures, total relationships
@@ -124,7 +151,7 @@ Ready to continue. Type any /pbi: command or describe what you need.
 
 ### Step 6 — Update session context
 
-Read-then-Write `.pbi-context.md`:
+Read-then-Write `.pbi/context.md`:
 - `## Last Command`: Command = `/pbi:resume`, Outcome = `Session resumed — [N] tables, context [freshness]`
 - Prepend row to `## Command History`; trim to 20 rows max
 - Do NOT modify `## Model Context` or `## Analyst-Reported Failures`
