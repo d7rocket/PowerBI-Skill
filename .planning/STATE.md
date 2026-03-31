@@ -20,7 +20,7 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-23 after v1.2 milestone start)
 
 **Core value:** Never block a data analyst — solve immediately, interrogate only when stuck or asked
-**Current focus:** Phase 08 — audit-and-settings
+**Current focus:** Milestone v1.2 complete — ready for `/gsd:complete-milestone`
 
 ## Current Position
 
@@ -80,5 +80,5 @@ None.
 ## Session Continuity
 
 Last activity: 2026-03-31
-Stopped at: Completed 08-03-PLAN.md (fix session-start format and housekeeping)
+Stopped at: Phase 08 complete — Milestone v1.2 Quality & Distribution 100% done
 Resume file: None
