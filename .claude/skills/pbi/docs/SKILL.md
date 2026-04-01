@@ -227,12 +227,14 @@ Write this JSON to `.pbi/doc_data.json` using the Write tool.
 
 ### Step 4 — Select output format(s) and generate
 
-**Format selection prompt** — present this and wait for the user's response:
+**STOP. Ask the user which format(s) they want. Do NOT generate or write any files until they reply.**
+
+Present this prompt and wait:
 
 ```
 Select output format(s):
 
-  [1] Markdown  — .pbi/project-docs.md   (always available)
+  [1] Markdown  — .pbi/project-docs.md   (no dependencies)
   [2] PDF       — .pbi/project-docs.pdf  (requires: pip install reportlab)
   [3] Word      — .pbi/project-docs.docx (requires: pip install python-docx)
   [4] All 3
@@ -240,13 +242,13 @@ Select output format(s):
 Enter number(s), e.g. 1 or 1,3 or 4:
 ```
 
-**Do not proceed until the user replies.**
+**Do not write any files until the user replies with their selection.**
 
 ---
 
-**Based on the user's selection:**
+**Only after the user replies, generate the selected format(s):**
 
-**Markdown** (any choice — always generated as the human-readable reference):
+**Markdown** (choice 1 or 4):
 - If PBI_CONFIRM=true: ask "Write to .pbi/project-docs.md? (y/N)". On n/N/Enter: output "Write cancelled." and stop.
 - Generate a clean markdown document directly from the JSON data (do NOT re-read model files — the JSON has everything). Structure:
   - `# [project_name] — Power BI Documentation`
