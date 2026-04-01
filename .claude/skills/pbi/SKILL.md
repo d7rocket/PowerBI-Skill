@@ -77,6 +77,7 @@ Parse `$ARGUMENTS` first word/keyword to determine the subcommand. Match against
 | new, create, "add measure", scaffold | `/pbi:new` |
 | edit, rename, update, change, modify | `/pbi:edit` |
 | "comment-batch", "comment all", "batch comment", "document all" | `/pbi:comment-batch` |
+| "format-batch", "format all", "batch format", "reformat all", "format all measures" | `/pbi:format-batch` |
 | audit, "health check", "review model", "find issues" | `/pbi:audit` |
 | load, context, "model context", "load project" | `/pbi:load` |
 | diff, "what changed", changes, "show changes" | `/pbi:diff` |

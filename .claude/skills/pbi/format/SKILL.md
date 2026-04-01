@@ -1,7 +1,7 @@
 ---
 name: pbi:format
 description: "Reformat DAX expressions for maximum readability using the DAX Formatter API (daxformatter.com). Handles long expressions, nested functions, and multi-line VAR/RETURN blocks. Preserves semantic meaning while applying consistent indentation and spacing. Auto-applies to PBIP files when detected."
-model: sonnet
+model: haiku
 allowed-tools: Read, Write, Bash, Agent
 disable-model-invocation: true
 metadata:
