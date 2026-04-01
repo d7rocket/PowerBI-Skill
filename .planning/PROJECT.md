@@ -2,7 +2,7 @@
 
 ## What This Is
 
-A Claude Code skill for Power BI development that solves DAX requests immediately by default, escalates to structured questioning only after repeated failure signals, grounds generated measures in the user's actual model context, and provides a complete structured deep-mode workflow with model health review, hard phase gates, and context re-injection.
+A Claude Code skill namespace (`/pbi`) that turns Claude into a Power BI DAX co-pilot. Solves DAX requests immediately by default, escalates to structured questioning only after repeated failure signals, grounds generated measures in the user's actual model context, provides a complete deep-mode workflow with model health review and hard phase gates, and ships as a full installer-managed distribution with version tracking, UTF-8-safe file operations, and a dedicated settings sub-skill.
 
 ## Core Value
 
@@ -31,23 +31,16 @@ Never block a data analyst — solve immediately, interrogate only when stuck or
 - ✓ Deep mode phase boundaries are hard gates (no auto-advance) — v1.1 (VERF-01)
 - ✓ Deep mode final gate checks output answers the stated business question — v1.1 (VERF-02)
 - ✓ Context summary restated at start of each deep-mode phase — v1.1 (VERF-03)
+- ✓ Installer downloads all skill files with configurable project/user scope (INST-01–04) — v1.2
+- ✓ No command file triggers token overflow errors; large files chunked (TOKEN-01–02) — v1.2
+- ✓ All file operations use Python with UTF-8 encoding; no grep/sed on model files (UTF8-01–03) — v1.2
+- ✓ `/pbi:version` shows full version history from bundled CHANGELOG.md (HIST-01–02) — v1.2
+- ✓ `/pbi:settings` is a dedicated slash command with settings/SKILL.md sub-skill (SETTINGS-01–02) — v1.2
+- ✓ All commands files synced to v6.1: correct context path, detection steps, session-check (SYNC-01–02) — v1.2
 
 ### Active
 
-- ✓ Installer reliably installs/updates all skill files with per-project vs user-level scope choice (INST-01–04) — Validated in Phase 8: audit-and-settings
-- [ ] Large command files stay under token limits during skill execution (TOKEN-01–02)
-- [ ] All file operations use Python with UTF-8 encoding — no grep/sed on model files (UTF8-01–03)
-- [ ] `/pbi version` command shows full version history from bundled changelog (HIST-01)
-
-## Current Milestone: v1.2 Quality & Distribution
-
-**Goal:** Fix installer reliability, eliminate token overflow, enforce Python-first file ops, and add version history command.
-
-**Target features:**
-- Reworked installer with `-Scope project|user` parameter, all files included, version read from SKILL.md
-- Token management for large command files
-- Replace remaining grep/sed with Python for UTF-8 safety
-- New `/pbi version` command with bundled CHANGELOG.md
+None — all v1.2 requirements validated.
 
 ### Out of Scope
 
@@ -55,16 +48,19 @@ Never block a data analyst — solve immediately, interrogate only when stuck or
 - Generic DAX tutorials — context-driven assistance, not educational content
 - Free-form Q&A mode without structure — destroys phase discipline in deep mode
 - OAuth / Power BI Service integration — works from described context only
+- Converting diff.md gitignore grep to Python — pure ASCII operation, no UTF-8 risk
+- Splitting SKILL.md router into multiple files — router must remain single file for discovery
 
-## Context
+## Current State
 
-**Shipped v1.1** with 4 phases, 11 plans total, ~3,200 LOC across skill markdown files. Phase 8 complete — `/pbi:settings` now a dedicated slash command, all commands files synced to v6.1, session-start format standardized. Current version: v6.2.0.
+**Shipped v1.2** (2026-03-31) — 8 phases, 40 plans total across all milestones.
 
-**Tech stack:** Claude Code skill markdown, `.pbi/context.md` for session state, TMDL/TMSL file support, Python detection script (`detect.py`).
+Skill version: **v6.2.0**. ~5,800 LOC across 22 skill markdown files + detect.py.
 
-**v1.2 drivers:** install.ps1 is out of sync (v4.1.0 vs SKILL.md v4.3.0), missing `docs.md` and `detect.py` from download list. Several command files (audit 16KB, optimise 14KB, error 13KB) trigger 10K token errors. Four commands still use `grep -rlF` instead of `detect.py search` for measure lookups. French accented characters in model files require consistent Python/UTF-8 handling.
+**Tech stack:** Claude Code skill markdown (`/pbi` namespace, 21 sub-skills + base router), `.pbi/context.md` for session state, TMDL/TMSL file support, Python detection script (`detect.py`, 15 subcommands), PowerShell installer (`install.ps1`).
 
-**Pending verification:** pbi-error file-mode live tests (ERR-03/INFRA-06) deferred until Power BI Desktop available. No implementation gap — same pattern as verified pbi-comment.
+**Known limitations:**
+- pbi-error file-mode live tests (ERR-03/INFRA-06) deferred until Power BI Desktop available — no implementation gap
 
 ## Constraints
 
@@ -88,6 +84,12 @@ Never block a data analyst — solve immediately, interrogate only when stuck or
 | Hard gate three-branch logic (exact token / cancel / re-output) | Two-branch gates are soft gates — unmatched input must re-output the gate | ✓ Good — "ok" and "sounds good" now correctly re-output |
 | Gate tokens: `continue`/`cancel` mid-session, `confirm`/`cancel` terminal | Differentiates mid-session phase advance from final session close | ✓ Good — clear semantic difference for users |
 | Model review scope: described context only, no file reads | Phase B should be fast and conversational; file-level audit is `/pbi audit` | ✓ Good — non-blocking, routes users to right tool for deep analysis |
+| Python-first file operations via detect.py | Shell grep/sed fails silently on UTF-8 (French accents in model files) | ✓ Good — all 4 search commands migrated, zero UTF-8 incidents |
+| Chunked TMSL reads (1000-line blocks) | model.bim can exceed 10K tokens; overflow errors are silent failures | ✓ Good — load.md, edit.md, comment.md all protected |
+| CHANGELOG.md bundled in shared/ (offline version history) | Network dependency at runtime for version check would be fragile | ✓ Good — fully offline /pbi:version command works in any environment |
+| `disable-model-invocation: true` for settings sub-skill | Settings is a Python script runner — no LLM reasoning needed, saves tokens | ✓ Good — runs as pure tool-call chain |
+| Extracted settings handler from base SKILL.md into settings/SKILL.md | Consistent sub-skill pattern; direct /pbi:settings invocation without router | ✓ Good — one sub-skill per command, no inline handlers in base |
+| Combined ensure-dir + migrate + session-check pass per commands file | Single-pass update reduces file I/O and commit noise vs separate passes | ✓ Good — all 20 commands files updated cleanly in one agent pass |
 
 ## Evolution
 
@@ -107,4 +109,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-03-23 after v1.2 milestone start*
+*Last updated: 2026-03-31 after v1.2 milestone completion*

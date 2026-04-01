@@ -96,10 +96,61 @@
 
 ---
 
+## Milestone: v1.2 — Quality & Distribution
+
+**Shipped:** 2026-03-31
+**Phases:** 4 (Phase 5: Installer Overhaul, Phase 6: Token Safety + UTF-8 Hardening, Phase 7: Version History Command, Phase 8: Audit & Settings Sub-skill) | **Plans:** 11
+
+### What Was Built
+
+- Reworked `install.ps1` with `-Scope project|user` parameter, full 21-file manifest, dynamic version read from SKILL.md
+- Python `detect.py` expanded to 15 subcommands: `html-parse`, `version-check`, `gitignore-check`, `search`, `session-check`, `settings-set`, `ensure-dir`, `migrate`, and more — replacing all grep/sed pipelines
+- TMSL chunked-read guards in `load.md`, `edit.md`, `comment.md` (1000-line blocks, prevents 10K token overflow on large model.bim files)
+- Bundled `CHANGELOG.md` in `shared/` with offline `/pbi:version` command — full version history without network call
+- `/pbi:settings` extracted from inline handler → dedicated `settings/SKILL.md` sub-skill with `disable-model-invocation: true`
+- All 20 `.claude/commands/pbi/*.md` files synced to v6.1: `.pbi/context.md` path, `ensure-dir`/`migrate`/`settings` detection, `session-check` auto-resume
+- Session-start format standardised across all 21 sub-skills: `**Session-Start:** [ISO]` (the exact format `detect.py session_check()` parses)
+
+### What Worked
+
+- **Parallel wave execution for independent plans** (Phase 8 Wave 1: 08-01 + 08-02 in parallel) shaved significant time. For plans with no data dependency, parallel is always the right call.
+- **detect.py as the extension point**: All Python-first requirements in Phase 6 fell neatly into adding new detect.py subcommands. The script as a single extension surface worked extremely well — no scattered Python inline strings in skill files.
+- **Mechanical replacement tasks as sub-agent work**: The 20-file commands sync (Phase 8, Plan 02) was entirely mechanical. Delegating it to a sub-agent with a precise task spec was more reliable than doing it inline — zero missed files.
+- **Session-check pattern supersedes Model Context presence check**: The v6.1 session-check pattern (detect.py session_check) is cleaner than checking for `## Model Context` in the context file. The 2-hour window logic prevents stale context reuse.
+
+### What Was Inefficient
+
+- **Phase 5 had only 1 plan** (05-01) vs the original scope of 2 — the installer plan was merged, which was the right call but resulted in an oddly sized phase. Minor.
+- **ROADMAP.md milestone entry didn't include Phase 8** at milestone start — added late. Phase 8 was an add-on to the roadmap mid-milestone. Normal evolution, but adds noise to milestone archival.
+- **commands/ files were 4 versions behind** (v4-era): The scope of Plan 08-02 (20 files, 3 changes each) was larger than anticipated because no one had been maintaining the commands/ files in sync with the skills/. Need a sync-check in the phase planning workflow.
+
+### Patterns Established
+
+- **detect.py as the single Python entry point**: All file operations, searches, settings reads/writes, and session management go through detect.py subcommands. Never add ad-hoc Python inline in skill files.
+- **`disable-model-invocation: true` for utility sub-skills**: Any sub-skill that runs scripts only (no LLM reasoning) should use this flag to prevent accidental model invocations and save tokens.
+- **Parallel agents for independent large-scale mechanical tasks**: 20+ file updates without dependencies = perfect sub-agent candidate. Use worktree isolation for parallelism.
+- **Session-start format**: `**Session-Start:** [ISO 8601 UTC]` immediately after `## Model Context` heading — single line, detect.py parses line.strip().startswith('**Session-Start:**').
+
+### Key Lessons
+
+1. **Keep commands/ in sync with skills/ at each milestone** — a cross-check step should be part of every milestone start to catch drift before it compounds.
+2. **A dedicated sub-skill per command is the right architecture** — extracting the settings handler from base SKILL.md into settings/SKILL.md resolved routing clarity and made `/pbi:settings` directly invocable. All future commands should follow the sub-skill pattern.
+3. **Chunking is a must for TMSL models** — model.bim files in large PBIP projects easily exceed 10K tokens. Chunk-read at 1000 lines is the correct default for any Read tool call on model files.
+4. **The 2-hour session window is the right heuristic for auto-load** — saves a model load (fast) on every command in a session while ensuring fresh context after idle gaps.
+
+### Cost Observations
+
+- Model mix: Sonnet primary, Haiku for file-heavy tasks (load, diff, commit)
+- Sessions: ~5 sessions across 8 days (2026-03-23 → 2026-03-31)
+- Notable: Phase 8 used parallel sub-agents for Wave 1 (2 agents simultaneously) — first use of worktree isolation in this project, worked cleanly
+
+---
+
 ## Cross-Milestone Trends
 
 | Milestone | Phases | Plans | Avg/Plan | Tech Debt Items |
 |-----------|--------|-------|----------|-----------------|
 | v1.0 Core | 2 | 7 | ~10 min | 3 (field schema mismatches) |
 | v1.1 Complete | 2 | 4 | ~2 min | 0 (debt-clearing milestone) |
+| v1.2 Quality & Distribution | 4 | 11 | ~7 min | 1 (pbi-error live test pending PBI Desktop) |
 
