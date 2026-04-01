@@ -83,13 +83,7 @@ Write for business stakeholders, not developers. Every section should be underst
 
 > No PBIP project found in this directory. Run `/pbi:docs` from a directory containing a `*.SemanticModel/` folder.
 
-**If PBIP_MODE=file:** output:
-
-```
-Generating project documentation...
-```
-
-Then proceed to Step 1.
+**If PBIP_MODE=file:** proceed to Step 1. (Do NOT output anything yet — Step 4 asks questions first.)
 
 ---
 
@@ -221,13 +215,13 @@ Construct the following JSON object in memory from everything extracted in Steps
 }
 ```
 
-Write this JSON to `.pbi/doc_data.json` using the Write tool.
+Hold this JSON in memory — do NOT write any files yet.
 
 ---
 
 ### Step 4 — Select detail level and output format(s)
 
-**STOP. Ask TWO questions before generating anything. Do NOT write any files until both are answered.**
+**STOP. Ask TWO questions before generating anything. Do NOT write any files until both are answered. These questions are REQUIRED regardless of PBI_CONFIRM setting — they are not confirm prompts, they are required inputs.**
 
 **Question 1 — Detail level:**
 
@@ -266,7 +260,10 @@ Wait for the user's reply. **Do not write any files until both questions are ans
 
 ---
 
-**Only after both replies, generate the selected format(s):**
+**Only after both replies:**
+
+1. Write the JSON data (from Step 3) to `.pbi/doc_data.json` using the Write tool.
+2. Then generate the selected format(s):
 
 **Detail level rules — apply to PDF and Word only (Markdown always uses Full):**
 
