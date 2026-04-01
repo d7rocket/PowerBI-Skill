@@ -6,6 +6,11 @@ SecurityBindings
 
 # PBI Skill session state
 .pbi-context.md
+.pbi/context.md
+
+# Claude Code local settings
+.claude/settings.local.json
+.claude/worktrees/
 
 # GSD planning artifacts
 .planning/
