@@ -267,13 +267,44 @@ Output format:
 
 ---
 
-### Step 4 — Write output file
+### Step 4 — Select output format(s) and write files
 
-**Confirm check:** If PBI_CONFIRM=true, ask "Write documentation to .pbi/project-docs.md? (y/N)" before writing. On n/N/Enter: "Write cancelled." Skip file write. On y/Y: proceed. If PBI_CONFIRM=false: proceed directly to write (current behavior).
+**Format selection prompt** — present this and wait for the user's response before writing anything:
 
-Write the generated document to `.pbi/project-docs.md` in the project root using the Write tool.
+```
+Select output format(s):
 
-Output: `Documentation written to .pbi/project-docs.md`
+  [1] Markdown  — .pbi/project-docs.md
+  [2] PDF       — .pbi/project-docs.pdf   (requires pandoc)
+  [3] Word      — .pbi/project-docs.docx  (requires pandoc)
+  [4] All 3
+
+Enter number(s), e.g. 1 or 1,3 or 4:
+```
+
+**Do not proceed until the user replies.**
+
+---
+
+**Based on the user's selection, follow these steps:**
+
+**Markdown** (choice 1, 2, 3, or 4 — always written as the base file):
+- If PBI_CONFIRM=true: ask "Write to .pbi/project-docs.md? (y/N)". On n/N/Enter: "Write cancelled." and stop. On y/Y or PBI_CONFIRM=false: write using the Write tool.
+- Output: `Markdown written to .pbi/project-docs.md`
+
+**PDF** (choice 2 or 4):
+- Check pandoc: `python -c "import subprocess; r=subprocess.run(['pandoc','--version'],capture_output=True,timeout=5); print('PANDOC=yes' if r.returncode==0 else 'PANDOC=no')" 2>/dev/null`
+- If `PANDOC=yes`: run `pandoc ".pbi/project-docs.md" -o ".pbi/project-docs.pdf" 2>&1`
+  - On success: `PDF written to .pbi/project-docs.pdf`
+  - On error: show the pandoc error output.
+- If `PANDOC=no`: `PDF export requires pandoc — install from https://pandoc.org/installing.html`
+
+**Word** (choice 3 or 4):
+- Check pandoc (same command as above, reuse result if already checked).
+- If `PANDOC=yes`: run `pandoc ".pbi/project-docs.md" -o ".pbi/project-docs.docx" 2>&1`
+  - On success: `Word document written to .pbi/project-docs.docx`
+  - On error: show the pandoc error output.
+- If `PANDOC=no`: `Word export requires pandoc — install from https://pandoc.org/installing.html`
 
 ---
 

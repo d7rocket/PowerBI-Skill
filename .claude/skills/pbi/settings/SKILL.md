@@ -13,6 +13,9 @@ metadata:
 
 ## Detection
 
+### PBI Directory Setup
+!`python ".claude/skills/pbi/scripts/detect.py" ensure-dir 2>/dev/null && python ".claude/skills/pbi/scripts/detect.py" migrate 2>/dev/null`
+
 ### Settings
 !`python ".claude/skills/pbi/scripts/detect.py" settings 2>/dev/null || echo "PBI_CONFIRM=true"`
 
@@ -26,11 +29,13 @@ Save the `PBI_CONFIRM` value — this is the current write mode setting.
 
 Parse the argument after `settings`:
 
-- `auto` → Run: `python ".claude/skills/pbi/scripts/detect.py" settings-set confirm_writes false 2>/dev/null`
-  Output: `Write mode set to **auto** — changes will be applied without confirmation.`
+- `auto` → Run: `python ".claude/skills/pbi/scripts/detect.py" settings-set confirm_writes false`
+  - If exit code ≠ 0: output the error message and stop.
+  - On success: Output `Write mode set to **auto** — changes will be applied without confirmation.`
 
-- `confirm` → Run: `python ".claude/skills/pbi/scripts/detect.py" settings-set confirm_writes true 2>/dev/null`
-  Output: `Write mode set to **confirm** — you'll be asked before every file write.`
+- `confirm` → Run: `python ".claude/skills/pbi/scripts/detect.py" settings-set confirm_writes true`
+  - If exit code ≠ 0: output the error message and stop.
+  - On success: Output `Write mode set to **confirm** — you'll be asked before every file write.`
 
 - No argument → Read current PBI_CONFIRM value from Settings detection output.
   Output:

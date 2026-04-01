@@ -6,24 +6,97 @@ Usage:
     python detect.py files     — List all TMDL files or model.bim path
     python detect.py pbir      — Detect PBIR Report folder and list visual JSONs
     python detect.py git       — Check git state (repo exists, has commits)
-    python detect.py context   — Read last 80 lines of .pbi-context.md
+    python detect.py context   — Read last 80 lines of .pbi/context.md
     python detect.py nearby    — Check parent directories for a PBIP project
     python detect.py search <name> <pbip_dir>  — Find files containing measure name
     python detect.py html-parse <tmpfile>  — Strip DAX Formatter HTML to clean DAX text
     python detect.py version-check <skill_file>  — Read version from SKILL.md frontmatter
     python detect.py gitignore-check  — Ensure .gitignore contains all noise-file entries
     python detect.py session-check  — Check if model was loaded this session (2h window)
+    python detect.py settings  — Read .pbi/settings.json and output PBI_CONFIRM
+    python detect.py settings-set <key> <value>  — Write a setting to .pbi/settings.json
+    python detect.py ensure-dir  — Create .pbi/ directory if missing
+    python detect.py migrate   — Move legacy root files into .pbi/ folder
 """
 import sys
 import os
 import glob
 import subprocess
+import json
 
 # Force UTF-8 output (Windows defaults to cp1252 which breaks French accents)
 if hasattr(sys.stdout, 'reconfigure'):
     sys.stdout.reconfigure(encoding='utf-8')
 if hasattr(sys.stderr, 'reconfigure'):
     sys.stderr.reconfigure(encoding='utf-8')
+
+PBI_DIR = '.pbi'
+CONTEXT_FILE = os.path.join(PBI_DIR, 'context.md')
+SETTINGS_FILE = os.path.join(PBI_DIR, 'settings.json')
+
+
+def ensure_pbi_dir():
+    """Create .pbi/ directory if it does not exist."""
+    os.makedirs(PBI_DIR, exist_ok=True)
+    print('PBI_DIR_OK')
+
+
+def migrate_files():
+    """Move legacy root-level files into .pbi/ folder.
+
+    Migrates:
+      .pbi-context.md  -> .pbi/context.md
+      project-docs.md  -> .pbi/project-docs.md
+      audit-report.md  -> .pbi/audit-report.md
+    """
+    os.makedirs(PBI_DIR, exist_ok=True)
+    migrations = [
+        ('.pbi-context.md', CONTEXT_FILE),
+        ('project-docs.md', os.path.join(PBI_DIR, 'project-docs.md')),
+        ('audit-report.md', os.path.join(PBI_DIR, 'audit-report.md')),
+    ]
+    moved = []
+    for src, dst in migrations:
+        if os.path.isfile(src) and not os.path.isfile(dst):
+            os.rename(src, dst)
+            moved.append(f'{src} -> {dst}')
+    if moved:
+        for m in moved:
+            print('MIGRATED: ' + m)
+    else:
+        print('MIGRATE_OK')
+
+
+def detect_settings():
+    """Read .pbi/settings.json and output PBI_CONFIRM value."""
+    try:
+        with open(SETTINGS_FILE, 'r', encoding='utf-8') as f:
+            settings = json.load(f)
+            confirm = settings.get('confirm_writes', True)
+            print('PBI_CONFIRM=' + str(confirm).lower())
+    except (FileNotFoundError, json.JSONDecodeError):
+        print('PBI_CONFIRM=true')
+
+
+def set_setting(key, value):
+    """Write a setting to .pbi/settings.json."""
+    os.makedirs(PBI_DIR, exist_ok=True)
+    settings = {}
+    try:
+        with open(SETTINGS_FILE, 'r', encoding='utf-8') as f:
+            settings = json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError):
+        pass
+    # Parse boolean-like values
+    if value.lower() in ('true', 'yes', '1'):
+        settings[key] = True
+    elif value.lower() in ('false', 'no', '0'):
+        settings[key] = False
+    else:
+        settings[key] = value
+    with open(SETTINGS_FILE, 'w', encoding='utf-8') as f:
+        json.dump(settings, f, indent=2, ensure_ascii=False)
+    print(f'SET_OK {key}={settings[key]}')
 
 
 def detect_pbip():
@@ -95,9 +168,9 @@ def detect_git():
 
 
 def detect_context():
-    """Read last 80 lines of .pbi-context.md (UTF-8 safe)."""
+    """Read last 80 lines of .pbi/context.md (UTF-8 safe)."""
     try:
-        with open('.pbi-context.md', 'r', encoding='utf-8') as f:
+        with open(CONTEXT_FILE, 'r', encoding='utf-8') as f:
             lines = f.readlines()
             for line in lines[-80:]:
                 print(line, end='')
@@ -200,13 +273,13 @@ def version_check(skill_file):
 def session_check():
     """Check if model context was loaded this session.
 
-    Reads ## Session Start from .pbi-context.md, compares timestamp
+    Reads ## Session Start from .pbi/context.md, compares timestamp
     to current time. If within 2 hours, outputs SESSION=active.
     Otherwise outputs SESSION=new.
     """
     from datetime import datetime, timezone, timedelta
     try:
-        with open('.pbi-context.md', 'r', encoding='utf-8') as f:
+        with open(CONTEXT_FILE, 'r', encoding='utf-8') as f:
             for line in f:
                 if line.strip().startswith('**Session-Start:**'):
                     ts_str = line.strip().split('**Session-Start:**')[1].strip()
@@ -224,13 +297,13 @@ def session_check():
 
 
 def gitignore_check():
-    """Ensure four noise-file entries exist in .gitignore.
+    """Ensure noise-file entries exist in .gitignore.
 
-    Replaces grep/append pipeline in diff.md Step 1.
-    Entries required: *.abf, localSettings.json, .pbi-context.md, SecurityBindings
+    Entries required: *.abf, localSettings.json, .pbi/context.md, SecurityBindings
     Prints GITIGNORE_OK when done.
     """
-    required = ['*.abf', 'localSettings.json', '.pbi-context.md', 'SecurityBindings']
+    required = ['*.abf', 'localSettings.json', '.pbi/context.md', 'SecurityBindings']
+    # Also remove legacy entry if present
     existing_lines = []
     try:
         with open('.gitignore', 'r', encoding='utf-8') as f:
@@ -241,7 +314,6 @@ def gitignore_check():
     existing_text = ''.join(existing_lines)
     to_add = []
     for entry in required:
-        # Match *.abf also catches cache.abf since we add *.abf
         if entry not in existing_text:
             to_add.append(entry)
 
@@ -255,7 +327,7 @@ def gitignore_check():
 
 if __name__ == '__main__':
     if len(sys.argv) < 2:
-        print('Usage: detect.py [pbip|files|pbir|git|context|nearby|search]', file=sys.stderr)
+        print('Usage: detect.py [pbip|files|pbir|git|context|nearby|search|settings|...]', file=sys.stderr)
         sys.exit(1)
 
     cmd = sys.argv[1]
@@ -281,6 +353,14 @@ if __name__ == '__main__':
         session_check()
     elif cmd == 'gitignore-check':
         gitignore_check()
+    elif cmd == 'settings':
+        detect_settings()
+    elif cmd == 'settings-set' and len(sys.argv) >= 4:
+        set_setting(sys.argv[2], sys.argv[3])
+    elif cmd == 'ensure-dir':
+        ensure_pbi_dir()
+    elif cmd == 'migrate':
+        migrate_files()
     else:
         print('Unknown command: ' + cmd, file=sys.stderr)
         sys.exit(1)
