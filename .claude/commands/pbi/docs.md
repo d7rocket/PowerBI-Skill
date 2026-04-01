@@ -89,13 +89,7 @@ After auto-resume completes, proceed to the command instructions below.
 
 > No PBIP project found in this directory. Run `/pbi:docs` from a directory containing a `*.SemanticModel/` folder.
 
-**If PBIP_MODE=file:** output:
-
-```
-Generating project documentation...
-```
-
-Then proceed to Step 1.
+**If PBIP_MODE=file:** proceed to Step 1. (Do NOT output anything yet — questions must be answered first.)
 
 ---
 
@@ -136,7 +130,42 @@ Classify each table:
 
 ---
 
-### Step 3 — Generate documentation
+### Step 3 — Ask before generating
+
+**STOP. Ask TWO questions before generating or writing anything. These are REQUIRED regardless of PBI_CONFIRM — they are not confirm prompts, they are required inputs.**
+
+**Question 1 — Detail level:**
+
+```
+How detailed should the document be?
+
+  [1] Quick  — Overview, table summary, measure names only (no DAX)
+  [2] Normal — Full structure, all measures with DAX, relationships, health notes
+  [3] Full   — Everything: extended narrative, all columns, full DAX, data sources
+
+Enter 1, 2, or 3:
+```
+
+Wait for reply. Save as DETAIL_LEVEL (quick / normal / full).
+
+**Question 2 — Confirm write:**
+
+```
+Write documentation to .pbi/project-docs.md? (y/N)
+```
+
+Wait for reply. On n/N/Enter: output "Cancelled." and stop.
+
+Only after both replies, proceed to Step 4.
+
+---
+
+### Step 4 — Generate documentation
+
+Apply DETAIL_LEVEL rules:
+- **Quick:** Include sections 1, 2 (table list only, no column details), 3 (measure names + descriptions only, no DAX), 7 (health). Omit DAX blocks, column tables, sections 4–6.
+- **Normal:** Include all sections. Include DAX in `<details>` blocks. Include columns. Omit extended business narrative.
+- **Full:** Include all sections. Full DAX, full column listings, extended business logic (3–5 paragraphs), data sources, report pages.
 
 Write a polished, stakeholder-ready Markdown document. Use clear headings, tables, and formatting. Write in a professional but accessible tone. Adapt language to the model (e.g., if tables/measures use French names, write documentation in French).
 
@@ -273,15 +302,15 @@ Output format:
 
 ---
 
-### Step 4 — Write output file
+### Step 5 — Write output file
 
-Write the generated document to `project-docs.md` in the project root using the Write tool.
+Write the generated document to `.pbi/project-docs.md` using the Write tool.
 
-Output: `Documentation written to project-docs.md`
+Output: `Documentation written to .pbi/project-docs.md ([DETAIL_LEVEL] detail)`
 
 ---
 
-### Step 5 — Update .pbi/context.md
+### Step 6 — Update .pbi/context.md
 
 Use Read-then-Write to update `.pbi/context.md`:
 1. Update `## Last Command`: Command = `/pbi:docs`, Outcome = `Documentation generated — [N] tables, [M] measures. Written to project-docs.md`
