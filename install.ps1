@@ -33,7 +33,7 @@ Write-Host "  ║   ██╔══██╗██╔══██╗██║   
 Write-Host "  ║   ██████╔╝██████╔╝██║     Power BI DAX Co-pilot         ║" -ForegroundColor Yellow
 Write-Host "  ║   ██╔═══╝ ██╔══██╗██║     for Claude Code               ║" -ForegroundColor Yellow
 Write-Host "  ║   ██║     ██████╔╝██║                                   ║" -ForegroundColor Yellow
-Write-Host "  ║   ╚═╝     ╚═════╝ ╚═╝                                  ║" -ForegroundColor DarkYellow
+Write-Host "  ║   ╚═╝     ╚═════╝ ╚═╝                           v7.0   ║" -ForegroundColor DarkYellow
 Write-Host "  ║                                                         ║" -ForegroundColor DarkYellow
 Write-Host "  ╚═════════════════════════════════════════════════════════╝" -ForegroundColor DarkYellow
 Write-Host ""
@@ -85,7 +85,7 @@ $commands = @(
     "explain","format","optimise","comment","error","new",
     "load","audit","diff","commit","edit","undo",
     "comment-batch","changelog","extract","deep","docs","help","version","resume",
-    "settings"
+    "settings","format-batch"
 )
 $total = $commands.Count
 $i = 0

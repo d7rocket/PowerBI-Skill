@@ -2,7 +2,7 @@
 set -e
 
 TARGET="${1:-.}"
-VERSION="6.1.0"
+VERSION="7.0.0"
 BASE="https://raw.githubusercontent.com/d7rocket/PowerBI-Skill/main"
 SKILL_DIR="$TARGET/.claude/skills/pbi"
 
@@ -27,7 +27,7 @@ echo -e "${YELLOW}  ║   ██╔══██╗██╔══██╗██
 echo -e "${YELLOW}  ║   ██████╔╝██████╔╝██║     ${DIM}Power BI DAX Co-pilot         ║${RESET}"
 echo -e "${YELLOW}  ║   ██╔═══╝ ██╔══██╗██║     ${DIM}for Claude Code               ║${RESET}"
 echo -e "${YELLOW}  ║   ██║     ██████╔╝██║                                   ${DIM}║${RESET}"
-echo -e "${DIM}  ║   ╚═╝     ╚═════╝ ╚═╝                        v${VERSION}  ║${RESET}"
+echo -e "${DIM}  ║   ╚═╝     ╚═════╝ ╚═╝                       v${VERSION}  ║${RESET}"
 echo -e "${DIM}  ║                                                         ║${RESET}"
 echo -e "${DIM}  ╚═════════════════════════════════════════════════════════╝${RESET}"
 echo ""
@@ -70,7 +70,7 @@ fi
 
 # ── Download sub-skills ────────────────────────────────────────────
 echo -e "${CYAN}  [2/5] Sub-skills${RESET}"
-commands=(explain format optimise comment error new load audit diff commit edit undo comment-batch changelog extract deep docs help version resume)
+commands=(explain format optimise comment error new load audit diff commit edit undo comment-batch changelog extract deep docs help version resume settings format-batch)
 total=${#commands[@]}
 i=0
 failed=()

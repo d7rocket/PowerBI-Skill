@@ -7,7 +7,7 @@ model: sonnet
 allowed-tools: Read, Write, Bash, Agent
 metadata:
   author: d7rocket
-  version: 6.1.0
+  version: 7.0.0
   category: data-analytics
   tags: [power-bi, dax, pbip, semantic-model]
 ---

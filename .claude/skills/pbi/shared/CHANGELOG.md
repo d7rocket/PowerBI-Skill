@@ -3,6 +3,18 @@
 All notable changes to the PBI skill are documented here.
 Format: [Keep a Changelog](https://keepachangelog.com)
 
+## [7.0.0] — 2026-04-01
+
+### Added
+- `/pbi:format-batch` — bulk-format every measure in the model in one pass (SQLBI-standard structure, VAR/RETURN blocks, CALCULATE arguments, keyword capitalisation). No DAX Formatter API dependency. Auto-commits.
+- `/pbi:settings` — dedicated slash command for toggling write mode: `auto` (silent writes) vs `confirm` (preview before every write). Replaces keyword-only access via `/pbi settings`.
+- `format-batch` and `settings` added to both `install.ps1` and `install.sh` installers (22 sub-skills total).
+
+### Changed
+- Version bumped to 7.0.0 — marks completion of the full sub-skill architecture: all 22 commands are independently invocable as `/pbi:<cmd>`.
+- README updated with new ASCII art banner, v7 What's New section, and complete 22-command table.
+- `install.sh` updated to include `settings` and `format-batch` in the commands array.
+
 ## [6.2.0] — 2026-03-31
 
 ### Added

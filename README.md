@@ -1,6 +1,6 @@
 <p align="center">
   <img src="https://img.shields.io/badge/Claude_Code-Skill-blueviolet?style=for-the-badge&logo=data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHBhdGggZmlsbD0id2hpdGUiIGQ9Ik0xMiAyQzYuNDggMiAyIDYuNDggMiAxMnM0LjQ4IDEwIDEwIDEwIDEwLTQuNDggMTAtMTBTMTcuNTIgMiAxMiAyem0tMiAxNWwtNS01IDEuNDEtMS40MUwxMCAxNC4xN2w3LjU5LTcuNTlMMTkgOGwtOSA5eiIvPjwvc3ZnPg==" alt="Claude Code Skill">
-  <img src="https://img.shields.io/badge/version-6.1-blue?style=for-the-badge" alt="Version 6.1">
+  <img src="https://img.shields.io/badge/version-7.0-blue?style=for-the-badge" alt="Version 7.0">
   <img src="https://img.shields.io/badge/license-MIT-green?style=for-the-badge" alt="MIT License">
   <img src="https://img.shields.io/badge/Power_BI-DAX-F2C811?style=for-the-badge&logo=powerbi&logoColor=black" alt="Power BI DAX">
 </p>
@@ -8,12 +8,16 @@
 <div align="center">
 
 ```
-  ██████╗ ██████╗ ██╗
-  ██╔══██╗██╔══██╗██║
-  ██████╔╝██████╔╝██║   Power BI DAX Co-pilot
-  ██╔═══╝ ██╔══██╗██║   for Claude Code
-  ██║     ██████╔╝██║
-  ╚═╝     ╚═════╝ ╚═╝   v6.1
+  ╔═══════════════════════════════════════════════════════╗
+  ║                                                       ║
+  ║   ██████╗ ██████╗ ██╗  · Power BI DAX Co-pilot        ║
+  ║   ██╔══██╗██╔══██╗██║  · for Claude Code              ║
+  ║   ██████╔╝██████╔╝██║  ·                              ║
+  ║   ██╔═══╝ ██╔══██╗██║  · 22 commands  ·  PBIP-native  ║
+  ║   ██║     ██████╔╝██║  · UTF-8 safe   ·  local-first  ║
+  ║   ╚═╝     ╚═════╝ ╚═╝                        v7.0    ║
+  ║                                                       ║
+  ╚═══════════════════════════════════════════════════════╝
 ```
 
 **Explain, format, optimise, audit, and edit DAX measures — directly from your terminal.**
@@ -40,14 +44,14 @@ curl -sL https://raw.githubusercontent.com/d7rocket/PowerBI-Skill/main/install.s
 
 ---
 
-## What's New in v6.1
+## What's New in v7.0
 
 | Feature | Details |
 |:--------|:--------|
-| **Session-aware auto-load** | First `/pbi` command in each session runs a fresh model load automatically — no stale context. Subsequent commands resume from cache (2-hour session window). |
-| **Cleaner output** | Removed the context usage bar from all commands — less noise, more signal. |
-| **Session resume** | `/pbi:resume` restores context across sessions — model state, command history, in-progress workflows, and git state. |
-| **Visual branding** | Consistent output format with stage banners, approved status symbols, severity tags, and next-steps blocks. |
+| **`/pbi:format-batch`** | Format every measure in the model in one pass — SQLBI-standard structure, no API dependency, auto-commits. |
+| **`/pbi:settings`** | Dedicated settings command — toggle auto mode (silent writes) vs confirm mode (preview before every write). |
+| **22 independent commands** | Every command is its own `/pbi:<cmd>` skill with full detection, auto-resume, and session awareness. |
+| **`.pbi/` context directory** | All runtime files (context, settings, audit reports, docs) live in `.pbi/` — auto-migrated from legacy root paths. |
 
 ---
 
@@ -72,6 +76,7 @@ curl -sL https://raw.githubusercontent.com/d7rocket/PowerBI-Skill/main/install.s
 | `/pbi:edit` | Modify measures, columns, and tables using plain-English instructions |
 | `/pbi:docs` | Generate polished, stakeholder-ready project documentation |
 | `/pbi:extract` | Export model summary at three detail levels (overview, standard, deep-dive) |
+| `/pbi:format-batch` | Apply SQLBI-standard formatting to every measure in the model — no API dependency |
 | `/pbi:diff` | Human-readable change summary grouped by entity type |
 | `/pbi:commit` | Auto-generated business-language commits (local only) |
 | `/pbi:undo` | Safely revert the last auto-commit using git revert |
@@ -84,6 +89,7 @@ curl -sL https://raw.githubusercontent.com/d7rocket/PowerBI-Skill/main/install.s
 |:--------|:------------|
 | `/pbi:deep` | Four-phase guided workflow with hard gates: intake, model review, DAX dev, verification |
 | `/pbi:resume` | Restore session context and continue from where you left off |
+| `/pbi:settings` | Toggle auto mode (silent writes) vs confirm mode (preview before every write) |
 | `/pbi:version` | Display installed version and full changelog history |
 | `/pbi:help` | Complete command reference with remote update check |
 | `/pbi` | Interactive menu, backward-compatible router, and free-text DAX solver |
@@ -108,7 +114,7 @@ curl -sL https://raw.githubusercontent.com/d7rocket/PowerBI-Skill/main/install.s
 │   Paste-in     │  │    PBIP     │  │    Workflow        │
 │ explain format │  │ audit edit  │  │ deep extract       │
 │ optimise new   │  │ diff commit │  │ docs version       │
-│ comment error  │  │ undo load   │  │ help               │
+│ comment error  │  │ undo load   │  │ help settings      │
 │                │  │ changelog   │  │                    │
 │   Sonnet       │  │ Haiku/Son.  │  │   Sonnet/Opus      │
 └────────────────┘  └─────────────┘  └────────────────────┘
@@ -118,9 +124,9 @@ curl -sL https://raw.githubusercontent.com/d7rocket/PowerBI-Skill/main/install.s
 |:--------|:----|
 | **Session Auto-Load** | First command each session refreshes model context automatically |
 | **Local-First Git** | Never pulls, pushes, or creates PRs. Your files are the source of truth. |
-| **Session Memory** | `.pbi-context.md` persists model context, command history, failure flags |
+| **Session Memory** | `.pbi/context.md` persists model context, command history, failure flags |
 | **Smart Routing** | Sonnet for DAX reasoning, Haiku for file ops, Opus for deep extraction |
-| **UTF-8 Safe** | Python-based search handles French accents (e, e, c, a, u) |
+| **UTF-8 Safe** | Python-based search handles French accents (é, è, ê, ç, à, ù) |
 
 ---
 
@@ -165,10 +171,10 @@ cp -r /tmp/pbi-skill/.claude your-project/.claude
 
 ```
 .claude/skills/pbi/
-  SKILL.md              Base skill (menu + catch-all + backward-compatible router)
-  explain/SKILL.md      20 self-contained sub-skills, each with its own
-  format/SKILL.md       detection blocks, auto-resume, and instructions.
-  optimise/SKILL.md     Invoked as /pbi:<cmd> (e.g., /pbi:explain).
+  SKILL.md               Base skill (menu + catch-all + backward-compatible router)
+  explain/SKILL.md       22 self-contained sub-skills, each with its own
+  format/SKILL.md        detection blocks, auto-resume, and instructions.
+  optimise/SKILL.md      Invoked as /pbi:<cmd> (e.g., /pbi:explain).
   comment/SKILL.md
   error/SKILL.md
   new/SKILL.md
@@ -180,17 +186,19 @@ cp -r /tmp/pbi-skill/.claude your-project/.claude
   undo/SKILL.md
   comment-batch/SKILL.md
   changelog/SKILL.md
+  format-batch/SKILL.md  Bulk-format all measures (no API dependency)
   deep/SKILL.md
   extract/SKILL.md
   docs/SKILL.md
   help/SKILL.md
   version/SKILL.md
-  resume/SKILL.md       Session resume and context restoration
-  scripts/detect.py     UTF-8 detection + search (11 subcommands)
+  resume/SKILL.md        Session resume and context restoration
+  settings/SKILL.md      Write-mode toggle (auto / confirm)
+  scripts/detect.py      UTF-8 detection + search (15 subcommands)
   shared/
-    api-notes.md        DAX Formatter API reference
-    CHANGELOG.md        Version history
-    ui-brand.md         Visual output standards reference
+    api-notes.md         DAX Formatter API reference
+    CHANGELOG.md         Version history
+    ui-brand.md          Visual output standards reference
 ```
 
 </details>
@@ -240,6 +248,15 @@ Finds the measure, applies the change, auto-commits.
 </details>
 
 <details>
+<summary><strong>Bulk format all measures</strong></summary>
+
+```
+/pbi:format-batch
+```
+Applies SQLBI-standard formatting (VAR/RETURN blocks, CALCULATE structure, keyword capitalisation) to every measure in the model in a single pass. No DAX Formatter API required. Auto-commits.
+</details>
+
+<details>
 <summary><strong>Deep mode</strong></summary>
 
 ```
@@ -282,7 +299,8 @@ All commits are local only.
 - [x] Installer overhaul, token safety, `/pbi:version`
 - [x] Sub-skill architecture — each command is its own `/pbi:<cmd>` skill
 - [x] Session resume, visual branding, rich command descriptions
-- [x] Session-aware auto-load, context bar removal
+- [x] Session-aware auto-load, `.pbi/` context directory
+- [x] `/pbi:settings` write-mode toggle, `/pbi:format-batch` bulk formatter
 - [ ] Cross-measure dependency graph
 - [ ] Side-by-side measure comparison
 - [ ] Calculated column support

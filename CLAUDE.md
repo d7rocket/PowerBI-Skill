@@ -36,12 +36,16 @@ Each sub-skill runs its own detection blocks on load via `!` backtick syntax:
 - **File Index**: lists all `.tmdl` files or model.bim under `$PBIP_DIR`
 - **PBIR detection**: globs for `*.Report` or `.Report` directories, outputs `PBIR_DIR=<actual folder name>`
 - **Git state**: checks if inside a git repo with commits
-- **Session context**: reads `.pbi-context.md`
+- **Session context**: reads `.pbi/context.md`
+- **Settings**: reads `.pbi/settings.json`, outputs `PBI_CONFIRM=true/false`
+- **PBI directory setup**: ensures `.pbi/` exists and migrates legacy root files
 
 ### Conventions
 
-- **Session context**: all commands read/write `.pbi-context.md` using Read-then-Write (never bash append). Keep Command History to 20 rows max. Never modify the Analyst-Reported Failures section.
+- **Output folder (`.pbi/`)**: all skill-generated files live in `.pbi/` in the project root — `context.md` (session), `settings.json` (preferences), `project-docs.md` (docs output), `audit-report.md` (audit output). On first run, `detect.py ensure-dir` creates the folder and `detect.py migrate` moves any legacy root-level files (`.pbi-context.md`, `project-docs.md`, `audit-report.md`) into `.pbi/`.
+- **Session context**: all commands read/write `.pbi/context.md` using Read-then-Write (never bash append). Keep Command History to 20 rows max. Never modify the Analyst-Reported Failures section.
 - **Session-aware auto-load**: the first `/pbi` command in each session always runs a fresh load to ensure model data is current. Subsequent commands in the same session resume from cached context (2-hour session window). No explicit `/pbi:load` required.
+- **Confirm mode (`PBI_CONFIRM`)**: stored in `.pbi/settings.json` as `confirm_writes` (default: `true`). When `true`, commands show a preview and ask `(y/N)` before writing files. When `false` (auto mode), writes proceed without asking. Toggle with `/pbi settings auto` or `/pbi settings confirm`.
 - **Auto-commit**: edit, comment, error, and new auto-commit after successful writes. Use undo to revert. All commits are LOCAL only.
 - **Post-command staging**: after every command that writes to `$PBIP_DIR/`, changes are auto-staged (`git add`) and the user is notified.
 - **LOCAL-FIRST GIT POLICY (CRITICAL)**: NEVER `git pull`, `git fetch`, `git merge`, `git push`, or create PRs. Local files are always the source of truth. Pulling has previously overwritten PBIP changes and broken relationships. Git is used only for local version control (`init`, `add`, `commit`, `diff`, `log`, `status`, `revert`).
@@ -80,7 +84,7 @@ Each sub-skill runs its own detection blocks on load via `!` backtick syntax:
   version/SKILL.md      ← /pbi:version (sonnet)
   resume/SKILL.md       ← /pbi:resume (haiku)
   scripts/
-    detect.py           ← Python detection, search, HTML parsing, version check, session check, gitignore (UTF-8 safe, 11 subcommands)
+    detect.py           ← Python detection, search, HTML parsing, version check, session check, gitignore, settings, migration (UTF-8 safe, 15 subcommands)
   shared/
     api-notes.md        ← DAX Formatter API reference
     CHANGELOG.md        ← version history (read by /pbi:version)
@@ -99,9 +103,9 @@ Test fixtures are in `tests/fixtures/`:
 
 ## Known Limitations
 
-- **Session context race condition**: simultaneous skill invocations can overwrite each other's `.pbi-context.md` updates. Not an issue in interactive use but worth noting.
+- **Session context race condition**: simultaneous skill invocations can overwrite each other's `.pbi/context.md` updates. Not an issue in interactive use but worth noting.
 - **Audit parallelism**: for models with 5+ tables, audit spawns 3 parallel agents for domain passes. For < 5 tables, runs sequentially to avoid agent overhead.
 
 ## Version
 
-Current: 6.1.0 (set in `pbi/SKILL.md` frontmatter)
+Current: 7.0.0 (set in `pbi/SKILL.md` frontmatter)
