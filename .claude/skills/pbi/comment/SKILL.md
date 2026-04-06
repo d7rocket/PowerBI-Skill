@@ -128,7 +128,7 @@ Use the measure name extracted in Step 2 as the search key.
    Where [MEASURE_NAME] is the actual measure name from Step 2 and [TABLE_NAME] is the table name extracted from the .tmdl file path.
    - AUTO_COMMIT=ok: append line `Auto-committed: chore: update [MEASURE_NAME] comment in [TABLE_NAME]`
    - AUTO_COMMIT=skip_no_repo: append line `No git repo — run /pbi:commit to initialise one.`
-   - AUTO_COMMIT=fail: do not output anything (git failure is non-fatal; file write succeeded)
+   - AUTO_COMMIT=fail: output line `⚠ File written but git commit failed — run /pbi:commit to save a snapshot.`
 
 **If PBIP_FORMAT=tmsl:**
 1. Read `$PBIP_DIR/model.bim` using the Read tool. If model.bim is >2000 lines, use offset/limit parameters to read in chunks of 1000 lines — read the full file across multiple reads before locating the measure.
@@ -154,7 +154,7 @@ Use the measure name extracted in Step 2 as the search key.
    Where [MEASURE_NAME] is the actual measure name from Step 2 and [TABLE_NAME] is the table name of the measure's table context in model.bim.
    - AUTO_COMMIT=ok: append line `Auto-committed: chore: update [MEASURE_NAME] comment in [TABLE_NAME]`
    - AUTO_COMMIT=skip_no_repo: append line `No git repo — run /pbi:commit to initialise one.`
-   - AUTO_COMMIT=fail: do not output anything (git failure is non-fatal; file write succeeded)
+   - AUTO_COMMIT=fail: output line `⚠ File written but git commit failed — run /pbi:commit to save a snapshot.`
 
 ## Instructions
 
@@ -250,7 +250,7 @@ After producing the output, update `.pbi/context.md` using Read then Write:
 
 1. **Read** `.pbi/context.md` using the Read tool to get the current contents.
 2. **Write** the updated file back using the Write tool with these changes:
-   - Update the `## Last Command` section: set Command to `/pbi:comment`, Timestamp to current UTC time (ISO 8601), Measure to the extracted measure name, Outcome to `Commented`.
+   - Update the `## Last Command` section: set Command to `/pbi:comment`, Timestamp to current UTC time (ISO 8601), Measure to the extracted measure name, Outcome to `Commented` (or `Commented (git commit failed)` if AUTO_COMMIT=fail).
    - Append a new row to the `## Command History` table with columns: Timestamp, Command (`/pbi:comment`), Measure Name (extracted name), Outcome (`Commented`).
    - Keep the Command History table to a maximum of 20 rows — if adding the new row would exceed 20, remove the oldest row first.
    - Do **not** modify the `## Analyst-Reported Failures` section.

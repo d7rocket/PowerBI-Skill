@@ -242,6 +242,7 @@ After any subcommand completes (including the Solve-First Default handler):
 - **Auto-Resume (session-aware):** The first `/pbi` command in each session always runs a fresh load to ensure data is current. Subsequent commands in the same session resume from the cached context. Individual commands should skip their "Model Context Check" (Step 0.5) if Auto-Resume already loaded context.
 - **Output folder:** All skill-generated files (context, docs, audit reports, settings) are stored in `.pbi/` in the project root. On first run, `detect.py ensure-dir` creates the folder and `detect.py migrate` moves any legacy root-level files (`.pbi-context.md`, `project-docs.md`, `audit-report.md`) into `.pbi/`.
 - **Confirm mode (PBI_CONFIRM):** Read the `PBI_CONFIRM` value from Settings detection. When `PBI_CONFIRM=true` (default): commands that write to model files or generate output files MUST show a preview and ask `(y/N)` before writing. When `PBI_CONFIRM=false` (auto mode): skip all confirmation prompts and write directly. Toggle with `/pbi settings auto` or `/pbi settings confirm`.
+- **Serial execution only (IMPORTANT):** Run only one `/pbi` command at a time per project. Parallel invocations race on `.pbi/context.md` (no file locking) and may corrupt the session context or drop Command History rows. This is safe in interactive use — it only matters if you somehow trigger two skill commands simultaneously.
 
 ## Troubleshooting
 

@@ -154,7 +154,7 @@ If the fix targets a specific measure expression (Category A name errors with a 
    ```
    - AUTO_COMMIT=ok: append line `Auto-committed: chore: apply error fix in [TABLE_NAME]`
    - AUTO_COMMIT=skip_no_repo: append line `No git repo — run /pbi:commit to initialise one.`
-   - AUTO_COMMIT=fail: do not output anything (git failure is non-fatal)
+   - AUTO_COMMIT=fail: output line `⚠ File written but git commit failed — run /pbi:commit to save a snapshot.`
 
 8. Proceed to Step 6 (context update).
 

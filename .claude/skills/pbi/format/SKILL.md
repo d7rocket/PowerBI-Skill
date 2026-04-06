@@ -78,7 +78,7 @@ Use the external DAX Formatter API for consistent, community-standard formatting
 > DAX Formatter API reference is in `shared/api-notes.md` (read if needed).
 
 ## Format API Status
-!`TMPCHECK=$(mktemp); curl -s -L -X POST "https://www.daxformatter.com" -d "fx=1%2B1&r=US&embed=1" --max-time 5 -o "$TMPCHECK" 2>/dev/null; python3 -c "import sys; d=open('$TMPCHECK','r',errors='replace').read(); print('API_OK' if 'formatted' in d else 'API_FAIL')"; rm -f "$TMPCHECK"`
+!`TMPCHECK=$(mktemp); curl -s -L -X POST "https://www.daxformatter.com" -d "fx=1%2B1&r=US&embed=1" --max-time 5 -o "$TMPCHECK" 2>/dev/null; CURL_EXIT=$?; if [ "$CURL_EXIT" -eq 28 ]; then echo "API_TIMEOUT"; elif python3 -c "import sys; d=open('$TMPCHECK','r',errors='replace').read(); sys.exit(0 if 'formatted' in d else 1)" 2>/dev/null; then echo "API_OK"; else echo "API_FAIL"; fi; rm -f "$TMPCHECK"`
 
 ## Instructions
 
@@ -115,6 +115,13 @@ Review the Session Context. If the context file contains a record in the Analyst
 ### Step 3 — Format the Measure
 
 Check the "Format API Status" section above:
+
+**If API_TIMEOUT:**
+
+Add exactly this one line at the top of the output (or after the prior-failure warning if one is present):
+`_DAX Formatter API timed out (5 s) — formatted inline by Claude_`
+
+Then format using the Claude inline SQLBI rules in Step 4.
 
 **If API_OK:**
 
@@ -208,7 +215,7 @@ After producing the output, update the `.pbi/context.md` file:
    - Command: /pbi:format
    - Timestamp: current UTC timestamp
    - Measure: the measure name extracted in Step 1
-   - Outcome: "Success — formatted via API" or "Success — formatted inline by Claude (API unavailable)"
+   - Outcome: "Success — formatted via API" or "Success — formatted inline by Claude (API timeout)" or "Success — formatted inline by Claude (API unavailable)"
 4. Append a new row to the `## Command History` table with the same info
 5. If the Command History table has more than 20 rows, remove the oldest rows to keep it at 20
 6. Do NOT modify the `## Analyst-Reported Failures` section

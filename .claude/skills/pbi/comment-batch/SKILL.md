@@ -209,14 +209,14 @@ fi
 ```
 - AUTO_COMMIT=ok: Output "Auto-committed: chore: batch comment [N] measures in [scope]"
 - AUTO_COMMIT=skip_no_repo: Output "No git repo — run /pbi:commit to initialise one."
-- AUTO_COMMIT=fail: silent (non-fatal)
+- AUTO_COMMIT=fail: Output "⚠ File written but git commit failed — run /pbi:commit to save a snapshot."
 
 ---
 
 ### Step 6 — Update Session Context
 
 Read `.pbi/context.md` (Read tool), update these sections, then Write the full file back:
-- `## Last Command`: Command = `/pbi:comment-batch`, Timestamp = current UTC ISO 8601, Measure = `[N] measures in [scope]`, Outcome = `Batch commented`
+- `## Last Command`: Command = `/pbi:comment-batch`, Timestamp = current UTC ISO 8601, Measure = `[N] measures in [scope]`, Outcome = `Batch commented` (or `Batch commented (git commit failed)` if AUTO_COMMIT=fail)
 - `## Command History`: Append one row; keep last 20 rows maximum.
 - Do NOT modify `## Analyst-Reported Failures`.
 

@@ -212,11 +212,17 @@ Formatted: [N] measures in [file]
 
 **Auto-commit:**
 ```bash
-if git rev-parse --is-inside-work-tree 2>/dev/null; then
+GIT_STATUS=$(git rev-parse --is-inside-work-tree 2>/dev/null && echo "yes" || echo "no")
+if [ "$GIT_STATUS" = "yes" ]; then
   git add "$PBIP_DIR/" 2>/dev/null
   git commit -m "style: batch-format [TOTAL_N] DAX measures — SQLBI standard" 2>/dev/null && echo "AUTO_COMMIT=ok" || echo "AUTO_COMMIT=fail"
+else
+  echo "AUTO_COMMIT=skip_no_repo"
 fi
 ```
+- AUTO_COMMIT=ok: Output "Auto-committed: style: batch-format [TOTAL_N] DAX measures — SQLBI standard"
+- AUTO_COMMIT=skip_no_repo: Output "No git repo — run /pbi:commit to initialise one."
+- AUTO_COMMIT=fail: Output "⚠ File written but git commit failed — run /pbi:commit to save a snapshot."
 
 ---
 

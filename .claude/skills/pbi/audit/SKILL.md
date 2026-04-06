@@ -400,7 +400,7 @@ fi
 ```
 - AUTO_COMMIT=ok: Output "Auto-committed: fix: auto-fix [N] audit findings"
 - AUTO_COMMIT=skip_no_repo: Output "No git repo — run /pbi:commit to initialise one."
-- AUTO_COMMIT=fail: silent
+- AUTO_COMMIT=fail: Output "⚠ File written but git commit failed — run /pbi:commit to save a snapshot."
 
 **Auto-fix example walkthrough:**
 Given a model with a bidirectional relationship `Sales[ProductKey] → Product[ProductKey]` and a visible key column `Sales[ProductKey]`:
@@ -415,7 +415,7 @@ Given a model with a bidirectional relationship `Sales[ProductKey] → Product[P
 ### Step 6 — Update .pbi/context.md
 
 Use Read-then-Write to update `.pbi/context.md`:
-1. Update `## Last Command`: Command = `/pbi:audit`, Outcome = `Audit complete — [N_critical] CRITICAL, [N_warn] WARN, [N_info] INFO findings. Report written to .pbi/audit-report.md`
+1. Update `## Last Command`: Command = `/pbi:audit`, Outcome = `Audit complete — [N_critical] CRITICAL, [N_warn] WARN, [N_info] INFO findings. Report written to .pbi/audit-report.md` (append " (git commit failed)" if AUTO_COMMIT=fail)
 2. Append row to `## Command History`; trim to 20 rows max
 3. Do NOT modify `## Model Context`, `## Analyst-Reported Failures`, or any other sections
 

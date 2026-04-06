@@ -141,6 +141,8 @@ def detect_pbir():
                     if count < 20:
                         print(os.path.join(root, f))
                     count += 1
+        if count > 20:
+            print(f'PBIR_VISUAL_COUNT={count} (showing first 20)')
         print('PBIR=yes PBIR_DIR=' + rpt)
     else:
         print('PBIR=no')
@@ -202,16 +204,16 @@ def search_measure(name, pbip_dir):
                 with open(f, 'r', encoding='utf-8') as fh:
                     if name in fh.read():
                         print(f)
-            except (UnicodeDecodeError, OSError):
-                pass
+            except (UnicodeDecodeError, OSError) as e:
+                print(f'Warning: {f} skipped — {type(e).__name__}', file=sys.stderr)
     bim = os.path.join(pbip_dir, 'model.bim')
     if os.path.isfile(bim):
         try:
             with open(bim, 'r', encoding='utf-8') as fh:
                 if name in fh.read():
                     print(bim)
-        except (UnicodeDecodeError, OSError):
-            pass
+        except (UnicodeDecodeError, OSError) as e:
+            print(f'Warning: {bim} skipped — {type(e).__name__}', file=sys.stderr)
 
 
 def html_parse(tmpfile):

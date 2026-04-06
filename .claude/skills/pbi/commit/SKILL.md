@@ -102,17 +102,9 @@ Run these in sequence:
 git init
 ```
 
-**2. Write `.gitignore`** using the Write tool with this exact content:
-
-```
-# Power BI noise files
-*.abf
-localSettings.json
-.pbi/context.md
-SecurityBindings
-*.pbids
-cache/
-unappliedChanges.json
+**2. Ensure `.gitignore`** — run this instead of writing a hardcoded file (detect.py is the single source of truth for gitignore entries):
+```bash
+python ".claude/skills/pbi/scripts/detect.py" gitignore-check 2>/dev/null
 ```
 
 **3. Stage and create the initial commit:**

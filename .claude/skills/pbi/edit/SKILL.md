@@ -219,7 +219,7 @@ Where [PREFIX] is: `chore:` for rename/expression/metadata updates, `feat:` for 
 
 On AUTO_COMMIT=ok: Output "Auto-committed: [full commit message]"
 On AUTO_COMMIT=skip_no_repo: Output "No git repo — run /pbi:commit to initialise one."
-On AUTO_COMMIT=fail: silent (non-fatal).
+On AUTO_COMMIT=fail: Output "⚠ File written but git commit failed — run /pbi:commit to save a snapshot."
 
 ### Step 7: Update Session Context
 
@@ -228,7 +228,7 @@ Read `.pbi/context.md` (Read tool), update these sections, then Write the full f
   - Command: /pbi:edit
   - Timestamp: [current UTC ISO 8601]
   - Measure: [EntityName] in [TableName]
-  - Outcome: [Change type] applied
+  - Outcome: [Change type] applied (or "[Change type] applied (git commit failed)" if AUTO_COMMIT=fail)
 - `## Command History`: Append one row in this format: `| [timestamp] | /pbi:edit | [EntityName] in [TableName] | [Change type] applied |`; keep last 20 rows maximum.
 - Do NOT modify `## Analyst-Reported Failures`.
 
