@@ -3,6 +3,16 @@
 All notable changes to the PBI skill are documented here.
 Format: [Keep a Changelog](https://keepachangelog.com)
 
+## [7.0.1] — 2026-04-07
+
+### Fixed
+- `/pbi:docs` Markdown output now fully compliant with `pbi-docgen` pipeline contract:
+  - Section headings use explicit `##` H2 with keyword-matched heading text (`## Overview`, `## Data Model`, `## Measures & KPIs`, `## Business Logic`, `## Columns`, `## Data Sources`, `## Report Pages`, `## Model Health`)
+  - DAX expressions wrapped in ` ```dax ` fenced blocks; M/Power Query in ` ```m `; SQL in ` ```sql `
+  - Tabular data uses pipe table format throughout
+  - Anti-patterns extended to explicitly prohibit `CODE_BLOCK:`/`END_CODE_BLOCK` and `TABLE:`/`END_TABLE` markers
+- Added `pbi-docs-contract.md` — reference spec defining docgen output requirements
+
 ## [7.0.0] — 2026-04-01
 
 ### Added
