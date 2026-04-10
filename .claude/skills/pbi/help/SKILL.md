@@ -78,8 +78,10 @@ Output the following, inserting the version line from Step 1:
 |---------|-------------|-------|
 | `/pbi:load` | Read project structure into session context | Haiku |
 | `/pbi:audit` | Full model health check with auto-fix for critical issues | Sonnet |
+| `/pbi:audit-fix` | Autonomous scan → fix → validate → commit pipeline | Sonnet |
 | `/pbi:edit` | Modify model entities from plain-English instructions | Sonnet |
 | `/pbi:comment-batch` | Add descriptions to all undocumented measures | Sonnet |
+| `/pbi:format-batch` | Apply SQLBI-standard DAX formatting to all measures | Sonnet |
 | `/pbi:extract` | Export a structured summary of your PBIP project | Varies |
 | `/pbi:diff` | Summarise uncommitted model changes | Haiku |
 | `/pbi:commit` | Stage and commit model changes with a generated message | Haiku |
@@ -106,7 +108,7 @@ Output the following, inserting the version line from Step 1:
 ## Tips
 
 - All commands read `.pbi/context.md` for session state. Use `/pbi:resume` to see current state, or `/pbi:load` to refresh.
-- `/pbi:audit` can auto-fix critical issues (bidirectional filters, unhidden key columns).
+- `/pbi:audit` finds issues; `/pbi:audit-fix` finds AND fixes them autonomously.
 - Free-text works too — just type `/pbi <your question>` and it will be solved directly.
 - Model selection is automatic: Haiku for file/git ops, Sonnet for DAX reasoning, Opus for deep extraction.
 ```

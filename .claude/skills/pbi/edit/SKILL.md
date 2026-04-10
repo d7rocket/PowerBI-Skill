@@ -153,6 +153,12 @@ Apply the change in memory — do NOT write yet:
 
 For **rename**: Find the measure/column declaration line matching the entity name. Replace the name in the declaration. Apply TMDL quoting rule: if the new name contains a space or special character, wrap in single quotes; otherwise unquoted.
 
+**Cross-reference check (rename only):** After computing the rename, scan for references to the old name in other files:
+Run: `python ".claude/skills/pbi/scripts/detect.py" search "[OldName]" "$PBIP_DIR" 2>/dev/null`
+If the old name appears in files OTHER than the target file (e.g., other measures reference `[OldName]`), output a warning:
+> Warning: [OldName] is referenced in [N] other file(s): [file list]. These references will NOT be updated automatically — update them with separate `/pbi:edit` commands or they will break.
+Proceed with the rename regardless (the user may want to update references separately).
+
 For **update-expression**: Find the expression body lines. Replace with new expression lines. Preserve tab indentation from the file. Preserve all other properties (formatString, displayFolder, description).
 
 For **update-formatString / update-displayFolder / update-description**: Locate the property line in the measure block. Replace the value. If the property line does not exist, insert it after the expression body.
@@ -205,6 +211,8 @@ Write the entire file back using the Write tool (full file content — never par
 
 Output: "Written to: [EntityName] in [file path]"
 
+Output: `Reminder: Close and reopen the project in Power BI Desktop to see this change — Desktop does not hot-reload external PBIP file edits.`
+
 Run the auto-commit bash block:
 ```bash
 GIT_STATUS=$(git rev-parse --is-inside-work-tree 2>/dev/null && echo "yes" || echo "no")
@@ -237,6 +245,7 @@ Read `.pbi/context.md` (Read tool), update these sections, then Write the full f
 - NEVER convert tabs to spaces or spaces to tabs. Read the file's style and match it.
 - NEVER auto-select a table when the same entity name appears in multiple tables. Always ask.
 - NEVER write on Enter or N at the confirm prompt. Default is cancel.
+- NEVER suggest bidirectional cross-filtering as a first approach when fixing relationship or filter issues — prefer measure-based filtering (CALCULATE, CROSSFILTER function) or single-direction relationships.
 
 ## Shared Rules
 

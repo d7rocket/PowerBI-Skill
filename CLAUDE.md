@@ -58,6 +58,24 @@ Each sub-skill runs its own detection blocks on load via `!` backtick syntax:
 - **Python-first file operations**: always use Python with `encoding='utf-8'` for file read/write and text search. Use `detect.py search` instead of `grep -rlF` for measure name search. Shell/bash is only for git CLI commands.
 - **UTF-8 encoding**: model files may contain French accented characters (é, è, ê, ç, à, ù). All file operations must handle UTF-8 correctly.
 
+### Power BI TMDL/PBIR Conventions
+
+- When editing TMDL files, validate syntax carefully: use correct property names (e.g., `crossFilteringBehavior`), avoid stray control characters, and match expected enum types (string vs int).
+- Power BI Desktop does NOT hot-reload external PBIP/TMDL file changes — always remind user to close and reopen the project after edits.
+- Never suggest bidirectional cross-filtering as a first approach; prefer measure-based filtering solutions.
+
+### Python Environment
+
+- This system has multiple Python versions installed. Always verify which `python`/`pip` is active before installing packages.
+- For large datasets (200k+ rows), avoid cell-by-cell styling with openpyxl — use batch/range operations or xlsxwriter instead.
+- npm may not be available in the shell; prefer pip-based or Python-native solutions.
+
+### Documentation Generation
+
+- All client-facing documentation should use French language for headings and content unless explicitly told otherwise.
+- When generating Word documents, test RGBColor imports and markdown-to-docx conversion before running full generation.
+- Always verify stakeholder names and details with the user before finalizing onboarding or project docs.
+
 ## Directory Structure
 
 ```
@@ -71,6 +89,7 @@ Each sub-skill runs its own detection blocks on load via `!` backtick syntax:
   new/SKILL.md          ← /pbi:new (sonnet)
   load/SKILL.md         ← /pbi:load (haiku)
   audit/SKILL.md        ← /pbi:audit (sonnet, parallel agents for 5+ table models)
+  audit-fix/SKILL.md    ← /pbi:audit-fix (sonnet, autonomous scan→fix→validate→commit)
   diff/SKILL.md         ← /pbi:diff (haiku)
   commit/SKILL.md       ← /pbi:commit (haiku)
   edit/SKILL.md         ← /pbi:edit (sonnet)
