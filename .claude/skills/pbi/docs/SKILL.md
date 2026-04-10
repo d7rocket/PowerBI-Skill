@@ -297,12 +297,18 @@ Wait for the user's reply. **Do not write any files until both questions are ans
 - Output: `Markdown written to .pbi/project-docs.md (Full detail)`
 
 **PDF** (choice 2 or 4 — uses DETAIL_LEVEL):
+- **Pre-validate dependencies** before attempting generation:
+  Run: `python -c "from reportlab.lib.pagesizes import A4; print('PDF_DEPS=ok')" 2>&1`
+  If output does NOT contain `PDF_DEPS=ok`: output `PDF export requires reportlab — run: pip install reportlab` and skip PDF generation. Do not attempt the generator script.
 - Run: `python ".claude/skills/pbi/scripts/gen_pdf.py" ".pbi/doc_data.json" ".pbi/project-docs.pdf" "<DETAIL_LEVEL>" 2>&1`
 - If output starts with `PDF_OK`: output `PDF written to .pbi/project-docs.pdf ([DETAIL_LEVEL] detail)`
 - If output starts with `MISSING_DEP`: output `PDF export requires reportlab — run: pip install reportlab`
 - On any other error: show the error output.
 
 **Word** (choice 3 or 4 — uses DETAIL_LEVEL):
+- **Pre-validate dependencies** before attempting generation:
+  Run: `python -c "from docx import Document; from docx.shared import RGBColor, Pt; print('DOCX_DEPS=ok')" 2>&1`
+  If output does NOT contain `DOCX_DEPS=ok`: output `Word export requires python-docx — run: pip install python-docx` and skip Word generation. Do not attempt the generator script.
 - Run: `python ".claude/skills/pbi/scripts/gen_docx.py" ".pbi/doc_data.json" ".pbi/project-docs.docx" "<DETAIL_LEVEL>" 2>&1`
 - If output starts with `DOCX_OK`: output `Word document written to .pbi/project-docs.docx ([DETAIL_LEVEL] detail)`
 - If output starts with `MISSING_DEP`: output `Word export requires python-docx — run: pip install python-docx`
@@ -325,8 +331,9 @@ Use Read-then-Write to update `.pbi/context.md`:
 - NEVER include implementation details (file paths, TMDL syntax, internal IDs) in the documentation — keep it stakeholder-friendly
 - NEVER skip the Business Logic Summary (`## Business Logic`) — it is the most valuable section for non-technical readers
 - NEVER generate documentation from cached context alone — always read the actual model files to ensure accuracy
-- NEVER hardcode English — if the model uses French (or other language) names, write the documentation in that language
+- NEVER hardcode English — if the model uses French (or other language) names, write the documentation in that language. Default to French for client-facing content unless the model language is clearly English.
 - NEVER use `CODE_BLOCK:` / `END_CODE_BLOCK` or `TABLE:` / `END_TABLE` markers — use standard fenced code blocks and pipe tables only (docgen pipeline requirement)
+- NEVER attempt Word or PDF generation without pre-validating dependencies first — missing imports (RGBColor, python-docx, reportlab) waste long generation runs that fail near the end
 - NEVER write DAX or M expressions as plain indented text — always use fenced code blocks with the correct language tag (`dax`, `m`, `sql`)
 
 ## Shared Rules

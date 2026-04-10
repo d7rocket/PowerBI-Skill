@@ -79,6 +79,7 @@ Parse `$ARGUMENTS` first word/keyword to determine the subcommand. Match against
 | "comment-batch", "comment all", "batch comment", "document all" | `/pbi:comment-batch` |
 | "format-batch", "format all", "batch format", "reformat all", "format all measures" | `/pbi:format-batch` |
 | audit, "health check", "review model", "find issues" | `/pbi:audit` |
+| "audit-fix", "audit fix", "auto-fix", "fix audit", "scan and fix" | `/pbi:audit-fix` |
 | load, context, "model context", "load project" | `/pbi:load` |
 | diff, "what changed", changes, "show changes" | `/pbi:diff` |
 | commit, save, snapshot, git | `/pbi:commit` |
@@ -115,13 +116,14 @@ What would you like to do?
   /pbi:explain · /pbi:format · /pbi:optimise · /pbi:comment · /pbi:new
 
 **B — Audit the model**
-  /pbi:audit (includes hidden column hygiene, auto-fix, and PBIR visual audit)
+  /pbi:audit (health check with findings report)
+  /pbi:audit-fix (autonomous scan → fix → validate → commit pipeline)
 
 **C — See, commit, or undo changes**
   /pbi:diff · /pbi:commit · /pbi:undo · /pbi:changelog
 
 **D — Edit a model file**
-  /pbi:edit · /pbi:comment-batch
+  /pbi:edit · /pbi:comment-batch · /pbi:format-batch
 
 **E — Deep mode**
   /pbi:deep — Full structured workflow with upfront context gathering

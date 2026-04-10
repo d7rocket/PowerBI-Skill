@@ -141,6 +141,7 @@ If the fix targets a specific measure expression (Category A name errors with a 
 
 6. Append write confirmation after the preview:
    > Written to: [MeasureName] expression in [file path]
+   > Reminder: Close and reopen the project in Power BI Desktop to see this change — Desktop does not hot-reload external PBIP file edits.
 
 7. Run the auto-commit bash block (inside the `y` response branch only):
    ```bash
@@ -289,6 +290,7 @@ After producing the output, update `.pbi/context.md` using Read then Write.
 - NEVER auto-apply a file fix without showing the before/after preview and getting confirmation
 - NEVER diagnose without checking prior failure history and last command correlation
 - NEVER skip the Category classification step — always classify before diagnosing
+- NEVER suggest bidirectional cross-filtering as a first approach for Category E relationship errors — prefer measure-based filtering (CALCULATE with CROSSFILTER, TREATAS) or single-direction relationship fixes
 
 ## Shared Rules
 

@@ -268,6 +268,7 @@ If the analyst did not specify a table, ask: "Which table should this measure be
 ```
 5. Write the entire modified file back using the Write tool.
 6. Output: "Written to: [Measure Name] in [file path]"
+7. Output: `Reminder: Close and reopen the project in Power BI Desktop to see this change — Desktop does not hot-reload external PBIP file edits.`
 
 **If PBIP_FORMAT=tmsl:**
 1. Read `$PBIP_DIR/model.bim` using the Read tool. If model.bim is >2000 lines, use offset/limit parameters to read in chunks of 1000 lines — read the full file before locating the target table's measures array.
@@ -284,6 +285,7 @@ If the analyst did not specify a table, ask: "Which table should this measure be
 ```
 4. Write the entire model.bim back using the Write tool.
 5. Output: "Written to: [Measure Name] in $PBIP_DIR/model.bim"
+6. Output: `Reminder: Close and reopen the project in Power BI Desktop to see this change — Desktop does not hot-reload external PBIP file edits.`
 
 **Auto-commit:**
 ```bash
