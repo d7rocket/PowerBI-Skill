@@ -58,7 +58,11 @@ def main():
     except (json.JSONDecodeError, EOFError):
         sys.exit(0)
 
-    file_path = input_data.get("tool_input", {}).get("file_path", "")
+    tool_input = input_data.get("tool_input")
+    if tool_input is None:
+        print("validate-edit: unexpected hook schema — 'tool_input' key missing", file=sys.stderr)
+        sys.exit(0)  # non-blocking: still pass to avoid false failures on schema changes
+    file_path = tool_input.get("file_path", "")
     if not file_path or not os.path.isfile(file_path):
         sys.exit(0)
 
