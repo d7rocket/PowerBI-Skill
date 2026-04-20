@@ -250,7 +250,8 @@ Output: `Validation passed — all [N] modified files are clean.`
 GIT_STATUS=$(git rev-parse --is-inside-work-tree 2>/dev/null && echo "yes" || echo "no")
 if [ "$GIT_STATUS" = "yes" ]; then
   git add "$PBIP_DIR/" 2>/dev/null
-  git commit -m "fix: auto-fix [N] audit findings (AF-01..AF-05)" 2>/dev/null && echo "AUTO_COMMIT=ok" || echo "AUTO_COMMIT=fail"
+  # IMPORTANT: Replace [N] with the integer count only — never interpolate free-text strings into commit messages
+  git commit -m "fix: auto-fix ${FIXES_COUNT} audit findings" 2>/dev/null && echo "AUTO_COMMIT=ok" || echo "AUTO_COMMIT=fail"
 else
   echo "AUTO_COMMIT=skip_no_repo"
 fi
