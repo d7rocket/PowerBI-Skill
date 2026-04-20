@@ -188,7 +188,7 @@ def main():
     check_import()
 
     from docx import Document
-    from docx.shared import Cm
+    from docx.shared import Cm, Pt
 
     with open(sys.argv[1], 'r', encoding='utf-8') as f:
         data = json.load(f)
@@ -281,7 +281,7 @@ def main():
         p = doc.add_paragraph()
         r = p.add_run(erd)
         r.font.name = 'Courier New'
-        r.font.size = __import__('docx').shared.Pt(8.5)
+        r.font.size = Pt(8.5)
 
     add_heading(doc, '2.2', 'Tables', level=2)
     if tables:
