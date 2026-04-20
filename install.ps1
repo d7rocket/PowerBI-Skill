@@ -33,7 +33,7 @@ Write-Host "  ║   ██╔══██╗██╔══██╗██║   
 Write-Host "  ║   ██████╔╝██████╔╝██║     Power BI DAX Co-pilot         ║" -ForegroundColor Yellow
 Write-Host "  ║   ██╔═══╝ ██╔══██╗██║     for Claude Code               ║" -ForegroundColor Yellow
 Write-Host "  ║   ██║     ██████╔╝██║                                   ║" -ForegroundColor Yellow
-Write-Host "  ║   ╚═╝     ╚═════╝ ╚═╝                           v7.0   ║" -ForegroundColor DarkYellow
+Write-Host "  ║   ╚═╝     ╚═════╝ ╚═╝                         v7.0.0  ║" -ForegroundColor DarkYellow
 Write-Host "  ║                                                         ║" -ForegroundColor DarkYellow
 Write-Host "  ╚═════════════════════════════════════════════════════════╝" -ForegroundColor DarkYellow
 Write-Host ""
