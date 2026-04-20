@@ -314,10 +314,10 @@ def gitignore_check():
     except FileNotFoundError:
         pass  # Will create below
 
-    existing_text = ''.join(existing_lines)
+    existing_lines_stripped = [line.strip() for line in existing_lines]
     to_add = []
     for entry in required:
-        if entry not in existing_text:
+        if entry not in existing_lines_stripped:
             to_add.append(entry)
 
     if to_add:
