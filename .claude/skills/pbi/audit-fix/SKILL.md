@@ -223,10 +223,11 @@ bad = [c for c in content if ord(c) < 32 and c not in '\n\r\t']
 if bad:
     print(f'VALIDATE_FAIL: {len(bad)} stray control characters remain')
     sys.exit(1)
-# Check basic TMDL structure
-if 'table ' not in content and 'column ' not in content and 'measure ' not in content:
-    print('VALIDATE_FAIL: file appears empty or malformed')
-    sys.exit(1)
+# Check basic TMDL structure (tables files only — relationships.tmdl / model.tmdl lack these keywords)
+if '/tables/' in sys.argv[1]:
+    if 'table ' not in content and 'column ' not in content and 'measure ' not in content:
+        print('VALIDATE_FAIL: file appears empty or malformed')
+        sys.exit(1)
 print('VALIDATE_OK')
 " "[file_path]" 2>&1
 ```
