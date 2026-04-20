@@ -363,7 +363,7 @@ def main():
                             'Review — may affect query performance'])
     if health.get('undocumented_count', 0) > 0:
         health_rows.append(['Undocumented measures', str(health['undocumented_count']),
-                            'Run /pbi:comment-batch to add descriptions'])
+                            'Run /pbi-comment-batch to add descriptions'])
     if health.get('missing_format_count', 0) > 0:
         health_rows.append(['Missing format strings', str(health['missing_format_count']),
                             'Add format strings for consistent display'])

@@ -1,6 +1,6 @@
 # PBI Skill — Visual Output Standards
 
-Reference for consistent visual output across all `/pbi:` commands.
+Reference for consistent visual output across all `/pbi-` commands.
 
 ## Stage Banners
 
@@ -46,7 +46,7 @@ For audit findings, error diagnosis, and model checks:
 Every command output ends with a `Next steps` line showing 3–5 contextually relevant commands:
 
 ```
-**Next steps:** `/pbi:format` · `/pbi:optimise` · `/pbi:comment`
+**Next steps:** `/pbi-format` · `/pbi-optimise` · `/pbi-comment`
 ```
 
 - Separator: ` · ` (space-middle-dot-space)

@@ -6,7 +6,7 @@ Format: [Keep a Changelog](https://keepachangelog.com)
 ## [7.0.1] — 2026-04-07
 
 ### Fixed
-- `/pbi:docs` Markdown output now fully compliant with `pbi-docgen` pipeline contract:
+- `/pbi-docs` Markdown output now fully compliant with `pbi-docgen` pipeline contract:
   - Section headings use explicit `##` H2 with keyword-matched heading text (`## Overview`, `## Data Model`, `## Measures & KPIs`, `## Business Logic`, `## Columns`, `## Data Sources`, `## Report Pages`, `## Model Health`)
   - DAX expressions wrapped in ` ```dax ` fenced blocks; M/Power Query in ` ```m `; SQL in ` ```sql `
   - Tabular data uses pipe table format throughout
@@ -16,24 +16,24 @@ Format: [Keep a Changelog](https://keepachangelog.com)
 ## [7.0.0] — 2026-04-01
 
 ### Added
-- `/pbi:format-batch` — bulk-format every measure in the model in one pass (SQLBI-standard structure, VAR/RETURN blocks, CALCULATE arguments, keyword capitalisation). No DAX Formatter API dependency. Auto-commits.
-- `/pbi:settings` — dedicated slash command for toggling write mode: `auto` (silent writes) vs `confirm` (preview before every write). Replaces keyword-only access via `/pbi settings`.
+- `/pbi-format-batch` — bulk-format every measure in the model in one pass (SQLBI-standard structure, VAR/RETURN blocks, CALCULATE arguments, keyword capitalisation). No DAX Formatter API dependency. Auto-commits.
+- `/pbi-settings` — dedicated slash command for toggling write mode: `auto` (silent writes) vs `confirm` (preview before every write). Replaces keyword-only access via `/pbi settings`.
 - `format-batch` and `settings` added to both `install.ps1` and `install.sh` installers (22 sub-skills total).
 
 ### Changed
-- Version bumped to 7.0.0 — marks completion of the full sub-skill architecture: all 22 commands are independently invocable as `/pbi:<cmd>`.
+- Version bumped to 7.0.0 — marks completion of the full sub-skill architecture: all 22 commands are independently invocable as `/pbi-<cmd>`.
 - README updated with new ASCII art banner, v7 What's New section, and complete 22-command table.
 - `install.sh` updated to include `settings` and `format-batch` in the commands array.
 
 ## [6.2.0] — 2026-03-31
 
 ### Added
-- `/pbi:settings` is now a dedicated slash command — directly invocable as `/pbi:settings` (previously only accessible as a keyword via `/pbi settings`)
+- `/pbi-settings` is now a dedicated slash command — directly invocable as `/pbi-settings` (previously only accessible as a keyword via `/pbi settings`)
 - `settings/SKILL.md` sub-skill with proper frontmatter (model: sonnet, version: 6.1.0)
-- `.claude/commands/pbi/settings.md` command stub added to installer
+- `.claude/commands/pbi-settings.md` command stub added to installer
 
 ### Fixed
-- All 20 `.claude/commands/pbi/*.md` files updated to v6.1: now write context to `.pbi/context.md` (previously wrote to stale `.pbi-context.md` path)
+- All 20 `.claude/commands/*.md` files updated to v6.1: now write context to `.pbi/context.md` (previously wrote to stale `.pbi-context.md` path)
 - All 20 commands files now include `ensure-dir`, `migrate`, and `settings` detection steps
 - All 20 commands files now use `detect.py session-check` auto-resume logic (SESSION=active/new) instead of checking `## Model Context` presence
 - Session-start format standardised across all sub-skills: auto-resume blocks now write `**Session-Start:** [ISO timestamp]` (the format `detect.py session_check()` expects), replacing the ambiguous `## Session Start` heading that could produce a two-line write
@@ -55,13 +55,13 @@ Format: [Keep a Changelog](https://keepachangelog.com)
 ### Changed
 
 - Auto-Resume logic across all sub-skills now checks session state before deciding whether to load or resume
-- `/pbi:load` now writes `**Session-Start:**` timestamp to `.pbi-context.md` to mark the session as active
+- `/pbi-load` now writes `**Session-Start:**` timestamp to `.pbi-context.md` to mark the session as active
 
 ## [6.0.0] — 2026-03-28
 
 ### Added
 
-- `/pbi:resume` command — restore session context across sessions with model state, command history, workflow progress, and git state summary
+- `/pbi-resume` command — restore session context across sessions with model state, command history, workflow progress, and git state summary
 - `<purpose>` and `<core_principle>` blocks on all 20 commands — explains WHY each command exists and HOW it makes decisions
 - `shared/ui-brand.md` — visual output standards reference (stage banners, status symbols, severity tags, progress bars)
 - Context freshness tracking — resume command shows whether cached context is Current, Recent, or Stale

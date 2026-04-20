@@ -10,8 +10,10 @@ if ($Scope -eq "user") {
     $userHome = $env:USERPROFILE
     if (-not $userHome) { $userHome = $HOME }
     $skillBase = Join-Path $userHome ".claude\skills\pbi"
+    $skillsRoot = Join-Path $userHome ".claude\skills"
 } else {
     $skillBase = Join-Path (Get-Location) ".claude\skills\pbi"
+    $skillsRoot = Join-Path (Get-Location) ".claude\skills"
 }
 $scriptsDir = Join-Path $skillBase "scripts"
 $sharedDir  = Join-Path $skillBase "shared"
@@ -19,7 +21,7 @@ $sharedDir  = Join-Path $skillBase "shared"
 # Commands directory — always user-level for discoverability
 $userHome2 = $env:USERPROFILE
 if (-not $userHome2) { $userHome2 = $HOME }
-$cmdsDir = Join-Path $userHome2 ".claude\commands\pbi"
+$cmdsDir = Join-Path $userHome2 ".claude\commands"
 
 $base = "https://raw.githubusercontent.com/d7rocket/PowerBI-Skill/main"
 $isUpdate = Test-Path $skillBase
@@ -96,10 +98,10 @@ foreach ($cmd in $commands) {
     $filled = [math]::Floor($pct / 5)
     $bar = ([string][char]9608) * $filled + ([string][char]9617) * (20 - $filled)
     Write-Host "`r        $bar $pct%%  " -NoNewline
-    $cmdDir = Join-Path $skillBase $cmd
+    $cmdDir = Join-Path $skillsRoot "pbi-$cmd"
     New-Item -ItemType Directory -Force -Path $cmdDir | Out-Null
     try {
-        Invoke-WebRequest -Uri "$base/.claude/skills/pbi/$cmd/SKILL.md" -OutFile (Join-Path $cmdDir "SKILL.md") -UseBasicParsing
+        Invoke-WebRequest -Uri "$base/.claude/skills/pbi-$cmd/SKILL.md" -OutFile (Join-Path $cmdDir "SKILL.md") -UseBasicParsing
     } catch {
         $failed += $cmd
     }
@@ -117,7 +119,7 @@ try {
     exit 1
 }
 
-# ── Download commands (for /pbi:cmd discovery) ────────────────────
+# ── Download commands (for /pbi-cmd discovery) ────────────────────
 Write-Host "  [4/5] Commands" -ForegroundColor Cyan
 New-Item -ItemType Directory -Force -Path $cmdsDir | Out-Null
 $i2 = 0
@@ -129,7 +131,7 @@ foreach ($cmd in $commands) {
     $bar2 = ([string][char]9608) * $filled2 + ([string][char]9617) * (20 - $filled2)
     Write-Host "`r        $bar2 $pct2%%  " -NoNewline
     try {
-        Invoke-WebRequest -Uri "$base/.claude/commands/pbi/$cmd.md" -OutFile (Join-Path $cmdsDir "$cmd.md") -UseBasicParsing
+        Invoke-WebRequest -Uri "$base/.claude/commands/pbi-$cmd.md" -OutFile (Join-Path $cmdsDir "pbi-$cmd.md") -UseBasicParsing
     } catch {
         $failed2 += $cmd
     }
@@ -159,8 +161,8 @@ try {
 }
 
 # ── Verify ──────────────────────────────────────────────────────────
-$fileCount = (Get-ChildItem -Path $skillBase -Recurse -File).Count
-$resolved = (Resolve-Path $skillBase).Path
+$fileCount = (Get-ChildItem -Path $skillsRoot -Recurse -File).Count
+$resolved = (Resolve-Path $skillsRoot).Path
 
 Write-Host ""
 if ($failed.Count -gt 0) {
@@ -181,7 +183,7 @@ Write-Host "  ║  $fileCount files installed                       ║" -Foregr
 Write-Host "  ║  Version $version                          ║" -ForegroundColor Green
 Write-Host "  ║  Scope: $Scope                             ║" -ForegroundColor Green
 Write-Host "  ║                                          ║" -ForegroundColor Green
-Write-Host "  ║  Open Claude Code and type /pbi:help      ║" -ForegroundColor Green
+Write-Host "  ║  Open Claude Code and type /pbi-help      ║" -ForegroundColor Green
 Write-Host "  ╚══════════════════════════════════════════╝" -ForegroundColor Green
 Write-Host ""
 Write-Host "  Installed to: $resolved" -ForegroundColor DarkGray

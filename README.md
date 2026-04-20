@@ -34,7 +34,7 @@ Works with pasted DAX *and* with Power BI Project (PBIP) files on disk.
 irm https://raw.githubusercontent.com/d7rocket/PowerBI-Skill/main/install.ps1 | iex
 
 # Then open Claude Code and type:
-/pbi:help
+/pbi-help
 ```
 
 ```bash
@@ -48,9 +48,9 @@ curl -sL https://raw.githubusercontent.com/d7rocket/PowerBI-Skill/main/install.s
 
 | Feature | Details |
 |:--------|:--------|
-| **`/pbi:format-batch`** | Format every measure in the model in one pass — SQLBI-standard structure, no API dependency, auto-commits. |
-| **`/pbi:settings`** | Dedicated settings command — toggle auto mode (silent writes) vs confirm mode (preview before every write). |
-| **22 independent commands** | Every command is its own `/pbi:<cmd>` skill with full detection, auto-resume, and session awareness. |
+| **`/pbi-format-batch`** | Format every measure in the model in one pass — SQLBI-standard structure, no API dependency, auto-commits. |
+| **`/pbi-settings`** | Dedicated settings command — toggle auto mode (silent writes) vs confirm mode (preview before every write). |
+| **22 independent commands** | Every command is its own `/pbi-<cmd>` skill with full detection, auto-resume, and session awareness. |
 | **`.pbi/` context directory** | All runtime files (context, settings, audit reports, docs) live in `.pbi/` — auto-migrated from legacy root paths. |
 
 ---
@@ -61,37 +61,37 @@ curl -sL https://raw.githubusercontent.com/d7rocket/PowerBI-Skill/main/install.s
 
 | Command | What it does |
 |:--------|:------------|
-| `/pbi:explain` | Structured plain-English breakdown with filter context, row context, and performance notes |
-| `/pbi:format` | Reformat DAX for readability via DAX Formatter API |
-| `/pbi:optimise` | 13-rule performance scan with severity-graded findings and before/after diffs |
-| `/pbi:comment` | Add inline `//` comments and description property for Power BI tooltips |
-| `/pbi:error` | Diagnose errors across 7 categories with root cause analysis and auto-fix |
-| `/pbi:new` | Generate a complete measure from plain English with format string and display folder |
+| `/pbi-explain` | Structured plain-English breakdown with filter context, row context, and performance notes |
+| `/pbi-format` | Reformat DAX for readability via DAX Formatter API |
+| `/pbi-optimise` | 13-rule performance scan with severity-graded findings and before/after diffs |
+| `/pbi-comment` | Add inline `//` comments and description property for Power BI tooltips |
+| `/pbi-error` | Diagnose errors across 7 categories with root cause analysis and auto-fix |
+| `/pbi-new` | Generate a complete measure from plain English with format string and display folder |
 
 ### PBIP Project — *auto-detected when `*.SemanticModel/` exists*
 
 | Command | What it does |
 |:--------|:------------|
-| `/pbi:audit` | 19-rule health check across 8 domains with severity grading and auto-fix |
-| `/pbi:edit` | Modify measures, columns, and tables using plain-English instructions |
-| `/pbi:docs` | Generate polished, stakeholder-ready project documentation |
-| `/pbi:extract` | Export model summary at three detail levels (overview, standard, deep-dive) |
-| `/pbi:format-batch` | Apply SQLBI-standard formatting to every measure in the model — no API dependency |
-| `/pbi:diff` | Human-readable change summary grouped by entity type |
-| `/pbi:commit` | Auto-generated business-language commits (local only) |
-| `/pbi:undo` | Safely revert the last auto-commit using git revert |
-| `/pbi:changelog` | Generate CHANGELOG.md from git history in Keep a Changelog format |
-| `/pbi:comment-batch` | Add descriptions to every undocumented measure in the model |
+| `/pbi-audit` | 19-rule health check across 8 domains with severity grading and auto-fix |
+| `/pbi-edit` | Modify measures, columns, and tables using plain-English instructions |
+| `/pbi-docs` | Generate polished, stakeholder-ready project documentation |
+| `/pbi-extract` | Export model summary at three detail levels (overview, standard, deep-dive) |
+| `/pbi-format-batch` | Apply SQLBI-standard formatting to every measure in the model — no API dependency |
+| `/pbi-diff` | Human-readable change summary grouped by entity type |
+| `/pbi-commit` | Auto-generated business-language commits (local only) |
+| `/pbi-undo` | Safely revert the last auto-commit using git revert |
+| `/pbi-changelog` | Generate CHANGELOG.md from git history in Keep a Changelog format |
+| `/pbi-comment-batch` | Add descriptions to every undocumented measure in the model |
 
 ### Workflow & Utility
 
 | Command | What it does |
 |:--------|:------------|
-| `/pbi:deep` | Four-phase guided workflow with hard gates: intake, model review, DAX dev, verification |
-| `/pbi:resume` | Restore session context and continue from where you left off |
-| `/pbi:settings` | Toggle auto mode (silent writes) vs confirm mode (preview before every write) |
-| `/pbi:version` | Display installed version and full changelog history |
-| `/pbi:help` | Complete command reference with remote update check |
+| `/pbi-deep` | Four-phase guided workflow with hard gates: intake, model review, DAX dev, verification |
+| `/pbi-resume` | Restore session context and continue from where you left off |
+| `/pbi-settings` | Toggle auto mode (silent writes) vs confirm mode (preview before every write) |
+| `/pbi-version` | Display installed version and full changelog history |
+| `/pbi-help` | Complete command reference with remote update check |
 | `/pbi` | Interactive menu, backward-compatible router, and free-text DAX solver |
 
 ---
@@ -100,7 +100,7 @@ curl -sL https://raw.githubusercontent.com/d7rocket/PowerBI-Skill/main/install.s
 
 ```
              ┌───────────────────────────────┐
-             │  /pbi:explain  /pbi:audit ... │  ← direct invocation
+             │  /pbi-explain  /pbi-audit ... │  ← direct invocation
              └──────────────┬────────────────┘
                             │
              ┌──────────────▼────────────────┐
@@ -174,7 +174,7 @@ cp -r /tmp/pbi-skill/.claude your-project/.claude
   SKILL.md               Base skill (menu + catch-all + backward-compatible router)
   explain/SKILL.md       22 self-contained sub-skills, each with its own
   format/SKILL.md        detection blocks, auto-resume, and instructions.
-  optimise/SKILL.md      Invoked as /pbi:<cmd> (e.g., /pbi:explain).
+  optimise/SKILL.md      Invoked as /pbi-<cmd> (e.g., /pbi-explain).
   comment/SKILL.md
   error/SKILL.md
   new/SKILL.md
@@ -211,7 +211,7 @@ cp -r /tmp/pbi-skill/.claude your-project/.claude
 <summary><strong>Explain a measure</strong></summary>
 
 ```
-/pbi:explain
+/pbi-explain
 
 > Revenue YTD = CALCULATE([Revenue], DATESYTD('Date'[Date]))
 ```
@@ -222,7 +222,7 @@ Get a structured breakdown — filter context, row context, context transitions,
 <summary><strong>Scaffold a new measure</strong></summary>
 
 ```
-/pbi:new
+/pbi-new
 > year-to-date revenue filtered to the selected region, in the Sales table
 ```
 Generates the DAX, format string, display folder, and description — writes to PBIP if detected.
@@ -232,7 +232,7 @@ Generates the DAX, format string, display folder, and description — writes to 
 <summary><strong>Audit your model</strong></summary>
 
 ```
-/pbi:audit
+/pbi-audit
 ```
 8 domain passes: relationships, naming, date table, measure quality, hidden columns, report layer, advanced features, performance. Severity-graded report with auto-fix.
 </details>
@@ -241,7 +241,7 @@ Generates the DAX, format string, display folder, and description — writes to 
 <summary><strong>Edit with plain language</strong></summary>
 
 ```
-/pbi:edit
+/pbi-edit
 > rename [Total Sales] to [Revenue] in the Sales table
 ```
 Finds the measure, applies the change, auto-commits.
@@ -251,7 +251,7 @@ Finds the measure, applies the change, auto-commits.
 <summary><strong>Bulk format all measures</strong></summary>
 
 ```
-/pbi:format-batch
+/pbi-format-batch
 ```
 Applies SQLBI-standard formatting (VAR/RETURN blocks, CALCULATE structure, keyword capitalisation) to every measure in the model in a single pass. No DAX Formatter API required. Auto-commits.
 </details>
@@ -260,7 +260,7 @@ Applies SQLBI-standard formatting (VAR/RETURN blocks, CALCULATE structure, keywo
 <summary><strong>Deep mode</strong></summary>
 
 ```
-/pbi:deep
+/pbi-deep
 ```
 Four-phase guided workflow with hard gates: business context intake, model review, DAX development, final verification.
 </details>
@@ -269,10 +269,10 @@ Four-phase guided workflow with hard gates: business context intake, model revie
 <summary><strong>Version control</strong></summary>
 
 ```
-/pbi:diff        # what changed since last commit
-/pbi:commit      # auto-generated business-language commit
-/pbi:undo        # revert the last auto-commit
-/pbi:changelog   # generate CHANGELOG.md from history
+/pbi-diff        # what changed since last commit
+/pbi-commit      # auto-generated business-language commit
+/pbi-undo        # revert the last auto-commit
+/pbi-changelog   # generate CHANGELOG.md from history
 ```
 All commits are local only.
 </details>
@@ -295,12 +295,12 @@ All commits are local only.
 - [x] Single-skill router, one-liner install, parallel audit agents
 - [x] Auto-resume context, local-first git, expanded audit rules
 - [x] Deep mode workflow, project extraction (3 tiers)
-- [x] Python-first UTF-8, `/pbi:docs`, context tracking
-- [x] Installer overhaul, token safety, `/pbi:version`
-- [x] Sub-skill architecture — each command is its own `/pbi:<cmd>` skill
+- [x] Python-first UTF-8, `/pbi-docs`, context tracking
+- [x] Installer overhaul, token safety, `/pbi-version`
+- [x] Sub-skill architecture — each command is its own `/pbi-<cmd>` skill
 - [x] Session resume, visual branding, rich command descriptions
 - [x] Session-aware auto-load, `.pbi/` context directory
-- [x] `/pbi:settings` write-mode toggle, `/pbi:format-batch` bulk formatter
+- [x] `/pbi-settings` write-mode toggle, `/pbi-format-batch` bulk formatter
 - [ ] Cross-measure dependency graph
 - [ ] Side-by-side measure comparison
 - [ ] Calculated column support

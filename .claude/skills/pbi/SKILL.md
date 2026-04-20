@@ -1,6 +1,6 @@
 ---
 name: pbi
-description: Power BI DAX co-pilot — menu, free-text solver, and backward-compatible router. Use when user mentions "DAX", "Power BI", "PBIP", "semantic model", asks to "explain this measure", "format DAX", "optimise DAX", "audit my model", "create a measure", "comment DAX", "fix DAX error", "edit measure", "diff changes", "undo last change", "extract project summary", or works with .tmdl/.bim files. Individual commands are also available as /pbi:<cmd>.
+description: Power BI DAX co-pilot — menu, free-text solver, and backward-compatible router. Use when user mentions "DAX", "Power BI", "PBIP", "semantic model", asks to "explain this measure", "format DAX", "optimise DAX", "audit my model", "create a measure", "comment DAX", "fix DAX error", "edit measure", "diff changes", "undo last change", "extract project summary", or works with .tmdl/.bim files. Individual commands are also available as /pbi-<cmd>.
 license: MIT
 disable-model-invocation: true
 model: sonnet
@@ -69,32 +69,32 @@ Parse `$ARGUMENTS` first word/keyword to determine the subcommand. Match against
 
 | Keyword(s) | Sub-skill |
 |------------|-----------|
-| explain, "what does", understand, "how does" | `/pbi:explain` |
-| format, "clean up", prettify, style | `/pbi:format` |
-| optimise, optimize, performance, "speed up", slow | `/pbi:optimise` |
-| comment (not "comment-batch"/"comment all"), annotate, document, describe | `/pbi:comment` |
-| error, fix, diagnose, broken, failing | `/pbi:error` |
-| new, create, "add measure", scaffold | `/pbi:new` |
-| edit, rename, update, change, modify | `/pbi:edit` |
-| "comment-batch", "comment all", "batch comment", "document all" | `/pbi:comment-batch` |
-| "format-batch", "format all", "batch format", "reformat all", "format all measures" | `/pbi:format-batch` |
-| audit, "health check", "review model", "find issues" | `/pbi:audit` |
-| "audit-fix", "audit fix", "auto-fix", "fix audit", "scan and fix" | `/pbi:audit-fix` |
-| load, context, "model context", "load project" | `/pbi:load` |
-| diff, "what changed", changes, "show changes" | `/pbi:diff` |
-| commit, save, snapshot, git | `/pbi:commit` |
-| undo, revert, "go back" | `/pbi:undo` |
-| changelog, "release notes", history, "what shipped" | `/pbi:changelog` |
-| deep | `/pbi:deep` |
-| extract, "project summary", "model summary", "export model" | `/pbi:extract` |
-| docs, documentation, "generate docs", "document project", "project docs" | `/pbi:docs` |
-| help, commands, "what can you do", "list commands" | `/pbi:help` |
-| resume, "pick up where I left off", "what was I doing", "continue", "restore context" | `/pbi:resume` |
-| version, "version history", "what version" | `/pbi:version` |
+| explain, "what does", understand, "how does" | `/pbi-explain` |
+| format, "clean up", prettify, style | `/pbi-format` |
+| optimise, optimize, performance, "speed up", slow | `/pbi-optimise` |
+| comment (not "comment-batch"/"comment all"), annotate, document, describe | `/pbi-comment` |
+| error, fix, diagnose, broken, failing | `/pbi-error` |
+| new, create, "add measure", scaffold | `/pbi-new` |
+| edit, rename, update, change, modify | `/pbi-edit` |
+| "comment-batch", "comment all", "batch comment", "document all" | `/pbi-comment-batch` |
+| "format-batch", "format all", "batch format", "reformat all", "format all measures" | `/pbi-format-batch` |
+| audit, "health check", "review model", "find issues" | `/pbi-audit` |
+| "audit-fix", "audit fix", "auto-fix", "fix audit", "scan and fix" | `/pbi-audit-fix` |
+| load, context, "model context", "load project" | `/pbi-load` |
+| diff, "what changed", changes, "show changes" | `/pbi-diff` |
+| commit, save, snapshot, git | `/pbi-commit` |
+| undo, revert, "go back" | `/pbi-undo` |
+| changelog, "release notes", history, "what shipped" | `/pbi-changelog` |
+| deep | `/pbi-deep` |
+| extract, "project summary", "model summary", "export model" | `/pbi-extract` |
+| docs, documentation, "generate docs", "document project", "project docs" | `/pbi-docs` |
+| help, commands, "what can you do", "list commands" | `/pbi-help` |
+| resume, "pick up where I left off", "what was I doing", "continue", "restore context" | `/pbi-resume` |
+| version, "version history", "what version" | `/pbi-version` |
 | settings, "write mode", "auto mode", "confirm mode" | `settings/SKILL.md` |
 | (no keyword match — free-text) | Solve-first handler (inline below) |
 
-If intent is ambiguous between two commands: pick the most specific match and note it — "Routing to /pbi:edit (you can also use /pbi:comment if you only need to add comments)."
+If intent is ambiguous between two commands: pick the most specific match and note it — "Routing to /pbi-edit (you can also use /pbi-comment if you only need to add comments)."
 
 ### Execution
 
@@ -113,35 +113,35 @@ If `$ARGUMENTS` is empty or absent, output the following category menu exactly:
 What would you like to do?
 
 **A — Work on a DAX measure**
-  /pbi:explain · /pbi:format · /pbi:optimise · /pbi:comment · /pbi:new
+  /pbi-explain · /pbi-format · /pbi-optimise · /pbi-comment · /pbi-new
 
 **B — Audit the model**
-  /pbi:audit (health check with findings report)
-  /pbi:audit-fix (autonomous scan → fix → validate → commit pipeline)
+  /pbi-audit (health check with findings report)
+  /pbi-audit-fix (autonomous scan → fix → validate → commit pipeline)
 
 **C — See, commit, or undo changes**
-  /pbi:diff · /pbi:commit · /pbi:undo · /pbi:changelog
+  /pbi-diff · /pbi-commit · /pbi-undo · /pbi-changelog
 
 **D — Edit a model file**
-  /pbi:edit · /pbi:comment-batch · /pbi:format-batch
+  /pbi-edit · /pbi-comment-batch · /pbi-format-batch
 
 **E — Deep mode**
-  /pbi:deep — Full structured workflow with upfront context gathering
+  /pbi-deep — Full structured workflow with upfront context gathering
 
 **F — Extract project summary**
-  /pbi:extract (overview · standard · deep-dive)
+  /pbi-extract (overview · standard · deep-dive)
 
 **G — Generate project documentation**
-  /pbi:docs (polished, stakeholder-ready model documentation)
+  /pbi-docs (polished, stakeholder-ready model documentation)
 
 **H — Resume session**
-  /pbi:resume — Restore context and see where you left off
+  /pbi-resume — Restore context and see where you left off
 
 **S — Settings**
-  `/pbi:settings` · `/pbi settings auto` · `/pbi settings confirm`
+  `/pbi-settings` · `/pbi settings auto` · `/pbi settings confirm`
 
 **? — Help**
-  /pbi:help — List all commands
+  /pbi-help — List all commands
 
 Type A, B, C, D, E, F, G, H, S, or ? — or describe what you need and I'll route you directly.
 
@@ -149,16 +149,16 @@ Type A, B, C, D, E, F, G, H, S, or ? — or describe what you need and I'll rout
 
 On analyst response:
 
-- "A": Ask — "Which DAX command? **explain** · **format** · **optimise** · **comment** · **new**" — then route to the matching `/pbi:<cmd>`.
-- "B": Route directly to `/pbi:audit`. Output "Routing to /pbi:audit — running a full model health check." then proceed.
+- "A": Ask — "Which DAX command? **explain** · **format** · **optimise** · **comment** · **new**" — then route to the matching `/pbi-<cmd>`.
+- "B": Route directly to `/pbi-audit`. Output "Routing to /pbi-audit — running a full model health check." then proceed.
 - "C": Ask — "Which command? **diff** — see what changed · **commit** — save a snapshot · **undo** — revert the last commit · **changelog** — generate release notes" — then route.
 - "D": Ask — "Which command? **edit** — change a specific entity · **comment-batch** — comment all measures at once" — then route.
-- "E": Route to `/pbi:deep`.
-- "F": Route to `/pbi:extract`.
-- "G": Route to `/pbi:docs`. Output "Routing to /pbi:docs — generating project documentation." then proceed.
-- "H": Route to `/pbi:resume`. Output "Routing to /pbi:resume — restoring session context." then proceed.
-- "S": Route to `/pbi:settings`. Load and execute `settings/SKILL.md`.
-- "?": Route to `/pbi:help`.
+- "E": Route to `/pbi-deep`.
+- "F": Route to `/pbi-extract`.
+- "G": Route to `/pbi-docs`. Output "Routing to /pbi-docs — generating project documentation." then proceed.
+- "H": Route to `/pbi-resume`. Output "Routing to /pbi-resume — restoring session context." then proceed.
+- "S": Route to `/pbi-settings`. Load and execute `settings/SKILL.md`.
+- "?": Route to `/pbi-help`.
 - Free-text response: Apply the keyword matching from the Routing table above. If no keyword matches, route to **Solve-First Default** handler.
 - Unrecognised response: Output "I didn't catch that — type A, B, C, D, E, F, G, or ? — or describe what you need."
 
@@ -259,17 +259,17 @@ After any subcommand completes (including the Solve-First Default handler):
 ### Git not initialized
 **Symptom:** GIT=no — commands like diff, commit, undo, and changelog are unavailable.
 **Cause:** The project directory has no git repository.
-**Solution:** Run `/pbi:commit` — it will auto-initialize a git repo and create the first commit.
+**Solution:** Run `/pbi-commit` — it will auto-initialize a git repo and create the first commit.
 
 ### Context file stale or corrupted
 **Symptom:** Auto-resume shows outdated tables/measures, or commands reference entities that no longer exist.
 **Cause:** `.pbi/context.md` is out of sync with the actual model files.
-**Solution:** Run `/pbi:load` to rebuild context from scratch. This overwrites the existing context file.
+**Solution:** Run `/pbi-load` to rebuild context from scratch. This overwrites the existing context file.
 
 ### TMDL indentation broken after edit
 **Symptom:** Power BI Desktop shows parse errors after a skill edit.
 **Cause:** Spaces were used instead of tabs in TMDL files.
-**Solution:** The skill enforces tab indentation, but if an external edit introduced spaces, fix with: `sed -i 's/^    /\t/g' <file>.tmdl` (replace 4-space runs with tabs). Then run `/pbi:diff` to verify.
+**Solution:** The skill enforces tab indentation, but if an external edit introduced spaces, fix with: `sed -i 's/^    /\t/g' <file>.tmdl` (replace 4-space runs with tabs). Then run `/pbi-diff` to verify.
 
 ### Measure name not found
 **Symptom:** A command says a measure doesn't exist, but it does.

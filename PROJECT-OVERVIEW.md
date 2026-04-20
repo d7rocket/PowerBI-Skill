@@ -30,7 +30,7 @@ PBIP files are text, but `git diff` on a `.tmdl` file is noise. The skill transl
 
 ### Session continuity
 
-`.pbi-context.md` persists model context, command history (20 rows max), analyst-reported failures, escalation state, and in-progress workflow data. The `/pbi:resume` command reconstructs the full working state in a new session — what you were doing, what the model looks like, and what failed before.
+`.pbi-context.md` persists model context, command history (20 rows max), analyst-reported failures, escalation state, and in-progress workflow data. The `/pbi-resume` command reconstructs the full working state in a new session — what you were doing, what the model looks like, and what failed before.
 
 ## The 20 Commands
 
@@ -55,7 +55,7 @@ PBIP files are text, but `git diff` on a `.tmdl` file is noise. The skill transl
 
 **Model selection by task.** Haiku handles file/git operations (load, diff, commit, undo, changelog, resume) — fast and cheap. Sonnet handles DAX reasoning (explain, audit, edit, new) — accurate and detailed. Opus handles deep-dive extraction — thorough but expensive.
 
-**Hard gates in deep mode.** The `/pbi:deep` four-phase workflow (intake → model review → DAX development → verification) uses hard gates — no phase advances without explicit user confirmation. This prevents premature solutions that skip context gathering.
+**Hard gates in deep mode.** The `/pbi-deep` four-phase workflow (intake → model review → DAX development → verification) uses hard gates — no phase advances without explicit user confirmation. This prevents premature solutions that skip context gathering.
 
 ## Evolution
 
@@ -68,7 +68,7 @@ PBIP files are text, but `git diff` on a `.tmdl` file is noise. The skill transl
 | 4.1 | 2026-03-23 | Auto-resume, local-first git policy, installer rewrite |
 | 4.3 | 2026-03-23 | Python-first UTF-8, detect.py expansion, TMSL chunked reads |
 | 4.4 | 2026-03-24 | Context tracker progress bar, post-command footer |
-| 5.0 | 2026-03-28 | Sub-skill architecture — each command is its own `/pbi:<cmd>` skill |
+| 5.0 | 2026-03-28 | Sub-skill architecture — each command is its own `/pbi-<cmd>` skill |
 | 6.0 | 2026-03-28 | Resume command, rich descriptions, visual branding, GSD-level quality |
 
 ## Who This Is For

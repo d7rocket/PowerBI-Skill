@@ -2,26 +2,26 @@
 
 ## Overview
 
-This repo contains a Claude Code skill namespace (`/pbi`) that turns Claude into a Power BI DAX co-pilot. Each command is an individual skill invoked as `/pbi:<command>` (e.g., `/pbi:explain`, `/pbi:audit`). The base `/pbi` provides a menu, catch-all solver, and backward-compatible routing.
+This repo contains a Claude Code skill namespace (`/pbi`) that turns Claude into a Power BI DAX co-pilot. Each command is an individual skill invoked as `/pbi-<command>` (e.g., `/pbi-explain`, `/pbi-audit`). The base `/pbi` provides a menu, catch-all solver, and backward-compatible routing.
 
 ## Skill Architecture (v6.0)
 
 ### Individual sub-skills
 
-Each command is a self-contained skill at `.claude/skills/pbi/<cmd>/SKILL.md`, directly invocable as `/pbi:<cmd>`. Each sub-skill includes its own detection blocks, auto-resume logic, command instructions, and shared rules.
+Each command is a self-contained skill at `.claude/skills/pbi-<cmd>/SKILL.md`, directly invocable as `/pbi-<cmd>`. Each sub-skill includes its own detection blocks, auto-resume logic, command instructions, and shared rules.
 
 The base `/pbi` (at `.claude/skills/pbi/SKILL.md`) serves as:
 - **Menu** — shows categories when invoked with no arguments
 - **Catch-all solver** — handles free-text DAX questions directly
-- **Backward-compatible router** — `/pbi explain` still works, routing to `/pbi:explain`
+- **Backward-compatible router** — `/pbi explain` still works, routing to `/pbi-explain`
 
 ### Command types
 
-- **Paste-in** (work anywhere): `/pbi:explain`, `/pbi:format`, `/pbi:optimise`, `/pbi:comment`, `/pbi:error`, `/pbi:new`
-- **PBIP** (require `*.SemanticModel/` directory): `/pbi:load`, `/pbi:audit`, `/pbi:diff`, `/pbi:commit`, `/pbi:edit`, `/pbi:undo`, `/pbi:comment-batch`, `/pbi:changelog`, `/pbi:extract`, `/pbi:docs`
-- **Workflow**: `/pbi:deep`
-- **Session**: `/pbi:resume`
-- **Utility** (work anywhere): `/pbi:help`, `/pbi:version`
+- **Paste-in** (work anywhere): `/pbi-explain`, `/pbi-format`, `/pbi-optimise`, `/pbi-comment`, `/pbi-error`, `/pbi-new`
+- **PBIP** (require `*.SemanticModel/` directory): `/pbi-load`, `/pbi-audit`, `/pbi-diff`, `/pbi-commit`, `/pbi-edit`, `/pbi-undo`, `/pbi-comment-batch`, `/pbi-changelog`, `/pbi-extract`, `/pbi-docs`
+- **Workflow**: `/pbi-deep`
+- **Session**: `/pbi-resume`
+- **Utility** (work anywhere): `/pbi-help`, `/pbi-version`
 
 ### Model selection
 
@@ -44,7 +44,7 @@ Each sub-skill runs its own detection blocks on load via `!` backtick syntax:
 
 - **Output folder (`.pbi/`)**: all skill-generated files live in `.pbi/` in the project root — `context.md` (session), `settings.json` (preferences), `project-docs.md` (docs output), `audit-report.md` (audit output). On first run, `detect.py ensure-dir` creates the folder and `detect.py migrate` moves any legacy root-level files (`.pbi-context.md`, `project-docs.md`, `audit-report.md`) into `.pbi/`.
 - **Session context**: all commands read/write `.pbi/context.md` using Read-then-Write (never bash append). Keep Command History to 20 rows max. Never modify the Analyst-Reported Failures section.
-- **Session-aware auto-load**: the first `/pbi` command in each session always runs a fresh load to ensure model data is current. Subsequent commands in the same session resume from cached context (2-hour session window). No explicit `/pbi:load` required.
+- **Session-aware auto-load**: the first `/pbi` command in each session always runs a fresh load to ensure model data is current. Subsequent commands in the same session resume from cached context (2-hour session window). No explicit `/pbi-load` required.
 - **Confirm mode (`PBI_CONFIRM`)**: stored in `.pbi/settings.json` as `confirm_writes` (default: `true`). When `true`, commands show a preview and ask `(y/N)` before writing files. When `false` (auto mode), writes proceed without asking. Toggle with `/pbi settings auto` or `/pbi settings confirm`.
 - **Auto-commit**: edit, comment, error, and new auto-commit after successful writes. Use undo to revert. All commits are LOCAL only.
 - **Post-command staging**: after every command that writes to `$PBIP_DIR/`, changes are auto-staged (`git add`) and the user is notified.
@@ -81,33 +81,34 @@ Each sub-skill runs its own detection blocks on load via `!` backtick syntax:
 ```
 .claude/skills/pbi/
   SKILL.md              ← base /pbi (menu + catch-all + backward-compatible router)
-  explain/SKILL.md      ← /pbi:explain (sonnet)
-  format/SKILL.md       ← /pbi:format (sonnet)
-  optimise/SKILL.md     ← /pbi:optimise (sonnet)
-  comment/SKILL.md      ← /pbi:comment (sonnet)
-  error/SKILL.md        ← /pbi:error (sonnet)
-  new/SKILL.md          ← /pbi:new (sonnet)
-  load/SKILL.md         ← /pbi:load (haiku)
-  audit/SKILL.md        ← /pbi:audit (sonnet, parallel agents for 5+ table models)
-  audit-fix/SKILL.md    ← /pbi:audit-fix (sonnet, autonomous scan→fix→validate→commit)
-  diff/SKILL.md         ← /pbi:diff (haiku)
-  commit/SKILL.md       ← /pbi:commit (haiku)
-  edit/SKILL.md         ← /pbi:edit (sonnet)
-  undo/SKILL.md         ← /pbi:undo (haiku)
-  comment-batch/SKILL.md ← /pbi:comment-batch (sonnet)
-  changelog/SKILL.md    ← /pbi:changelog (haiku)
-  deep/SKILL.md         ← /pbi:deep (sonnet)
-  extract/SKILL.md      ← /pbi:extract (sonnet, agents for opus tier)
-  docs/SKILL.md         ← /pbi:docs (sonnet)
-  help/SKILL.md         ← /pbi:help (sonnet)
-  version/SKILL.md      ← /pbi:version (sonnet)
-  resume/SKILL.md       ← /pbi:resume (haiku)
   scripts/
     detect.py           ← Python detection, search, HTML parsing, version check, session check, gitignore, settings, migration (UTF-8 safe, 15 subcommands)
   shared/
     api-notes.md        ← DAX Formatter API reference
-    CHANGELOG.md        ← version history (read by /pbi:version)
+    CHANGELOG.md        ← version history (read by /pbi-version)
     ui-brand.md         ← visual output standards reference
+.claude/skills/pbi-explain/SKILL.md      ← /pbi-explain (sonnet)
+.claude/skills/pbi-format/SKILL.md       ← /pbi-format (sonnet)
+.claude/skills/pbi-optimise/SKILL.md     ← /pbi-optimise (sonnet)
+.claude/skills/pbi-comment/SKILL.md      ← /pbi-comment (sonnet)
+.claude/skills/pbi-error/SKILL.md        ← /pbi-error (sonnet)
+.claude/skills/pbi-new/SKILL.md          ← /pbi-new (sonnet)
+.claude/skills/pbi-load/SKILL.md         ← /pbi-load (haiku)
+.claude/skills/pbi-audit/SKILL.md        ← /pbi-audit (sonnet, parallel agents for 5+ table models)
+.claude/skills/pbi-audit-fix/SKILL.md    ← /pbi-audit-fix (sonnet, autonomous scan→fix→validate→commit)
+.claude/skills/pbi-diff/SKILL.md         ← /pbi-diff (haiku)
+.claude/skills/pbi-commit/SKILL.md       ← /pbi-commit (haiku)
+.claude/skills/pbi-edit/SKILL.md         ← /pbi-edit (sonnet)
+.claude/skills/pbi-undo/SKILL.md         ← /pbi-undo (haiku)
+.claude/skills/pbi-comment-batch/SKILL.md ← /pbi-comment-batch (sonnet)
+.claude/skills/pbi-changelog/SKILL.md    ← /pbi-changelog (haiku)
+.claude/skills/pbi-deep/SKILL.md         ← /pbi-deep (sonnet)
+.claude/skills/pbi-extract/SKILL.md      ← /pbi-extract (sonnet, agents for opus tier)
+.claude/skills/pbi-docs/SKILL.md         ← /pbi-docs (sonnet)
+.claude/skills/pbi-help/SKILL.md         ← /pbi-help (sonnet)
+.claude/skills/pbi-version/SKILL.md      ← /pbi-version (sonnet)
+.claude/skills/pbi-resume/SKILL.md       ← /pbi-resume (haiku)
+.claude/commands/pbi-<cmd>.md            ← command descriptors (one per sub-skill)
 ```
 
 ## Testing

@@ -51,6 +51,7 @@ if ! curl -s --head --connect-timeout 5 "https://raw.githubusercontent.com" >/de
 fi
 
 mkdir -p "$SKILL_DIR/scripts" "$SKILL_DIR/shared"
+TARGET_SKILLS_DIR="$(dirname "$SKILL_DIR")"
 
 # ── Clean up old commands/ directory if upgrading from v4 ──────────
 if [ -d "$SKILL_DIR/commands" ]; then
@@ -82,16 +83,16 @@ for cmd in "${commands[@]}"; do
     for ((f=0; f<filled; f++)); do bar="${bar}█"; done
     for ((e=0; e<20-filled; e++)); do bar="${bar}░"; done
     printf "\r        %s %d%%  " "$bar" "$pct"
-    mkdir -p "$SKILL_DIR/$cmd"
-    if ! curl -sL "$BASE/.claude/skills/pbi/$cmd/SKILL.md" -o "$SKILL_DIR/$cmd/SKILL.md" 2>/dev/null; then
+    mkdir -p "$TARGET_SKILLS_DIR/pbi-$cmd"
+    if ! curl -sL "$BASE/.claude/skills/pbi-$cmd/SKILL.md" -o "$TARGET_SKILLS_DIR/pbi-$cmd/SKILL.md" 2>/dev/null; then
         failed+=("$cmd")
     fi
 done
 printf "\r        ████████████████████ done — %d sub-skills     \n" "$total"
 
-# ── Download commands (for /pbi:cmd discovery) ────────────────────
+# ── Download commands (for /pbi-cmd discovery) ────────────────────
 echo -e "${CYAN}  [3/5] Commands${RESET}"
-CMDS_DIR="$HOME/.claude/commands/pbi"
+CMDS_DIR="$HOME/.claude/commands"
 mkdir -p "$CMDS_DIR"
 i=0
 for cmd in "${commands[@]}"; do
@@ -102,7 +103,7 @@ for cmd in "${commands[@]}"; do
     for ((f=0; f<filled; f++)); do bar="${bar}█"; done
     for ((e=0; e<20-filled; e++)); do bar="${bar}░"; done
     printf "\r        %s %d%%  " "$bar" "$pct"
-    if ! curl -sL "$BASE/.claude/commands/pbi/$cmd.md" -o "$CMDS_DIR/$cmd.md" 2>/dev/null; then
+    if ! curl -sL "$BASE/.claude/commands/pbi-$cmd.md" -o "$CMDS_DIR/pbi-$cmd.md" 2>/dev/null; then
         failed+=("$cmd")
     fi
 done
@@ -137,8 +138,8 @@ else
 fi
 
 # ── Verify ──────────────────────────────────────────────────────────
-file_count=$(find "$SKILL_DIR" -type f | wc -l | tr -d ' ')
-resolved=$(cd "$SKILL_DIR" && pwd)
+file_count=$(find "$TARGET_SKILLS_DIR" -name "*.md" -o -name "*.py" | wc -l | tr -d ' ')
+resolved=$(cd "$TARGET_SKILLS_DIR" && pwd)
 
 echo ""
 if [ ${#failed[@]} -gt 0 ]; then
@@ -158,7 +159,7 @@ echo -e "${GREEN}  ║                                          ║${RESET}"
 echo -e "${GREEN}  ║  ${file_count} files installed                       ║${RESET}"
 echo -e "${GREEN}  ║  Version ${VERSION}                          ║${RESET}"
 echo -e "${GREEN}  ║                                          ║${RESET}"
-echo -e "${GREEN}  ║  Open Claude Code and type /pbi:help      ║${RESET}"
+echo -e "${GREEN}  ║  Open Claude Code and type /pbi-help      ║${RESET}"
 echo -e "${GREEN}  ╚══════════════════════════════════════════╝${RESET}"
 echo ""
 echo -e "${GRAY}  Installed to: $resolved${RESET}"
