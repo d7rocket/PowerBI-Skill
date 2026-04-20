@@ -8,6 +8,9 @@ SecurityBindings
 .pbi-context.md
 .pbi/context.md
 
+# PBI Skill generated artifacts (intermediate, not for commit)
+.pbi/doc_data.json
+
 # Claude Code local settings
 .claude/settings.local.json
 .claude/worktrees/

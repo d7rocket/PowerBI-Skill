@@ -314,8 +314,9 @@ Wait for the user's reply. **Do not write any files until both questions are ans
 - If output starts with `MISSING_DEP`: output `Word export requires python-docx — run: pip install python-docx`
 - On any other error: show the error output.
 
-**After all selected formats are generated:**
-- Delete `.pbi/doc_data.json` (cleanup): `python -c "import os; os.remove('.pbi/doc_data.json')" 2>/dev/null`
+**After all format attempts (success OR failure):**
+- Delete `.pbi/doc_data.json` (cleanup — always run regardless of individual format success/failure):
+  `python -c "import os; os.remove('.pbi/doc_data.json')" 2>/dev/null`
 
 ---
 
