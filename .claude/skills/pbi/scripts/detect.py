@@ -232,7 +232,8 @@ def html_parse(tmpfile):
         return  # Silent — format.md API_FAIL branch handles empty output
 
     # Extract content inside <div class="formatted"...>...</div>
-    m = re.search(r'<div class="formatted"[^>]*>(.*?)</div>', html, re.DOTALL)
+    # Use greedy match so nested </div> tags don't truncate multi-block responses
+    m = re.search(r'<div class="formatted"[^>]*>(.*)</div>', html, re.DOTALL)
     if not m:
         return  # Silent empty — triggers API_FAIL fallback in format.md
 
