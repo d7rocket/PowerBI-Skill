@@ -118,6 +118,8 @@ Revert this commit? (y/N)
 
 ### Step 2 — Wait for confirmation
 
+> **NOTE: This confirmation is ALWAYS required regardless of PBI_CONFIRM setting.** Reverting a commit is a destructive history-modifying operation. Do NOT skip this prompt even when PBI_CONFIRM=false.
+
 - **y or Y:** proceed to Step 3.
 - **n, N, Enter, or anything else:** output "Undo cancelled. No changes made." and stop.
 
