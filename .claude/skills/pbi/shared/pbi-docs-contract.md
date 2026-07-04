@@ -1,10 +1,9 @@
-# pbi:docs Output Contract for docgen Compatibility
+# pbi-docs Output Contract for docgen Compatibility
 
-This document specifies the Markdown output requirements that the `pbi:docs` skill
-must follow for its output to be correctly parsed by the `pbi:docgen` pipeline.
+This document specifies the Markdown output requirements that the `pbi-docs` skill
+must follow for its output to be correctly parsed by the `pbi-docgen` pipeline.
 
-**Note:** The `pbi:docs` skill lives in a separate repository. These requirements
-must be applied manually to the pbi:docs SKILL.md when updating that skill.
+**Note:** The `pbi-docs` skill lives in this repository at `.claude/skills/pbi-docs/SKILL.md`; keep the two in sync when updating either side.
 
 ## Markdown Output Requirements
 
@@ -40,7 +39,7 @@ Standard Markdown only.
 
 ## Section Headings
 
-Each major section of pbi:docs output should use `##` (H2) headings. The docgen
+Each major section of pbi-docs output should use `##` (H2) headings. The docgen
 pipeline uses keyword matching from `section_heading_map.yaml` to categorize
 sections. Current keywords cover:
 

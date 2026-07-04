@@ -1,64 +1,53 @@
 ---
-name: pbi:edit
-description: "Modify measures, columns, and tables using plain-English instructions with before/after preview and auto-commit"
+name: pbi-edit
+description: "Modify any model entity (measures, columns, tables, properties) using plain-English instructions. Supports rename, expression change, property update, move between tables, and bulk operations. Shows before/after preview before writing. Uses UTF-8 search for French accent handling. Auto-commits."
 allowed-tools:
   - Read
   - Write
+  - Edit
   - Bash
   - Agent
   - Glob
   - Grep
 ---
 
-## Detection
+## Detection (run once)
 
-Run ALL of the following detection commands using the Bash tool before proceeding. Save the output — subsequent steps reference these values.
+**Folder naming:** Real PBIP projects use `<ProjectName>.SemanticModel` and `<ReportName>.Report`. Test fixtures may use `.SemanticModel`. Detection globs for both patterns.
 
-Ensure .pbi/ directory exists and migrate legacy root-level files.
-```bash
-python ".claude/skills/pbi/scripts/detect.py" ensure-dir 2>/dev/null
-python ".claude/skills/pbi/scripts/detect.py" migrate 2>/dev/null
-```
+### PBI Directory Setup
+!`python ".claude/skills/pbi/scripts/detect.py" ensure-dir 2>/dev/null && python ".claude/skills/pbi/scripts/detect.py" migrate 2>/dev/null`
 
-```bash
-python ".claude/skills/pbi/scripts/detect.py" pbip 2>/dev/null || echo "PBIP_MODE=paste"
-```
+### PBIP Detection
+!`python ".claude/skills/pbi/scripts/detect.py" pbip 2>/dev/null || echo "PBIP_MODE=paste"`
 
 Save the `PBIP_DIR` value from the output — all subsequent steps must use it instead of a hardcoded `.SemanticModel`.
 
-```bash
-python ".claude/skills/pbi/scripts/detect.py" files 2>/dev/null
-```
+### File Index
+!`python ".claude/skills/pbi/scripts/detect.py" files 2>/dev/null`
 
-```bash
-python ".claude/skills/pbi/scripts/detect.py" pbir 2>/dev/null || echo "PBIR=no"
-```
+### PBIR Detection
+!`python ".claude/skills/pbi/scripts/detect.py" pbir 2>/dev/null || echo "PBIR=no"`
 
-```bash
-python ".claude/skills/pbi/scripts/detect.py" git 2>/dev/null || (echo "GIT=no" && echo "HAS_COMMITS=no")
-```
+### Git State
+!`python ".claude/skills/pbi/scripts/detect.py" git 2>/dev/null || (echo "GIT=no" && echo "HAS_COMMITS=no")`
 
-```bash
-python ".claude/skills/pbi/scripts/detect.py" context 2>/dev/null || echo "No prior context found."
-```
+### Session Context
+!`python ".claude/skills/pbi/scripts/detect.py" context 2>/dev/null || echo "No prior context found."`
 
-Save the PBI_CONFIRM value — use it to decide whether to ask before writing files.
-```bash
-python ".claude/skills/pbi/scripts/detect.py" settings 2>/dev/null || echo "PBI_CONFIRM=true"
-```
+### Settings
+!`python ".claude/skills/pbi/scripts/detect.py" settings 2>/dev/null || echo "PBI_CONFIRM=true"`
+
+Save the `PBI_CONFIRM` value — commands use it to decide whether to ask before writing files.
 
 ### Auto-Resume (session-aware)
 
-After detection, apply the following before executing the command:
+After detection blocks run, apply the following before executing the command:
 
 1. **PBIP_MODE=file — session load check**:
-   Run:
-   ```bash
-   python ".claude/skills/pbi/scripts/detect.py" session-check 2>/dev/null
-   ```
+   Run: `python ".claude/skills/pbi/scripts/detect.py" session-check 2>/dev/null`
    - If output is `SESSION=active` — context was already loaded this session:
-     - Count the table rows in the Model Context table from Session Context.
-     - Output on a single line: `Context resumed — [N] tables loaded`
+     - Output on a single line: `Context resumed — [N] tables loaded` (count from Session Context)
      - Skip any "Model Context Check" (Step 0.5) below — context is already available.
    - If output is `SESSION=new` — first command this session:
      - Output: `Loading model context (first command this session)...`
@@ -67,19 +56,24 @@ After detection, apply the following before executing the command:
      - Output the summary table and: `Context loaded — [N] tables. Ready.`
 
 2. **PBIP_MODE=paste — nearby folder check**:
-   Run:
-   ```bash
-   python ".claude/skills/pbi/scripts/detect.py" nearby 2>/dev/null
-   ```
+   Run: `python ".claude/skills/pbi/scripts/detect.py" nearby 2>/dev/null`
    - If NEARBY_PBIP is found: output: `No PBIP project here, but found one at [NEARBY_PBIP]. Run cd "[NEARBY_PBIP]" first.`
    - If NEARBY_PBIP is empty: skip silently. Paste-in commands still work.
 
 After auto-resume completes, proceed to the command instructions below.
 
+
 ---
 
 # /pbi-edit
 
+<purpose>
+Editing TMDL/TMSL files manually is error-prone — wrong indentation breaks TMDL, wrong JSON structure breaks TMSL. This command handles the file format complexity so the analyst focuses on the business change.
+</purpose>
+
+<core_principle>
+Always show before/after preview before writing. Never write without confirmation. Resolve entity names using detect.py search for UTF-8 accuracy. Preserve file format conventions (tabs for TMDL, correct JSON structure for TMSL).
+</core_principle>
 
 ## Instructions
 
@@ -159,11 +153,17 @@ Apply the change in memory — do NOT write yet:
 
 For **rename**: Find the measure/column declaration line matching the entity name. Replace the name in the declaration. Apply TMDL quoting rule: if the new name contains a space or special character, wrap in single quotes; otherwise unquoted.
 
+**Cross-reference check (rename only):** After computing the rename, scan for references to the old name in other files:
+Run: `python ".claude/skills/pbi/scripts/detect.py" search "[OldName]" "$PBIP_DIR" 2>/dev/null`
+If the old name appears in files OTHER than the target file (e.g., other measures reference `[OldName]`), output a warning:
+> Warning: [OldName] is referenced in [N] other file(s): [file list]. These references will NOT be updated automatically — update them with separate `/pbi-edit` commands or they will break.
+Proceed with the rename regardless (the user may want to update references separately).
+
 For **update-expression**: Find the expression body lines. Replace with new expression lines. Preserve tab indentation from the file. Preserve all other properties (formatString, displayFolder, description).
 
 For **update-formatString / update-displayFolder / update-description**: Locate the property line in the measure block. Replace the value. If the property line does not exist, insert it after the expression body.
 
-For **add (new measure, TMDL)**: Ask the analyst for formatString and displayFolder if not provided (or use defaults: formatString: 0, displayFolder: ""). Scaffold:
+For **add (new measure, TMDL)**: Ask the analyst for formatString and displayFolder if not provided (or use defaults: a contextual format string inferred from the measure type as in /pbi-new — currency/revenue → `"$#,##0.00"`, percentage/ratio → `"0.0%"`, count/integer → `"#,##0"`, otherwise `"#,##0.00"`; displayFolder: ""). Never skip the format string. Generated DAX must follow the simplicity-first rule: the simplest expression that meets the requirement — no gratuitous CALCULATE, VAR/RETURN, or IFERROR. Scaffold:
 ```
 	measure '[EntityName]' =
 			[expression]
@@ -179,6 +179,8 @@ For **TMSL expression preservation**: If the original expression was a JSON arra
 For **remove**: Locate and delete the full entity block. Auto-commit prefix: `fix:`.
 
 ### Step 5: Before/After Preview and Confirmation
+
+**If PBI_CONFIRM=false:** skip the preview and confirmation prompt below — proceed directly to Step 6 (write).
 
 Output the preview using this exact locked format:
 
@@ -209,6 +211,8 @@ Write the entire file back using the Write tool (full file content — never par
 
 Output: "Written to: [EntityName] in [file path]"
 
+Output: `Reminder: Close and reopen the project in Power BI Desktop to see this change — Desktop does not hot-reload external PBIP file edits.`
+
 Run the auto-commit bash block:
 ```bash
 GIT_STATUS=$(git rev-parse --is-inside-work-tree 2>/dev/null && echo "yes" || echo "no")
@@ -223,7 +227,7 @@ Where [PREFIX] is: `chore:` for rename/expression/metadata updates, `feat:` for 
 
 On AUTO_COMMIT=ok: Output "Auto-committed: [full commit message]"
 On AUTO_COMMIT=skip_no_repo: Output "No git repo — run /pbi-commit to initialise one."
-On AUTO_COMMIT=fail: silent (non-fatal).
+On AUTO_COMMIT=fail: Output "⚠ File written but git commit failed — run /pbi-commit to save a snapshot."
 
 ### Step 7: Update Session Context
 
@@ -232,7 +236,7 @@ Read `.pbi/context.md` (Read tool), update these sections, then Write the full f
   - Command: /pbi-edit
   - Timestamp: [current UTC ISO 8601]
   - Measure: [EntityName] in [TableName]
-  - Outcome: [Change type] applied
+  - Outcome: [Change type] applied (or "[Change type] applied (git commit failed)" if AUTO_COMMIT=fail)
 - `## Command History`: Append one row in this format: `| [timestamp] | /pbi-edit | [EntityName] in [TableName] | [Change type] applied |`; keep last 20 rows maximum.
 - Do NOT modify `## Analyst-Reported Failures`.
 
@@ -241,3 +245,17 @@ Read `.pbi/context.md` (Read tool), update these sections, then Write the full f
 - NEVER convert tabs to spaces or spaces to tabs. Read the file's style and match it.
 - NEVER auto-select a table when the same entity name appears in multiple tables. Always ask.
 - NEVER write on Enter or N at the confirm prompt. Default is cancel.
+- NEVER suggest bidirectional cross-filtering as a first approach when fixing relationship or filter issues — prefer measure-based filtering (CALCULATE, CROSSFILTER function) or single-direction relationships.
+
+## Shared Rules
+
+- **PYTHON-FIRST FILE OPERATIONS (CRITICAL):** All file read/write and text search operations MUST use Python with `encoding='utf-8'` to correctly handle accented characters (French: é, è, ê, ç, à, ù, etc.). Do NOT use `grep`, `cat`, `sed`, `awk`, or shell redirects for reading/writing model files. For measure name search, use `python ".claude/skills/pbi/scripts/detect.py" search "MeasureName" "$PBIP_DIR"` instead of `grep -rlF`. Shell/bash is allowed ONLY for: git CLI commands and Python script invocation.
+- **PBIP folder naming:** Always use the `PBIP_DIR` value from detection (e.g., `Sales.SemanticModel`) — never hardcode `.SemanticModel`. Same for Report: use `PBIR_DIR` (e.g., `Sales.Report`).
+- All bash paths must be double-quoted (e.g., `"$VAR"`, `"$SM_DIR/"`)
+- Session context: Read-then-Write `.pbi/context.md`, 20 row max Command History, never touch Analyst-Reported Failures
+- TMDL: tabs only for indentation
+- TMSL expression format: preserve original form (string vs array); use array if expression has line breaks
+- Escalation state: `## Escalation State` in `.pbi/context.md` tracks gathered context during escalation.
+- **LOCAL-FIRST GIT POLICY (CRITICAL):** NEVER `git pull`, `git fetch`, `git merge`, `git rebase`, `git push`, or create PRs. Allowed: `git init`, `git add`, `git commit`, `git diff`, `git log`, `git status`, `git revert`, `git rev-parse`.
+- **Post-write staging:** After any command writes files to `$PBIP_DIR/` (and PBIP_MODE=file, GIT=yes), auto-stage: `git add "$PBIP_DIR/" 2>/dev/null`. Skip if the command already auto-committed.
+- **Confirm mode (PBI_CONFIRM):** When `PBI_CONFIRM=true`: show preview and ask `(y/N)` before writing model files or output files. When `PBI_CONFIRM=false`: write directly without asking. Commands that already have a `(y/N)` prompt respect this — if PBI_CONFIRM=false, skip the prompt and proceed.

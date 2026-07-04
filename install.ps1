@@ -35,7 +35,7 @@ Write-Host "  ║   ██╔══██╗██╔══██╗██║   
 Write-Host "  ║   ██████╔╝██████╔╝██║     Power BI DAX Co-pilot         ║" -ForegroundColor Yellow
 Write-Host "  ║   ██╔═══╝ ██╔══██╗██║     for Claude Code               ║" -ForegroundColor Yellow
 Write-Host "  ║   ██║     ██████╔╝██║                                   ║" -ForegroundColor Yellow
-Write-Host "  ║   ╚═╝     ╚═════╝ ╚═╝                         v7.0.0  ║" -ForegroundColor DarkYellow
+Write-Host "  ║   ╚═╝     ╚═════╝ ╚═╝                         v7.1.0  ║" -ForegroundColor DarkYellow
 Write-Host "  ║                                                         ║" -ForegroundColor DarkYellow
 Write-Host "  ╚═════════════════════════════════════════════════════════╝" -ForegroundColor DarkYellow
 Write-Host ""
@@ -65,6 +65,25 @@ if (Test-Path $oldCmdsDir) {
     Remove-Item -Recurse -Force $oldCmdsDir
 }
 
+# ── Clean up legacy pbi:<cmd> command files (pre-7.1 migration) ─────
+$legacyCmdsDir = Join-Path $cmdsDir "pbi"
+if (Test-Path $legacyCmdsDir) {
+    Write-Host "  Removing legacy pbi:<cmd> command files (pre-7.1 migration)..." -ForegroundColor DarkGray
+    Remove-Item -Recurse -Force $legacyCmdsDir
+}
+
+# ── Clean up legacy nested sub-skill dirs under skills/pbi (v5/v6) ──
+$legacySubDirs = @(
+    "explain","format","optimise","comment","error","new",
+    "load","audit","diff","commit","edit","undo",
+    "comment-batch","changelog","extract","deep","docs","help","version","resume",
+    "settings","format-batch"
+)
+foreach ($legacy in $legacySubDirs) {
+    $legacyPath = Join-Path $skillBase $legacy
+    if (Test-Path $legacyPath) { Remove-Item -Recurse -Force $legacyPath }
+}
+
 # ── Download base skill ────────────────────────────────────────────
 Write-Host "  [1/5] Base skill" -ForegroundColor Cyan
 try {
@@ -85,7 +104,7 @@ if ($versionLine) { $version = ($versionLine -split ':\s+')[1].Trim() }
 Write-Host "  [2/5] Sub-skills" -ForegroundColor Cyan
 $commands = @(
     "explain","format","optimise","comment","error","new",
-    "load","audit","diff","commit","edit","undo",
+    "load","audit","audit-fix","diff","commit","edit","undo",
     "comment-batch","changelog","extract","deep","docs","help","version","resume",
     "settings","format-batch"
 )
@@ -117,6 +136,14 @@ try {
     Write-Host "        detect.py — FAILED" -ForegroundColor Red
     Write-Host "  Cannot continue without detect.py. Check your network." -ForegroundColor Red
     exit 1
+}
+foreach ($script in @("validate-edit.py","gen_docx.py","gen_pdf.py")) {
+    try {
+        Invoke-WebRequest -Uri "$base/.claude/skills/pbi/scripts/$script" -OutFile (Join-Path $scriptsDir $script) -UseBasicParsing
+        Write-Host "        $script" -ForegroundColor DarkGray
+    } catch {
+        Write-Host "        $script — skipped (non-critical)" -ForegroundColor Yellow
+    }
 }
 
 # ── Download commands (for /pbi-cmd discovery) ────────────────────
@@ -158,6 +185,12 @@ try {
     Write-Host "        ui-brand.md" -ForegroundColor DarkGray
 } catch {
     Write-Host "        ui-brand.md — skipped (non-critical)" -ForegroundColor Yellow
+}
+try {
+    Invoke-WebRequest -Uri "$base/.claude/skills/pbi/shared/pbi-docs-contract.md" -OutFile (Join-Path $sharedDir "pbi-docs-contract.md") -UseBasicParsing
+    Write-Host "        pbi-docs-contract.md" -ForegroundColor DarkGray
+} catch {
+    Write-Host "        pbi-docs-contract.md — skipped (non-critical)" -ForegroundColor Yellow
 }
 
 # ── Verify ──────────────────────────────────────────────────────────

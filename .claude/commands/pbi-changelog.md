@@ -1,64 +1,53 @@
 ---
-name: pbi:changelog
-description: "Generate structured release notes from git history in Keep a Changelog format"
+name: pbi-changelog
+description: "Generate structured release notes from local git history in Keep a Changelog format. Groups commits by type (Added, Changed, Fixed, Removed). Covers a configurable range. Writes to .pbi/changelog.md. Translates commit messages into user-facing release notes."
 allowed-tools:
   - Read
   - Write
+  - Edit
   - Bash
   - Agent
   - Glob
   - Grep
 ---
 
-## Detection
+## Detection (run once)
 
-Run ALL of the following detection commands using the Bash tool before proceeding. Save the output — subsequent steps reference these values.
+**Folder naming:** Real PBIP projects use `<ProjectName>.SemanticModel` and `<ReportName>.Report`. Test fixtures may use `.SemanticModel`. Detection globs for both patterns.
 
-Ensure .pbi/ directory exists and migrate legacy root-level files.
-```bash
-python ".claude/skills/pbi/scripts/detect.py" ensure-dir 2>/dev/null
-python ".claude/skills/pbi/scripts/detect.py" migrate 2>/dev/null
-```
+### PBI Directory Setup
+!`python ".claude/skills/pbi/scripts/detect.py" ensure-dir 2>/dev/null && python ".claude/skills/pbi/scripts/detect.py" migrate 2>/dev/null`
 
-```bash
-python ".claude/skills/pbi/scripts/detect.py" pbip 2>/dev/null || echo "PBIP_MODE=paste"
-```
+### PBIP Detection
+!`python ".claude/skills/pbi/scripts/detect.py" pbip 2>/dev/null || echo "PBIP_MODE=paste"`
 
 Save the `PBIP_DIR` value from the output — all subsequent steps must use it instead of a hardcoded `.SemanticModel`.
 
-```bash
-python ".claude/skills/pbi/scripts/detect.py" files 2>/dev/null
-```
+### File Index
+!`python ".claude/skills/pbi/scripts/detect.py" files 2>/dev/null`
 
-```bash
-python ".claude/skills/pbi/scripts/detect.py" pbir 2>/dev/null || echo "PBIR=no"
-```
+### PBIR Detection
+!`python ".claude/skills/pbi/scripts/detect.py" pbir 2>/dev/null || echo "PBIR=no"`
 
-```bash
-python ".claude/skills/pbi/scripts/detect.py" git 2>/dev/null || (echo "GIT=no" && echo "HAS_COMMITS=no")
-```
+### Git State
+!`python ".claude/skills/pbi/scripts/detect.py" git 2>/dev/null || (echo "GIT=no" && echo "HAS_COMMITS=no")`
 
-```bash
-python ".claude/skills/pbi/scripts/detect.py" context 2>/dev/null || echo "No prior context found."
-```
+### Session Context
+!`python ".claude/skills/pbi/scripts/detect.py" context 2>/dev/null || echo "No prior context found."`
 
-Save the PBI_CONFIRM value — use it to decide whether to ask before writing files.
-```bash
-python ".claude/skills/pbi/scripts/detect.py" settings 2>/dev/null || echo "PBI_CONFIRM=true"
-```
+### Settings
+!`python ".claude/skills/pbi/scripts/detect.py" settings 2>/dev/null || echo "PBI_CONFIRM=true"`
+
+Save the `PBI_CONFIRM` value — commands use it to decide whether to ask before writing files.
 
 ### Auto-Resume (session-aware)
 
-After detection, apply the following before executing the command:
+After detection blocks run, apply the following before executing the command:
 
 1. **PBIP_MODE=file — session load check**:
-   Run:
-   ```bash
-   python ".claude/skills/pbi/scripts/detect.py" session-check 2>/dev/null
-   ```
+   Run: `python ".claude/skills/pbi/scripts/detect.py" session-check 2>/dev/null`
    - If output is `SESSION=active` — context was already loaded this session:
-     - Count the table rows in the Model Context table from Session Context.
-     - Output on a single line: `Context resumed — [N] tables loaded`
+     - Output on a single line: `Context resumed — [N] tables loaded` (count from Session Context)
      - Skip any "Model Context Check" (Step 0.5) below — context is already available.
    - If output is `SESSION=new` — first command this session:
      - Output: `Loading model context (first command this session)...`
@@ -67,22 +56,24 @@ After detection, apply the following before executing the command:
      - Output the summary table and: `Context loaded — [N] tables. Ready.`
 
 2. **PBIP_MODE=paste — nearby folder check**:
-   Run:
-   ```bash
-   python ".claude/skills/pbi/scripts/detect.py" nearby 2>/dev/null
-   ```
+   Run: `python ".claude/skills/pbi/scripts/detect.py" nearby 2>/dev/null`
    - If NEARBY_PBIP is found: output: `No PBIP project here, but found one at [NEARBY_PBIP]. Run cd "[NEARBY_PBIP]" first.`
    - If NEARBY_PBIP is empty: skip silently. Paste-in commands still work.
 
 After auto-resume completes, proceed to the command instructions below.
 
+
 ---
 
 # /pbi-changelog
 
+<purpose>
+Stakeholders need to know what changed in the model without reading git logs. This command turns commit history into polished release notes that anyone can understand.
+</purpose>
 
-## Git Log
-!`git log --oneline --no-decorate -50 2>/dev/null || echo "NO_LOG"`
+<core_principle>
+Write for stakeholders, not developers. "Added year-to-date revenue measure" is useful. "feat: add Revenue YTD to Sales table via /pbi-new" is not. Strip technical prefixes and translate to business language.
+</core_principle>
 
 ## Instructions
 
@@ -105,16 +96,40 @@ Otherwise proceed to Step 1.
 
 Read `$ARGUMENTS`:
 - `--since [tag/date/hash]` → only include commits after that ref
-- `--all` or empty → include all commits
+- `--all` → include all commits (no cap)
 - `--last [N]` → include last N commits
 
-Default: all commits.
+Default (no argument): last 50 commits.
 
 ---
 
-### Step 2 — Parse Commit Messages
+### Step 2 — Read and Parse Commit History
 
-Read the Git Log output. For each commit line (`[hash] [message]`), classify by conventional commit prefix:
+Run the git log command that matches the scope from Step 1:
+
+**`--all`:**
+```bash
+git log --oneline --no-decorate 2>/dev/null || echo "NO_LOG"
+```
+
+**`--since [ref]`:**
+```bash
+git log --oneline --no-decorate "[ref]..HEAD" 2>/dev/null || echo "NO_LOG"
+```
+
+**`--last [N]`:**
+```bash
+git log --oneline --no-decorate -[N] 2>/dev/null || echo "NO_LOG"
+```
+
+**Default (no argument):**
+```bash
+git log --oneline --no-decorate -50 2>/dev/null || echo "NO_LOG"
+```
+
+If the output is `NO_LOG` or empty: output "No commit history available." and stop.
+
+For each commit line (`[hash] [message]`), classify by conventional commit prefix:
 
 | Prefix | Category |
 |--------|----------|
@@ -166,13 +181,19 @@ Rules:
 
 ### Step 4 — Output and Write
 
-Output the changelog to chat.
+Output the changelog to chat as a preview.
 
-Then write to `CHANGELOG.md` in the project root:
-1. Attempt to Read `CHANGELOG.md` (may not exist)
-2. Write the full changelog using the Write tool
+**If PBI_CONFIRM=true:** ask `Write to .pbi/changelog.md? (y/N)`. On n, N, Enter, or anything else: output "Write cancelled — changelog shown above only." and skip to Step 5.
 
-Output: "Changelog written to CHANGELOG.md"
+**If PBI_CONFIRM=false:** proceed directly to writing.
+
+Then write to `.pbi/changelog.md`:
+1. Attempt to Read `.pbi/changelog.md` (may not exist)
+2. Write the full changelog to `.pbi/changelog.md` using the Write tool
+
+**Do NOT touch a root-level `CHANGELOG.md`** — if one exists in the project root, leave it as-is.
+
+Output: "Changelog written to .pbi/changelog.md" — and if a root `CHANGELOG.md` exists, add: "(root CHANGELOG.md left untouched)"
 
 ---
 
@@ -187,3 +208,16 @@ Read `.pbi/context.md` (Read tool), update these sections, then Write the full f
 - NEVER include noise-file changes in the changelog
 - NEVER fabricate changes not present in git history
 - NEVER include merge commits in the changelog output
+
+## Shared Rules
+
+- **PYTHON-FIRST FILE OPERATIONS (CRITICAL):** All file read/write and text search operations MUST use Python with `encoding='utf-8'` to correctly handle accented characters (French: é, è, ê, ç, à, ù, etc.). Do NOT use `grep`, `cat`, `sed`, `awk`, or shell redirects for reading/writing model files. For measure name search, use `python ".claude/skills/pbi/scripts/detect.py" search "MeasureName" "$PBIP_DIR"` instead of `grep -rlF`. Shell/bash is allowed ONLY for: git CLI commands and Python script invocation.
+- **PBIP folder naming:** Always use the `PBIP_DIR` value from detection (e.g., `Sales.SemanticModel`) — never hardcode `.SemanticModel`. Same for Report: use `PBIR_DIR` (e.g., `Sales.Report`).
+- All bash paths must be double-quoted (e.g., `"$VAR"`, `"$SM_DIR/"`)
+- Session context: Read-then-Write `.pbi/context.md`, 20 row max Command History, never touch Analyst-Reported Failures
+- TMDL: tabs only for indentation
+- TMSL expression format: preserve original form (string vs array); use array if expression has line breaks
+- Escalation state: `## Escalation State` in `.pbi/context.md` tracks gathered context during escalation.
+- **LOCAL-FIRST GIT POLICY (CRITICAL):** NEVER `git pull`, `git fetch`, `git merge`, `git rebase`, `git push`, or create PRs. Allowed: `git init`, `git add`, `git commit`, `git diff`, `git log`, `git status`, `git revert`, `git rev-parse`.
+- **Post-write staging:** After any command writes files to `$PBIP_DIR/` (and PBIP_MODE=file, GIT=yes), auto-stage: `git add "$PBIP_DIR/" 2>/dev/null`. Skip if the command already auto-committed.
+- **Confirm mode (PBI_CONFIRM):** When `PBI_CONFIRM=true`: show preview and ask `(y/N)` before writing model files or output files. When `PBI_CONFIRM=false`: write directly without asking. Commands that already have a `(y/N)` prompt respect this — if PBI_CONFIRM=false, skip the prompt and proceed.

@@ -1,64 +1,53 @@
 ---
-name: pbi:optimise
-description: "13-rule performance scan with severity-graded findings and before/after diffs"
+name: pbi-optimise
+description: "Run a 14-rule performance scan on any DAX measure, identifying anti-patterns like unnecessary iterators, FILTER on full tables, nested CALCULATE chains, and gratuitous IFERROR wrappers. Produces a severity-graded report with before/after diffs. Works with pasted DAX and PBIP-embedded measures."
 allowed-tools:
   - Read
   - Write
+  - Edit
   - Bash
   - Agent
   - Glob
   - Grep
 ---
 
-## Detection
+## Detection (run once)
 
-Run ALL of the following detection commands using the Bash tool before proceeding. Save the output — subsequent steps reference these values.
+**Folder naming:** Real PBIP projects use `<ProjectName>.SemanticModel` and `<ReportName>.Report`. Test fixtures may use `.SemanticModel`. Detection globs for both patterns.
 
-Ensure .pbi/ directory exists and migrate legacy root-level files.
-```bash
-python ".claude/skills/pbi/scripts/detect.py" ensure-dir 2>/dev/null
-python ".claude/skills/pbi/scripts/detect.py" migrate 2>/dev/null
-```
+### PBI Directory Setup
+!`python ".claude/skills/pbi/scripts/detect.py" ensure-dir 2>/dev/null && python ".claude/skills/pbi/scripts/detect.py" migrate 2>/dev/null`
 
-```bash
-python ".claude/skills/pbi/scripts/detect.py" pbip 2>/dev/null || echo "PBIP_MODE=paste"
-```
+### PBIP Detection
+!`python ".claude/skills/pbi/scripts/detect.py" pbip 2>/dev/null || echo "PBIP_MODE=paste"`
 
 Save the `PBIP_DIR` value from the output — all subsequent steps must use it instead of a hardcoded `.SemanticModel`.
 
-```bash
-python ".claude/skills/pbi/scripts/detect.py" files 2>/dev/null
-```
+### File Index
+!`python ".claude/skills/pbi/scripts/detect.py" files 2>/dev/null`
 
-```bash
-python ".claude/skills/pbi/scripts/detect.py" pbir 2>/dev/null || echo "PBIR=no"
-```
+### PBIR Detection
+!`python ".claude/skills/pbi/scripts/detect.py" pbir 2>/dev/null || echo "PBIR=no"`
 
-```bash
-python ".claude/skills/pbi/scripts/detect.py" git 2>/dev/null || (echo "GIT=no" && echo "HAS_COMMITS=no")
-```
+### Git State
+!`python ".claude/skills/pbi/scripts/detect.py" git 2>/dev/null || (echo "GIT=no" && echo "HAS_COMMITS=no")`
 
-```bash
-python ".claude/skills/pbi/scripts/detect.py" context 2>/dev/null || echo "No prior context found."
-```
+### Session Context
+!`python ".claude/skills/pbi/scripts/detect.py" context 2>/dev/null || echo "No prior context found."`
 
-Save the PBI_CONFIRM value — use it to decide whether to ask before writing files.
-```bash
-python ".claude/skills/pbi/scripts/detect.py" settings 2>/dev/null || echo "PBI_CONFIRM=true"
-```
+### Settings
+!`python ".claude/skills/pbi/scripts/detect.py" settings 2>/dev/null || echo "PBI_CONFIRM=true"`
+
+Save the `PBI_CONFIRM` value — commands use it to decide whether to ask before writing files.
 
 ### Auto-Resume (session-aware)
 
-After detection, apply the following before executing the command:
+After detection blocks run, apply the following before executing the command:
 
 1. **PBIP_MODE=file — session load check**:
-   Run:
-   ```bash
-   python ".claude/skills/pbi/scripts/detect.py" session-check 2>/dev/null
-   ```
+   Run: `python ".claude/skills/pbi/scripts/detect.py" session-check 2>/dev/null`
    - If output is `SESSION=active` — context was already loaded this session:
-     - Count the table rows in the Model Context table from Session Context.
-     - Output on a single line: `Context resumed — [N] tables loaded`
+     - Output on a single line: `Context resumed — [N] tables loaded` (count from Session Context)
      - Skip any "Model Context Check" (Step 0.5) below — context is already available.
    - If output is `SESSION=new` — first command this session:
      - Output: `Loading model context (first command this session)...`
@@ -67,23 +56,30 @@ After detection, apply the following before executing the command:
      - Output the summary table and: `Context loaded — [N] tables. Ready.`
 
 2. **PBIP_MODE=paste — nearby folder check**:
-   Run:
-   ```bash
-   python ".claude/skills/pbi/scripts/detect.py" nearby 2>/dev/null
-   ```
+   Run: `python ".claude/skills/pbi/scripts/detect.py" nearby 2>/dev/null`
    - If NEARBY_PBIP is found: output: `No PBIP project here, but found one at [NEARBY_PBIP]. Run cd "[NEARBY_PBIP]" first.`
    - If NEARBY_PBIP is empty: skip silently. Paste-in commands still work.
 
 After auto-resume completes, proceed to the command instructions below.
 
+
 ---
 
 # /pbi-optimise
 
+<purpose>
+Slow measures degrade the entire report experience. This command catches the patterns that cause 90% of DAX performance problems — before they reach production.
+</purpose>
+
+<core_principle>
+Suggest only changes with measurable performance impact. Never recommend changes that sacrifice readability for marginal gains. Always show before/after diffs so the analyst can judge the trade-off.
+</core_principle>
 
 ## Instructions
 
-Respond with: "Paste your DAX measure below:"
+If `$ARGUMENTS` already contains a DAX expression, use it directly and skip the paste prompt.
+
+Otherwise respond with: "Paste your DAX measure below:"
 
 Wait for the analyst to paste a DAX measure, then follow these steps in order.
 
@@ -97,10 +93,9 @@ Read Session Context for `## Model Context` section.
 
 - If `## Model Context` is present and non-empty: note the table and related table context. Proceed to Step 1. Use this context when generating rationale for any rewrites.
 - If `## Model Context` is absent or empty:
-  - Ask: "Which table does this measure belong to, and are there any related tables involved?"
-  - Wait for the analyst's answer.
-  - Read `.pbi/context.md` with Read tool. Add `## Model Context` section with the answer. Write back with Write tool.
-  - Proceed to Step 1 using the noted context.
+  - Ask: "Which table does this measure belong to, and are there any related tables involved? (optional — press enter to skip)"
+  - If the analyst answers: Read `.pbi/context.md` with Read tool. Add `## Model Context` section with the answer. Write back with Write tool. Proceed to Step 1 using the noted context.
+  - If the analyst skips: proceed to Step 1 without blocking — analyse the pasted measure as-is.
 
 ---
 
@@ -156,8 +151,8 @@ CALCULATE([Measure], Sales[Region] = "North")
 ```
 
 RATIONALE (brief for simple, full paragraph for complex):
-- Simple case: "Column filter uses xmatch internally and avoids a full table scan row-by-row. This is more storage-engine-friendly and typically 10-100x faster on large tables."
-- Complex case: Provide a full paragraph explaining the storage engine vs formula engine distinction, xmatch mechanics, and the specific performance implication for the measure's table size and filter cardinality.
+- Simple case: "Column predicate filters compile to efficient storage-engine filters, while FILTER over a table iterates the rows in the formula engine. The direct column filter is faster, especially on large tables."
+- Complex case: Provide a full paragraph explaining the storage engine vs formula engine distinction and the specific performance implication for the measure's table size and filter cardinality.
 
 ---
 
@@ -213,7 +208,7 @@ REWRITE:
 SWITCH(Table[Col], "A", result1, "B", result2, default)
 ```
 
-RATIONALE: "SWITCH with a value argument evaluates the expression once and matches. SWITCH(TRUE()) evaluates every condition sequentially even after a match is found in some engines. Use the value form when all conditions test the same expression."
+RATIONALE: "SWITCH with a value argument evaluates the switch expression once and matches against it — clearer intent, and the shared expression is not re-evaluated in every condition. DAX SWITCH short-circuits in both forms, so the gain is readability plus a single evaluation of the switch expression. Use the value form when all conditions test the same expression."
 
 ---
 
@@ -300,7 +295,7 @@ If the condition is complex (multiple columns, OR logic, dynamic filters), FLAG 
 
 ---
 
-**Rule 13 — Semi-Additive Pattern Opportunities**
+**Rule 13 — Manual Time-Intelligence Patterns**
 
 DETECT: Manual date filtering patterns that replicate built-in time intelligence:
 - `CALCULATE([Measure], FILTER(ALL('Date'), 'Date'[Date] <= MAX('Date'[Date])))` → running total
@@ -309,8 +304,9 @@ DETECT: Manual date filtering patterns that replicate built-in time intelligence
 
 FLAG: "This measure implements manual date filtering that could use a built-in time intelligence function. Built-in functions (TOTALYTD, DATEADD, SAMEPERIODLASTYEAR, DATESYTD) are engine-optimised and handle edge cases (fiscal years, blank dates) more reliably."
 
-REWRITE ONLY IF the pattern directly maps to a standard function:
-- Running total with `<= MAX(Date)` → `CALCULATE([Measure], DATESYTD('Date'[Date]))`
+**Running total with `<= MAX(Date)` — FLAG ONLY, never rewrite.** An all-time running total and DATESYTD are NOT equivalent: DATESYTD resets each January 1, while the manual pattern accumulates across all time. Converting it changes business logic. Surface the pattern in the **Flags** section, explain this difference, and let the analyst decide whether a YTD reset is actually wanted.
+
+REWRITE ONLY IF the pattern directly maps to a standard function with identical semantics:
 - Year-to-date with year/date filter → `TOTALYTD([Measure], 'Date'[Date])`
 - Prior year comparison → `CALCULATE([Measure], SAMEPERIODLASTYEAR('Date'[Date]))`
 
@@ -318,7 +314,19 @@ If the pattern uses custom fiscal calendars or non-standard date hierarchies, fl
 
 ---
 
-### Step 6 — Multiple Valid Rewrites
+**Rule 14 — Gratuitous IFERROR**
+
+DETECT: `IFERROR(a / b, ...)` wrapping a division, or IFERROR wrapping an expression with no plausible error source (plain aggregations, measure references, arithmetic over numeric columns).
+
+REWRITE:
+- `IFERROR(a / b, alternate)` → `DIVIDE(a, b)` — add a third argument only if the alternate result is genuinely required
+- IFERROR with no plausible error source → remove the wrapper entirely
+
+RATIONALE: "This is de-complication, not just performance. DIVIDE handles division by zero natively, so IFERROR around a division is redundant. IFERROR also forces the engine into a slower error-handling evaluation mode and hides real errors; wrapping expressions that cannot fail adds overhead and noise with no benefit."
+
+---
+
+### Step 5 — Multiple Valid Rewrites
 
 If more than one valid rewrite exists for any portion of the measure, show each option as a labelled alternative with a brief trade-off comparison.
 
@@ -328,7 +336,7 @@ Format:
 
 ---
 
-### Step 7 — Complexity Inference
+### Step 6 — Complexity Inference
 
 Infer complexity using the same rules as `/pbi-explain`:
 - **Simple**: SUM, DIVIDE, basic CALCULATE with one filter, straightforward arithmetic
@@ -342,7 +350,7 @@ Rationale depth follows complexity:
 
 ---
 
-### Step 8 — Output
+### Step 7 — Output
 
 Produce output in this structure:
 
@@ -378,7 +386,7 @@ If no Flags apply, omit the Flags section entirely.
 
 ---
 
-### Step 9 — Update .pbi/context.md
+### Step 8 — Update .pbi/context.md
 
 After producing output, update `.pbi/context.md` using Read then Write:
 
@@ -398,3 +406,16 @@ After producing output, update `.pbi/context.md` using Read then Write:
 - NEVER change business logic — optimisation must preserve semantics
 - NEVER suggest removing CALCULATE when it controls context transitions
 - NEVER rewrite complex nested iterators without flagging — only rewrite trivially collapsible cases
+
+## Shared Rules
+
+- **PYTHON-FIRST FILE OPERATIONS (CRITICAL):** All file read/write and text search operations MUST use Python with `encoding='utf-8'` to correctly handle accented characters (French: é, è, ê, ç, à, ù, etc.). Do NOT use `grep`, `cat`, `sed`, `awk`, or shell redirects for reading/writing model files. For measure name search, use `python ".claude/skills/pbi/scripts/detect.py" search "MeasureName" "$PBIP_DIR"` instead of `grep -rlF`. Shell/bash is allowed ONLY for: git CLI commands and Python script invocation.
+- **PBIP folder naming:** Always use the `PBIP_DIR` value from detection (e.g., `Sales.SemanticModel`) — never hardcode `.SemanticModel`. Same for Report: use `PBIR_DIR` (e.g., `Sales.Report`).
+- All bash paths must be double-quoted (e.g., `"$VAR"`, `"$SM_DIR/"`)
+- Session context: Read-then-Write `.pbi/context.md`, 20 row max Command History, never touch Analyst-Reported Failures
+- TMDL: tabs only for indentation
+- TMSL expression format: preserve original form (string vs array); use array if expression has line breaks
+- Escalation state: `## Escalation State` in `.pbi/context.md` tracks gathered context during escalation.
+- **LOCAL-FIRST GIT POLICY (CRITICAL):** NEVER `git pull`, `git fetch`, `git merge`, `git rebase`, `git push`, or create PRs. Allowed: `git init`, `git add`, `git commit`, `git diff`, `git log`, `git status`, `git revert`, `git rev-parse`.
+- **Post-write staging:** After any command writes files to `$PBIP_DIR/` (and PBIP_MODE=file, GIT=yes), auto-stage: `git add "$PBIP_DIR/" 2>/dev/null`. Skip if the command already auto-committed.
+- **Confirm mode (PBI_CONFIRM):** When `PBI_CONFIRM=true`: show preview and ask `(y/N)` before writing model files or output files. When `PBI_CONFIRM=false`: write directly without asking. Commands that already have a `(y/N)` prompt respect this — if PBI_CONFIRM=false, skip the prompt and proceed.

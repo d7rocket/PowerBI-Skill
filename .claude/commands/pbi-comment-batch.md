@@ -1,64 +1,53 @@
 ---
-name: pbi:comment-batch
-description: "Add descriptions to every undocumented measure in the model with contextually accurate summaries"
+name: pbi-comment-batch
+description: "Scan the entire semantic model and add description properties to every measure that lacks one. Generates contextually accurate descriptions by analyzing each measure's expression, format string, and relationships. Processes table-by-table with progress tracking. Auto-commits."
 allowed-tools:
   - Read
   - Write
+  - Edit
   - Bash
   - Agent
   - Glob
   - Grep
 ---
 
-## Detection
+## Detection (run once)
 
-Run ALL of the following detection commands using the Bash tool before proceeding. Save the output — subsequent steps reference these values.
+**Folder naming:** Real PBIP projects use `<ProjectName>.SemanticModel` and `<ReportName>.Report`. Test fixtures may use `.SemanticModel`. Detection globs for both patterns.
 
-Ensure .pbi/ directory exists and migrate legacy root-level files.
-```bash
-python ".claude/skills/pbi/scripts/detect.py" ensure-dir 2>/dev/null
-python ".claude/skills/pbi/scripts/detect.py" migrate 2>/dev/null
-```
+### PBI Directory Setup
+!`python ".claude/skills/pbi/scripts/detect.py" ensure-dir 2>/dev/null && python ".claude/skills/pbi/scripts/detect.py" migrate 2>/dev/null`
 
-```bash
-python ".claude/skills/pbi/scripts/detect.py" pbip 2>/dev/null || echo "PBIP_MODE=paste"
-```
+### PBIP Detection
+!`python ".claude/skills/pbi/scripts/detect.py" pbip 2>/dev/null || echo "PBIP_MODE=paste"`
 
 Save the `PBIP_DIR` value from the output — all subsequent steps must use it instead of a hardcoded `.SemanticModel`.
 
-```bash
-python ".claude/skills/pbi/scripts/detect.py" files 2>/dev/null
-```
+### File Index
+!`python ".claude/skills/pbi/scripts/detect.py" files 2>/dev/null`
 
-```bash
-python ".claude/skills/pbi/scripts/detect.py" pbir 2>/dev/null || echo "PBIR=no"
-```
+### PBIR Detection
+!`python ".claude/skills/pbi/scripts/detect.py" pbir 2>/dev/null || echo "PBIR=no"`
 
-```bash
-python ".claude/skills/pbi/scripts/detect.py" git 2>/dev/null || (echo "GIT=no" && echo "HAS_COMMITS=no")
-```
+### Git State
+!`python ".claude/skills/pbi/scripts/detect.py" git 2>/dev/null || (echo "GIT=no" && echo "HAS_COMMITS=no")`
 
-```bash
-python ".claude/skills/pbi/scripts/detect.py" context 2>/dev/null || echo "No prior context found."
-```
+### Session Context
+!`python ".claude/skills/pbi/scripts/detect.py" context 2>/dev/null || echo "No prior context found."`
 
-Save the PBI_CONFIRM value — use it to decide whether to ask before writing files.
-```bash
-python ".claude/skills/pbi/scripts/detect.py" settings 2>/dev/null || echo "PBI_CONFIRM=true"
-```
+### Settings
+!`python ".claude/skills/pbi/scripts/detect.py" settings 2>/dev/null || echo "PBI_CONFIRM=true"`
+
+Save the `PBI_CONFIRM` value — commands use it to decide whether to ask before writing files.
 
 ### Auto-Resume (session-aware)
 
-After detection, apply the following before executing the command:
+After detection blocks run, apply the following before executing the command:
 
 1. **PBIP_MODE=file — session load check**:
-   Run:
-   ```bash
-   python ".claude/skills/pbi/scripts/detect.py" session-check 2>/dev/null
-   ```
+   Run: `python ".claude/skills/pbi/scripts/detect.py" session-check 2>/dev/null`
    - If output is `SESSION=active` — context was already loaded this session:
-     - Count the table rows in the Model Context table from Session Context.
-     - Output on a single line: `Context resumed — [N] tables loaded`
+     - Output on a single line: `Context resumed — [N] tables loaded` (count from Session Context)
      - Skip any "Model Context Check" (Step 0.5) below — context is already available.
    - If output is `SESSION=new` — first command this session:
      - Output: `Loading model context (first command this session)...`
@@ -67,19 +56,24 @@ After detection, apply the following before executing the command:
      - Output the summary table and: `Context loaded — [N] tables. Ready.`
 
 2. **PBIP_MODE=paste — nearby folder check**:
-   Run:
-   ```bash
-   python ".claude/skills/pbi/scripts/detect.py" nearby 2>/dev/null
-   ```
+   Run: `python ".claude/skills/pbi/scripts/detect.py" nearby 2>/dev/null`
    - If NEARBY_PBIP is found: output: `No PBIP project here, but found one at [NEARBY_PBIP]. Run cd "[NEARBY_PBIP]" first.`
    - If NEARBY_PBIP is empty: skip silently. Paste-in commands still work.
 
 After auto-resume completes, proceed to the command instructions below.
 
+
 ---
 
 # /pbi-comment-batch
 
+<purpose>
+Undocumented measures are invisible to report consumers — Power BI Desktop shows blank tooltips. Batch commenting brings the entire model to documentation parity in one pass.
+</purpose>
+
+<core_principle>
+Generate descriptions for report CONSUMERS, not DAX developers. "Shows total revenue for the current fiscal year" is useful. "Uses CALCULATE with DATESYTD to sum the Amount column" is not.
+</core_principle>
 
 ## Instructions
 
@@ -174,6 +168,9 @@ Output a summary table:
 Apply all comments? (y/N)
 ```
 
+**If PBI_CONFIRM=false:** do not print the `Apply all comments? (y/N)` line and do not wait — proceed directly to Step 5 (write).
+
+**If PBI_CONFIRM=true:** wait for the response:
 - y or Y: proceed to Step 5.
 - n, N, Enter, or anything else: Output "Batch cancelled. No files modified." Stop.
 
@@ -213,14 +210,14 @@ fi
 ```
 - AUTO_COMMIT=ok: Output "Auto-committed: chore: batch comment [N] measures in [scope]"
 - AUTO_COMMIT=skip_no_repo: Output "No git repo — run /pbi-commit to initialise one."
-- AUTO_COMMIT=fail: silent (non-fatal)
+- AUTO_COMMIT=fail: Output "⚠ File written but git commit failed — run /pbi-commit to save a snapshot."
 
 ---
 
 ### Step 6 — Update Session Context
 
 Read `.pbi/context.md` (Read tool), update these sections, then Write the full file back:
-- `## Last Command`: Command = `/pbi-comment-batch`, Timestamp = current UTC ISO 8601, Measure = `[N] measures in [scope]`, Outcome = `Batch commented`
+- `## Last Command`: Command = `/pbi-comment-batch`, Timestamp = current UTC ISO 8601, Measure = `[N] measures in [scope]`, Outcome = `Batch commented` (or `Batch commented (git commit failed)` if AUTO_COMMIT=fail)
 - `## Command History`: Append one row; keep last 20 rows maximum.
 - Do NOT modify `## Analyst-Reported Failures`.
 
@@ -228,6 +225,19 @@ Read `.pbi/context.md` (Read tool), update these sections, then Write the full f
 
 ### Anti-Patterns
 - NEVER write one file per measure — batch all changes for a table file into a single Write
-- NEVER skip the confirmation prompt
+- NEVER skip the confirmation prompt when PBI_CONFIRM=true
 - NEVER modify measures marked as "already commented" unless the analyst explicitly requests overwrite
 - NEVER convert tabs to spaces in TMDL files
+
+## Shared Rules
+
+- **PYTHON-FIRST FILE OPERATIONS (CRITICAL):** All file read/write and text search operations MUST use Python with `encoding='utf-8'` to correctly handle accented characters (French: é, è, ê, ç, à, ù, etc.). Do NOT use `grep`, `cat`, `sed`, `awk`, or shell redirects for reading/writing model files. For measure name search, use `python ".claude/skills/pbi/scripts/detect.py" search "MeasureName" "$PBIP_DIR"` instead of `grep -rlF`. Shell/bash is allowed ONLY for: git CLI commands and Python script invocation.
+- **PBIP folder naming:** Always use the `PBIP_DIR` value from detection (e.g., `Sales.SemanticModel`) — never hardcode `.SemanticModel`. Same for Report: use `PBIR_DIR` (e.g., `Sales.Report`).
+- All bash paths must be double-quoted (e.g., `"$VAR"`, `"$SM_DIR/"`)
+- Session context: Read-then-Write `.pbi/context.md`, 20 row max Command History, never touch Analyst-Reported Failures
+- TMDL: tabs only for indentation
+- TMSL expression format: preserve original form (string vs array); use array if expression has line breaks
+- Escalation state: `## Escalation State` in `.pbi/context.md` tracks gathered context during escalation.
+- **LOCAL-FIRST GIT POLICY (CRITICAL):** NEVER `git pull`, `git fetch`, `git merge`, `git rebase`, `git push`, or create PRs. Allowed: `git init`, `git add`, `git commit`, `git diff`, `git log`, `git status`, `git revert`, `git rev-parse`.
+- **Post-write staging:** After any command writes files to `$PBIP_DIR/` (and PBIP_MODE=file, GIT=yes), auto-stage: `git add "$PBIP_DIR/" 2>/dev/null`. Skip if the command already auto-committed.
+- **Confirm mode (PBI_CONFIRM):** When `PBI_CONFIRM=true`: show preview and ask `(y/N)` before writing model files or output files. When `PBI_CONFIRM=false`: write directly without asking. Commands that already have a `(y/N)` prompt respect this — if PBI_CONFIRM=false, skip the prompt and proceed.

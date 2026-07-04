@@ -2,7 +2,7 @@
 set -e
 
 TARGET="${1:-.}"
-VERSION="7.0.0"
+VERSION="7.1.0"
 BASE="https://raw.githubusercontent.com/d7rocket/PowerBI-Skill/main"
 SKILL_DIR="$TARGET/.claude/skills/pbi"
 
@@ -59,6 +59,17 @@ if [ -d "$SKILL_DIR/commands" ]; then
     rm -rf "$SKILL_DIR/commands"
 fi
 
+# ── Clean up legacy pbi:<cmd> command files (pre-7.1 migration) ─────
+if [ -d "$HOME/.claude/commands/pbi" ]; then
+    echo -e "${GRAY}  Removing legacy pbi:<cmd> command files (pre-7.1 migration)...${RESET}"
+    rm -rf "$HOME/.claude/commands/pbi"
+fi
+
+# ── Clean up legacy nested sub-skill dirs under skills/pbi (v5/v6) ──
+for legacy in explain format optimise comment error new load audit diff commit edit undo comment-batch changelog extract deep docs help version resume settings format-batch; do
+    [ -d "$SKILL_DIR/$legacy" ] && rm -rf "$SKILL_DIR/$legacy"
+done
+
 # ── Download base skill ────────────────────────────────────────────
 echo -e "${CYAN}  [1/5] Base skill${RESET}"
 if curl -sL "$BASE/.claude/skills/pbi/SKILL.md" -o "$SKILL_DIR/SKILL.md" 2>/dev/null; then
@@ -71,7 +82,7 @@ fi
 
 # ── Download sub-skills ────────────────────────────────────────────
 echo -e "${CYAN}  [2/5] Sub-skills${RESET}"
-commands=(explain format optimise comment error new load audit diff commit edit undo comment-batch changelog extract deep docs help version resume settings format-batch)
+commands=(explain format optimise comment error new load audit audit-fix diff commit edit undo comment-batch changelog extract deep docs help version resume settings format-batch)
 total=${#commands[@]}
 i=0
 failed=()
@@ -118,6 +129,13 @@ else
     echo -e "${RED}  Cannot continue without detect.py. Check your network.${RESET}"
     exit 1
 fi
+for script in validate-edit.py gen_docx.py gen_pdf.py; do
+    if curl -sL "$BASE/.claude/skills/pbi/scripts/$script" -o "$SKILL_DIR/scripts/$script" 2>/dev/null; then
+        echo -e "${GRAY}        $script${RESET}"
+    else
+        echo -e "${YELLOW}        $script — skipped (non-critical)${RESET}"
+    fi
+done
 
 # ── Download shared ────────────────────────────────────────────────
 echo -e "${CYAN}  [5/5] Shared resources${RESET}"
@@ -135,6 +153,11 @@ if curl -sL "$BASE/.claude/skills/pbi/shared/ui-brand.md" -o "$SKILL_DIR/shared/
     echo -e "${GRAY}        ui-brand.md${RESET}"
 else
     echo -e "${YELLOW}        ui-brand.md — skipped (non-critical)${RESET}"
+fi
+if curl -sL "$BASE/.claude/skills/pbi/shared/pbi-docs-contract.md" -o "$SKILL_DIR/shared/pbi-docs-contract.md" 2>/dev/null; then
+    echo -e "${GRAY}        pbi-docs-contract.md${RESET}"
+else
+    echo -e "${YELLOW}        pbi-docs-contract.md — skipped (non-critical)${RESET}"
 fi
 
 # ── Verify ──────────────────────────────────────────────────────────

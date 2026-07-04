@@ -1,64 +1,53 @@
 ---
-name: pbi:new
-description: "Generate a complete DAX measure from plain English with expression, format string, display folder, and description"
+name: pbi-new
+description: "Generate a complete DAX measure from a plain-English business requirement. Produces the expression, format string, display folder, and description property. Validates against model context when available. Auto-writes to TMDL/TMSL files and auto-commits."
 allowed-tools:
   - Read
   - Write
+  - Edit
   - Bash
   - Agent
   - Glob
   - Grep
 ---
 
-## Detection
+## Detection (run once)
 
-Run ALL of the following detection commands using the Bash tool before proceeding. Save the output — subsequent steps reference these values.
+**Folder naming:** Real PBIP projects use `<ProjectName>.SemanticModel` and `<ReportName>.Report`. Test fixtures may use `.SemanticModel`. Detection globs for both patterns.
 
-Ensure .pbi/ directory exists and migrate legacy root-level files.
-```bash
-python ".claude/skills/pbi/scripts/detect.py" ensure-dir 2>/dev/null
-python ".claude/skills/pbi/scripts/detect.py" migrate 2>/dev/null
-```
+### PBI Directory Setup
+!`python ".claude/skills/pbi/scripts/detect.py" ensure-dir 2>/dev/null && python ".claude/skills/pbi/scripts/detect.py" migrate 2>/dev/null`
 
-```bash
-python ".claude/skills/pbi/scripts/detect.py" pbip 2>/dev/null || echo "PBIP_MODE=paste"
-```
+### PBIP Detection
+!`python ".claude/skills/pbi/scripts/detect.py" pbip 2>/dev/null || echo "PBIP_MODE=paste"`
 
 Save the `PBIP_DIR` value from the output — all subsequent steps must use it instead of a hardcoded `.SemanticModel`.
 
-```bash
-python ".claude/skills/pbi/scripts/detect.py" files 2>/dev/null
-```
+### File Index
+!`python ".claude/skills/pbi/scripts/detect.py" files 2>/dev/null`
 
-```bash
-python ".claude/skills/pbi/scripts/detect.py" pbir 2>/dev/null || echo "PBIR=no"
-```
+### PBIR Detection
+!`python ".claude/skills/pbi/scripts/detect.py" pbir 2>/dev/null || echo "PBIR=no"`
 
-```bash
-python ".claude/skills/pbi/scripts/detect.py" git 2>/dev/null || (echo "GIT=no" && echo "HAS_COMMITS=no")
-```
+### Git State
+!`python ".claude/skills/pbi/scripts/detect.py" git 2>/dev/null || (echo "GIT=no" && echo "HAS_COMMITS=no")`
 
-```bash
-python ".claude/skills/pbi/scripts/detect.py" context 2>/dev/null || echo "No prior context found."
-```
+### Session Context
+!`python ".claude/skills/pbi/scripts/detect.py" context 2>/dev/null || echo "No prior context found."`
 
-Save the PBI_CONFIRM value — use it to decide whether to ask before writing files.
-```bash
-python ".claude/skills/pbi/scripts/detect.py" settings 2>/dev/null || echo "PBI_CONFIRM=true"
-```
+### Settings
+!`python ".claude/skills/pbi/scripts/detect.py" settings 2>/dev/null || echo "PBI_CONFIRM=true"`
+
+Save the `PBI_CONFIRM` value — commands use it to decide whether to ask before writing files.
 
 ### Auto-Resume (session-aware)
 
-After detection, apply the following before executing the command:
+After detection blocks run, apply the following before executing the command:
 
 1. **PBIP_MODE=file — session load check**:
-   Run:
-   ```bash
-   python ".claude/skills/pbi/scripts/detect.py" session-check 2>/dev/null
-   ```
+   Run: `python ".claude/skills/pbi/scripts/detect.py" session-check 2>/dev/null`
    - If output is `SESSION=active` — context was already loaded this session:
-     - Count the table rows in the Model Context table from Session Context.
-     - Output on a single line: `Context resumed — [N] tables loaded`
+     - Output on a single line: `Context resumed — [N] tables loaded` (count from Session Context)
      - Skip any "Model Context Check" (Step 0.5) below — context is already available.
    - If output is `SESSION=new` — first command this session:
      - Output: `Loading model context (first command this session)...`
@@ -67,19 +56,24 @@ After detection, apply the following before executing the command:
      - Output the summary table and: `Context loaded — [N] tables. Ready.`
 
 2. **PBIP_MODE=paste — nearby folder check**:
-   Run:
-   ```bash
-   python ".claude/skills/pbi/scripts/detect.py" nearby 2>/dev/null
-   ```
+   Run: `python ".claude/skills/pbi/scripts/detect.py" nearby 2>/dev/null`
    - If NEARBY_PBIP is found: output: `No PBIP project here, but found one at [NEARBY_PBIP]. Run cd "[NEARBY_PBIP]" first.`
    - If NEARBY_PBIP is empty: skip silently. Paste-in commands still work.
 
 After auto-resume completes, proceed to the command instructions below.
 
+
 ---
 
 # /pbi-new
 
+<purpose>
+Writing DAX from scratch requires knowing both the business requirement and the model structure. This command handles the translation — the analyst describes WHAT they need, the skill produces HOW in DAX.
+</purpose>
+
+<core_principle>
+Generate correct, idiomatic DAX that follows the model's existing patterns. Match naming conventions, display folder structure, and format string patterns already in use. Never generate DAX that references tables or columns not in the model. Prefer the simplest DAX that satisfies the requirement — a plain SUM or DIVIDE beats CALCULATE with no filter arguments; do not use VAR/RETURN for a single-use expression; never add IFERROR or defensive BLANK-handling unless the analyst asked for it (DIVIDE already handles division by zero).
+</core_principle>
 
 ## Instructions
 
@@ -179,7 +173,7 @@ If **pattern detected**:
      - Noted: [current ISO 8601 timestamp]
      ```
      Write back with Write tool.
-     Proceed to Step 3, incorporating the visual context into the DAX design (e.g., if placed in a card, consider CALCULATE with explicit date filter; if in a matrix with row context, note the slicer interactions).
+     Proceed to Step 3, incorporating the visual context into the DAX design (e.g., if placed in a card, only add explicit filters when the visual context genuinely can't supply them; if in a matrix with row context, note the slicer interactions).
 
 ---
 
@@ -194,7 +188,7 @@ Generate all five components:
 
 **3b. DAX Expression:**
 - Write correct, efficient DAX that implements the business intent
-- Use appropriate functions: SUM/AVERAGE for simple aggregations, CALCULATE with time intelligence for date-based measures, DIVIDE for ratios (with BLANK() default)
+- Use appropriate functions: SUM/AVERAGE for simple aggregations, CALCULATE with time intelligence for date-based measures, DIVIDE for ratios (omit the third argument — BLANK() is the default)
 - Reference actual column names from model context when available
 - Follow the same optimisation principles as /pbi-optimise (no unnecessary FILTER on tables, use SUM over SUMX for single columns, etc.)
 
@@ -255,9 +249,17 @@ If PBIP_MODE=paste:
 - Skip to Step 6.
 
 If PBIP_MODE=file:
+**Confirm check:** If PBI_CONFIRM=true, show the measure components from Step 4 and ask "Write this measure to [TableName]? (y/N)". On n/N/Enter: "Write cancelled. Output above is paste-ready." Skip file write and auto-commit. On y/Y: proceed. If PBI_CONFIRM=false: proceed directly to write (current behavior).
 
 **Confirm target table:**
 If the analyst did not specify a table, ask: "Which table should this measure be added to?"
+
+**unappliedChanges.json check:**
+Run bash: `ls "$PBIP_DIR/unappliedChanges.json" 2>/dev/null && echo "UNAPPLIED=yes" || echo "UNAPPLIED=no"`
+If UNAPPLIED=yes:
+  - Output: "unappliedChanges.json detected — Desktop may have unsaved changes. Proceed anyway? (y/N)"
+  - If analyst types y or Y: continue.
+  - Otherwise: Output "Write cancelled. No files modified." Stop.
 
 **If PBIP_FORMAT=tmdl:**
 1. Run bash: `python ".claude/skills/pbi/scripts/detect.py" search "table " "$PBIP_DIR" 2>/dev/null` to verify the target table file exists. If no output is returned, the table was not found — output "Table [TableName] not found in $PBIP_DIR/definition/tables/. Check the table name and try again." and stop.
@@ -273,6 +275,7 @@ If the analyst did not specify a table, ask: "Which table should this measure be
 ```
 5. Write the entire modified file back using the Write tool.
 6. Output: "Written to: [Measure Name] in [file path]"
+7. Output: `Reminder: Close and reopen the project in Power BI Desktop to see this change — Desktop does not hot-reload external PBIP file edits.`
 
 **If PBIP_FORMAT=tmsl:**
 1. Read `$PBIP_DIR/model.bim` using the Read tool. If model.bim is >2000 lines, use offset/limit parameters to read in chunks of 1000 lines — read the full file before locating the target table's measures array.
@@ -289,6 +292,7 @@ If the analyst did not specify a table, ask: "Which table should this measure be
 ```
 4. Write the entire model.bim back using the Write tool.
 5. Output: "Written to: [Measure Name] in $PBIP_DIR/model.bim"
+6. Output: `Reminder: Close and reopen the project in Power BI Desktop to see this change — Desktop does not hot-reload external PBIP file edits.`
 
 **Auto-commit:**
 ```bash
@@ -302,14 +306,14 @@ fi
 ```
 - AUTO_COMMIT=ok: Output "Auto-committed: feat: add [MEASURE_NAME] measure to [TABLE_NAME]"
 - AUTO_COMMIT=skip_no_repo: Output "No git repo — run /pbi-commit to initialise one."
-- AUTO_COMMIT=fail: silent (non-fatal)
+- AUTO_COMMIT=fail: Output "⚠ File written but git commit failed — run /pbi-commit to save a snapshot."
 
 ---
 
 ### Step 6 — Update Session Context
 
 Read `.pbi/context.md` (Read tool), update these sections, then Write the full file back:
-- `## Last Command`: Command = `/pbi-new`, Timestamp = current UTC ISO 8601, Measure = [Measure Name] in [TableName], Outcome = `New measure scaffolded`
+- `## Last Command`: Command = `/pbi-new`, Timestamp = current UTC ISO 8601, Measure = [Measure Name] in [TableName], Outcome = `New measure scaffolded` (or `New measure scaffolded (git commit failed)` if AUTO_COMMIT=fail)
 - `## Command History`: Append one row `| [timestamp] | /pbi-new | [Measure Name] | New measure scaffolded |`; keep last 20 rows maximum.
 - Do NOT modify `## Analyst-Reported Failures`.
 
@@ -318,5 +322,21 @@ Read `.pbi/context.md` (Read tool), update these sections, then Write the full f
 ### Anti-Patterns
 - NEVER generate a measure that references columns not in the model (when model context is available)
 - NEVER use FILTER(Table, ...) when a direct column filter suffices
+- NEVER wrap an expression in CALCULATE without filter arguments
+- NEVER use VAR/RETURN when the expression is used only once
+- NEVER add IFERROR/ISERROR unless the analyst explicitly requested it
 - NEVER skip the format string — every measure should have one
 - NEVER auto-push to remote
+
+## Shared Rules
+
+- **PYTHON-FIRST FILE OPERATIONS (CRITICAL):** All file read/write and text search operations MUST use Python with `encoding='utf-8'` to correctly handle accented characters (French: é, è, ê, ç, à, ù, etc.). Do NOT use `grep`, `cat`, `sed`, `awk`, or shell redirects for reading/writing model files. For measure name search, use `python ".claude/skills/pbi/scripts/detect.py" search "MeasureName" "$PBIP_DIR"` instead of `grep -rlF`. Shell/bash is allowed ONLY for: git CLI commands and Python script invocation.
+- **PBIP folder naming:** Always use the `PBIP_DIR` value from detection (e.g., `Sales.SemanticModel`) — never hardcode `.SemanticModel`. Same for Report: use `PBIR_DIR` (e.g., `Sales.Report`).
+- All bash paths must be double-quoted (e.g., `"$VAR"`, `"$SM_DIR/"`)
+- Session context: Read-then-Write `.pbi/context.md`, 20 row max Command History, never touch Analyst-Reported Failures
+- TMDL: tabs only for indentation
+- TMSL expression format: preserve original form (string vs array); use array if expression has line breaks
+- Escalation state: `## Escalation State` in `.pbi/context.md` tracks gathered context during escalation.
+- **LOCAL-FIRST GIT POLICY (CRITICAL):** NEVER `git pull`, `git fetch`, `git merge`, `git rebase`, `git push`, or create PRs. Allowed: `git init`, `git add`, `git commit`, `git diff`, `git log`, `git status`, `git revert`, `git rev-parse`.
+- **Post-write staging:** After any command writes files to `$PBIP_DIR/` (and PBIP_MODE=file, GIT=yes), auto-stage: `git add "$PBIP_DIR/" 2>/dev/null`. Skip if the command already auto-committed.
+- **Confirm mode (PBI_CONFIRM):** When `PBI_CONFIRM=true`: show preview and ask `(y/N)` before writing model files or output files. When `PBI_CONFIRM=false`: write directly without asking. Commands that already have a `(y/N)` prompt respect this — if PBI_CONFIRM=false, skip the prompt and proceed.

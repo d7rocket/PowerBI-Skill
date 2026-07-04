@@ -1,64 +1,53 @@
 ---
-name: pbi:format
-description: "Reformat DAX for readability using DAX Formatter API with consistent indentation and spacing"
+name: pbi-format
+description: "Reformat DAX expressions for maximum readability using the DAX Formatter API (daxformatter.com). Handles long expressions, nested functions, and multi-line VAR/RETURN blocks. Preserves semantic meaning while applying consistent indentation and spacing. Auto-applies to PBIP files when detected."
 allowed-tools:
   - Read
   - Write
+  - Edit
   - Bash
   - Agent
   - Glob
   - Grep
 ---
 
-## Detection
+## Detection (run once)
 
-Run ALL of the following detection commands using the Bash tool before proceeding. Save the output — subsequent steps reference these values.
+**Folder naming:** Real PBIP projects use `<ProjectName>.SemanticModel` and `<ReportName>.Report`. Test fixtures may use `.SemanticModel`. Detection globs for both patterns.
 
-Ensure .pbi/ directory exists and migrate legacy root-level files.
-```bash
-python ".claude/skills/pbi/scripts/detect.py" ensure-dir 2>/dev/null
-python ".claude/skills/pbi/scripts/detect.py" migrate 2>/dev/null
-```
+### PBI Directory Setup
+!`python ".claude/skills/pbi/scripts/detect.py" ensure-dir 2>/dev/null && python ".claude/skills/pbi/scripts/detect.py" migrate 2>/dev/null`
 
-```bash
-python ".claude/skills/pbi/scripts/detect.py" pbip 2>/dev/null || echo "PBIP_MODE=paste"
-```
+### PBIP Detection
+!`python ".claude/skills/pbi/scripts/detect.py" pbip 2>/dev/null || echo "PBIP_MODE=paste"`
 
 Save the `PBIP_DIR` value from the output — all subsequent steps must use it instead of a hardcoded `.SemanticModel`.
 
-```bash
-python ".claude/skills/pbi/scripts/detect.py" files 2>/dev/null
-```
+### File Index
+!`python ".claude/skills/pbi/scripts/detect.py" files 2>/dev/null`
 
-```bash
-python ".claude/skills/pbi/scripts/detect.py" pbir 2>/dev/null || echo "PBIR=no"
-```
+### PBIR Detection
+!`python ".claude/skills/pbi/scripts/detect.py" pbir 2>/dev/null || echo "PBIR=no"`
 
-```bash
-python ".claude/skills/pbi/scripts/detect.py" git 2>/dev/null || (echo "GIT=no" && echo "HAS_COMMITS=no")
-```
+### Git State
+!`python ".claude/skills/pbi/scripts/detect.py" git 2>/dev/null || (echo "GIT=no" && echo "HAS_COMMITS=no")`
 
-```bash
-python ".claude/skills/pbi/scripts/detect.py" context 2>/dev/null || echo "No prior context found."
-```
+### Session Context
+!`python ".claude/skills/pbi/scripts/detect.py" context 2>/dev/null || echo "No prior context found."`
 
-Save the PBI_CONFIRM value — use it to decide whether to ask before writing files.
-```bash
-python ".claude/skills/pbi/scripts/detect.py" settings 2>/dev/null || echo "PBI_CONFIRM=true"
-```
+### Settings
+!`python ".claude/skills/pbi/scripts/detect.py" settings 2>/dev/null || echo "PBI_CONFIRM=true"`
+
+Save the `PBI_CONFIRM` value — commands use it to decide whether to ask before writing files.
 
 ### Auto-Resume (session-aware)
 
-After detection, apply the following before executing the command:
+After detection blocks run, apply the following before executing the command:
 
 1. **PBIP_MODE=file — session load check**:
-   Run:
-   ```bash
-   python ".claude/skills/pbi/scripts/detect.py" session-check 2>/dev/null
-   ```
+   Run: `python ".claude/skills/pbi/scripts/detect.py" session-check 2>/dev/null`
    - If output is `SESSION=active` — context was already loaded this session:
-     - Count the table rows in the Model Context table from Session Context.
-     - Output on a single line: `Context resumed — [N] tables loaded`
+     - Output on a single line: `Context resumed — [N] tables loaded` (count from Session Context)
      - Skip any "Model Context Check" (Step 0.5) below — context is already available.
    - If output is `SESSION=new` — first command this session:
      - Output: `Loading model context (first command this session)...`
@@ -67,27 +56,35 @@ After detection, apply the following before executing the command:
      - Output the summary table and: `Context loaded — [N] tables. Ready.`
 
 2. **PBIP_MODE=paste — nearby folder check**:
-   Run:
-   ```bash
-   python ".claude/skills/pbi/scripts/detect.py" nearby 2>/dev/null
-   ```
+   Run: `python ".claude/skills/pbi/scripts/detect.py" nearby 2>/dev/null`
    - If NEARBY_PBIP is found: output: `No PBIP project here, but found one at [NEARBY_PBIP]. Run cd "[NEARBY_PBIP]" first.`
    - If NEARBY_PBIP is empty: skip silently. Paste-in commands still work.
 
 After auto-resume completes, proceed to the command instructions below.
 
+
 ---
 
 # /pbi-format
 
+<purpose>
+Consistent formatting makes DAX scannable and reviewable. Unformatted DAX hides logic in walls of text — formatted DAX reveals structure at a glance.
+</purpose>
+
+<core_principle>
+Use the external DAX Formatter API for consistent, community-standard formatting. Never invent formatting rules — defer to the API. If the API is unavailable, format manually following DAX Formatter conventions.
+</core_principle>
+
 > DAX Formatter API reference is in `shared/api-notes.md` (read if needed).
 
 ## Format API Status
-!`TMPCHECK=$(mktemp); curl -s -L -X POST "https://www.daxformatter.com" -d "fx=1%2B1&r=US&embed=1" --max-time 5 -o "$TMPCHECK" 2>/dev/null; python3 -c "import sys; d=open('$TMPCHECK','r',errors='replace').read(); print('API_OK' if 'formatted' in d else 'API_FAIL')"; rm -f "$TMPCHECK"`
+!`TMPCHECK=$(mktemp); curl -s -L -X POST "https://www.daxformatter.com" -d "fx=1%2B1&r=US&embed=1" --max-time 5 -o "$TMPCHECK" 2>/dev/null; CURL_EXIT=$?; if [ "$CURL_EXIT" -eq 28 ]; then echo "API_TIMEOUT"; elif python -c "import sys; d=open('$TMPCHECK','r',errors='replace').read(); sys.exit(0 if 'formatted' in d else 1)" 2>/dev/null; then echo "API_OK"; else echo "API_FAIL"; fi; rm -f "$TMPCHECK"`
 
 ## Instructions
 
-Respond to the analyst with exactly: "Paste your DAX measure below:"
+If `$ARGUMENTS` already contains a DAX expression, use it directly and skip the paste prompt.
+
+Otherwise respond to the analyst with exactly: "Paste your DAX measure below:"
 
 Once the analyst pastes a DAX measure, follow these steps in order.
 
@@ -120,6 +117,13 @@ Review the Session Context. If the context file contains a record in the Analyst
 ### Step 3 — Format the Measure
 
 Check the "Format API Status" section above:
+
+**If API_TIMEOUT:**
+
+Add exactly this one line at the top of the output (or after the prior-failure warning if one is present):
+`_DAX Formatter API timed out (5 s) — formatted inline by Claude_`
+
+Then format using the Claude inline SQLBI rules in Step 4.
 
 **If API_OK:**
 
@@ -190,7 +194,7 @@ VAR PriorYear =
         DATEADD ( 'Date'[Date], -1, YEAR )
     )
 RETURN
-DIVIDE ( CurrentYear - PriorYear, PriorYear, BLANK () )
+DIVIDE ( CurrentYear - PriorYear, PriorYear )
 ```
 
 ### Step 5 — Output Structure
@@ -198,10 +202,11 @@ DIVIDE ( CurrentYear - PriorYear, PriorYear, BLANK () )
 Present the output in this order:
 
 1. (Only if prior failure warning applies): Warning line
-2. (Only if API_FAIL): `_DAX Formatter API unavailable — formatted inline by Claude_`
-3. (Only if --table flag was passed): `Table context: TableName`
-4. The formatted measure in a fenced `dax` code block
-5. Next steps line: `**Next steps:** /pbi-explain · /pbi-optimise · /pbi-comment · /pbi-error`
+2. (Only if API_TIMEOUT): `_DAX Formatter API timed out (5 s) — formatted inline by Claude_`
+3. (Only if API_FAIL): `_DAX Formatter API unavailable — formatted inline by Claude_`
+4. (Only if --table flag was passed): `Table context: TableName`
+5. The formatted measure in a fenced `dax` code block
+6. Next steps line: `**Next steps:** /pbi-explain · /pbi-optimise · /pbi-comment · /pbi-error`
 
 ### Step 6 — Update .pbi/context.md
 
@@ -213,7 +218,7 @@ After producing the output, update the `.pbi/context.md` file:
    - Command: /pbi-format
    - Timestamp: current UTC timestamp
    - Measure: the measure name extracted in Step 1
-   - Outcome: "Success — formatted via API" or "Success — formatted inline by Claude (API unavailable)"
+   - Outcome: "Success — formatted via API" or "Success — formatted inline by Claude (API timeout)" or "Success — formatted inline by Claude (API unavailable)"
 4. Append a new row to the `## Command History` table with the same info
 5. If the Command History table has more than 20 rows, remove the oldest rows to keep it at 20
 6. Do NOT modify the `## Analyst-Reported Failures` section
@@ -244,3 +249,16 @@ After producing the output, update the `.pbi/context.md` file:
 - NEVER remove comments from the original measure
 - NEVER change the measure name
 - NEVER skip the DAX Formatter API check — always try API first
+
+## Shared Rules
+
+- **PYTHON-FIRST FILE OPERATIONS (CRITICAL):** All file read/write and text search operations MUST use Python with `encoding='utf-8'` to correctly handle accented characters (French: é, è, ê, ç, à, ù, etc.). Do NOT use `grep`, `cat`, `sed`, `awk`, or shell redirects for reading/writing model files. For measure name search, use `python ".claude/skills/pbi/scripts/detect.py" search "MeasureName" "$PBIP_DIR"` instead of `grep -rlF`. Shell/bash is allowed ONLY for: git CLI commands and Python script invocation.
+- **PBIP folder naming:** Always use the `PBIP_DIR` value from detection (e.g., `Sales.SemanticModel`) — never hardcode `.SemanticModel`. Same for Report: use `PBIR_DIR` (e.g., `Sales.Report`).
+- All bash paths must be double-quoted (e.g., `"$VAR"`, `"$SM_DIR/"`)
+- Session context: Read-then-Write `.pbi/context.md`, 20 row max Command History, never touch Analyst-Reported Failures
+- TMDL: tabs only for indentation
+- TMSL expression format: preserve original form (string vs array); use array if expression has line breaks
+- Escalation state: `## Escalation State` in `.pbi/context.md` tracks gathered context during escalation.
+- **LOCAL-FIRST GIT POLICY (CRITICAL):** NEVER `git pull`, `git fetch`, `git merge`, `git rebase`, `git push`, or create PRs. Allowed: `git init`, `git add`, `git commit`, `git diff`, `git log`, `git status`, `git revert`, `git rev-parse`.
+- **Post-write staging:** After any command writes files to `$PBIP_DIR/` (and PBIP_MODE=file, GIT=yes), auto-stage: `git add "$PBIP_DIR/" 2>/dev/null`. Skip if the command already auto-committed.
+- **Confirm mode (PBI_CONFIRM):** When `PBI_CONFIRM=true`: show preview and ask `(y/N)` before writing model files or output files. When `PBI_CONFIRM=false`: write directly without asking. Commands that already have a `(y/N)` prompt respect this — if PBI_CONFIRM=false, skip the prompt and proceed.

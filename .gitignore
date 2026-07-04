@@ -7,6 +7,7 @@ SecurityBindings
 # PBI Skill session state
 .pbi-context.md
 .pbi/context.md
+.pbi/settings.json
 
 # PBI Skill generated artifacts (intermediate, not for commit)
 .pbi/doc_data.json

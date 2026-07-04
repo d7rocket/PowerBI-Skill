@@ -1,64 +1,53 @@
 ---
-name: pbi:audit
-description: "19-rule health check across 8 domains with severity grading (CRITICAL/WARN/INFO) and auto-fix for structural issues"
+name: pbi-audit
+description: "Run a comprehensive 21-rule health check across 8 domains: relationships, naming, date table, measure quality, hidden columns, report layer, advanced features, and performance. Severity-graded output (CRITICAL/WARN/INFO) with auto-fix for structural issues. Parallel agents for 5+ table models."
 allowed-tools:
   - Read
   - Write
+  - Edit
   - Bash
   - Agent
   - Glob
   - Grep
 ---
 
-## Detection
+## Detection (run once)
 
-Run ALL of the following detection commands using the Bash tool before proceeding. Save the output — subsequent steps reference these values.
+**Folder naming:** Real PBIP projects use `<ProjectName>.SemanticModel` and `<ReportName>.Report`. Test fixtures may use `.SemanticModel`. Detection globs for both patterns.
 
-Ensure .pbi/ directory exists and migrate legacy root-level files.
-```bash
-python ".claude/skills/pbi/scripts/detect.py" ensure-dir 2>/dev/null
-python ".claude/skills/pbi/scripts/detect.py" migrate 2>/dev/null
-```
+### PBI Directory Setup
+!`python ".claude/skills/pbi/scripts/detect.py" ensure-dir 2>/dev/null && python ".claude/skills/pbi/scripts/detect.py" migrate 2>/dev/null`
 
-```bash
-python ".claude/skills/pbi/scripts/detect.py" pbip 2>/dev/null || echo "PBIP_MODE=paste"
-```
+### PBIP Detection
+!`python ".claude/skills/pbi/scripts/detect.py" pbip 2>/dev/null || echo "PBIP_MODE=paste"`
 
 Save the `PBIP_DIR` value from the output — all subsequent steps must use it instead of a hardcoded `.SemanticModel`.
 
-```bash
-python ".claude/skills/pbi/scripts/detect.py" files 2>/dev/null
-```
+### File Index
+!`python ".claude/skills/pbi/scripts/detect.py" files 2>/dev/null`
 
-```bash
-python ".claude/skills/pbi/scripts/detect.py" pbir 2>/dev/null || echo "PBIR=no"
-```
+### PBIR Detection
+!`python ".claude/skills/pbi/scripts/detect.py" pbir 2>/dev/null || echo "PBIR=no"`
 
-```bash
-python ".claude/skills/pbi/scripts/detect.py" git 2>/dev/null || (echo "GIT=no" && echo "HAS_COMMITS=no")
-```
+### Git State
+!`python ".claude/skills/pbi/scripts/detect.py" git 2>/dev/null || (echo "GIT=no" && echo "HAS_COMMITS=no")`
 
-```bash
-python ".claude/skills/pbi/scripts/detect.py" context 2>/dev/null || echo "No prior context found."
-```
+### Session Context
+!`python ".claude/skills/pbi/scripts/detect.py" context 2>/dev/null || echo "No prior context found."`
 
-Save the PBI_CONFIRM value — use it to decide whether to ask before writing files.
-```bash
-python ".claude/skills/pbi/scripts/detect.py" settings 2>/dev/null || echo "PBI_CONFIRM=true"
-```
+### Settings
+!`python ".claude/skills/pbi/scripts/detect.py" settings 2>/dev/null || echo "PBI_CONFIRM=true"`
+
+Save the `PBI_CONFIRM` value — commands use it to decide whether to ask before writing files.
 
 ### Auto-Resume (session-aware)
 
-After detection, apply the following before executing the command:
+After detection blocks run, apply the following before executing the command:
 
 1. **PBIP_MODE=file — session load check**:
-   Run:
-   ```bash
-   python ".claude/skills/pbi/scripts/detect.py" session-check 2>/dev/null
-   ```
+   Run: `python ".claude/skills/pbi/scripts/detect.py" session-check 2>/dev/null`
    - If output is `SESSION=active` — context was already loaded this session:
-     - Count the table rows in the Model Context table from Session Context.
-     - Output on a single line: `Context resumed — [N] tables loaded`
+     - Output on a single line: `Context resumed — [N] tables loaded` (count from Session Context)
      - Skip any "Model Context Check" (Step 0.5) below — context is already available.
    - If output is `SESSION=new` — first command this session:
      - Output: `Loading model context (first command this session)...`
@@ -67,19 +56,24 @@ After detection, apply the following before executing the command:
      - Output the summary table and: `Context loaded — [N] tables. Ready.`
 
 2. **PBIP_MODE=paste — nearby folder check**:
-   Run:
-   ```bash
-   python ".claude/skills/pbi/scripts/detect.py" nearby 2>/dev/null
-   ```
+   Run: `python ".claude/skills/pbi/scripts/detect.py" nearby 2>/dev/null`
    - If NEARBY_PBIP is found: output: `No PBIP project here, but found one at [NEARBY_PBIP]. Run cd "[NEARBY_PBIP]" first.`
    - If NEARBY_PBIP is empty: skip silently. Paste-in commands still work.
 
 After auto-resume completes, proceed to the command instructions below.
 
+
 ---
 
 # /pbi-audit
 
+<purpose>
+Model quality degrades silently — bidirectional filters create ambiguity, unhidden keys clutter filter panes, missing format strings confuse report consumers. This command surfaces problems before they reach stakeholders.
+</purpose>
+
+<core_principle>
+Grade by impact, not count. One CRITICAL bidirectional filter matters more than ten INFO findings. Auto-fix only touches structural properties (isHidden, crossFilteringBehavior) — never modify measure expressions during audit.
+</core_principle>
 
 ## Instructions
 
@@ -156,10 +150,12 @@ Pass the extracted metadata (all table/measure/column names, measure properties)
 - Domain Pass B: Naming (rules N-01, N-02, N-03)
 - Domain Pass D: Measures (rules M-01, M-02, M-03)
 
-**Agent 3 — Hidden Columns + PBIR Visuals:**
-Pass the extracted metadata (columns with isHidden, relationship columns, PBIR detection output) and run:
+**Agent 3 — Hidden Columns + PBIR Visuals + Advanced Features + Performance:**
+Pass the extracted metadata (columns with isHidden, relationship columns, table-level properties, calculation group / NAMEOF markers, PBIR detection output) and run:
 - Domain Pass E: Hidden Column Hygiene (rules H-01, H-02, H-03)
 - Domain Pass F: Report Layer (rules V-01, V-02, V-03 — only if PBIR=yes)
+- Domain Pass G: Advanced Features (rules AF-01, AF-02)
+- Domain Pass H: Performance Heuristics (rules P-01, P-02)
 
 Each agent returns its findings as a list. Collect all findings after all 3 agents complete.
 
@@ -173,6 +169,7 @@ Accumulate findings_relationships[]:
 - Any relationship where crossFilteringBehavior = "bothDirections"
 - Finding: `Bidirectional filter set on relationship from [FromTable][FromColumn] to [ToTable][ToColumn].`
 - Recommendation: `Change crossFilteringBehavior to single-direction. Bidirectional filters create ambiguous filter paths and degrade query performance.`
+- **Exception note (include in the finding):** if this is a deliberate many-to-many bridge or RLS-propagation pattern (securityFilteringBehavior), document it instead of changing it.
 
 **Rule R-02 — Isolated table heuristic (WARN):**
 - Tables with NO outbound or inbound relationships AND whose name matches fact table patterns (contains "Sales", "Orders", "Transactions", "Invoice", "Fact", or starts without "Dim"/"Date"/"Calendar" prefix) AND has at least one numeric column (dataType: int64, double, decimal)
@@ -217,8 +214,8 @@ If a date table IS found and IS correctly configured: add INFO finding noting it
 Accumulate findings_measures[]:
 
 **Rule M-01 — Empty formatString (WARN):** Any measure with no formatString property
-**Rule M-02 — Empty description (INFO):** Any measure with no description
-**Rule M-03 — No display folder (WARN):** Any measure with no displayFolder
+**Rule M-02 — Empty description (WARN):** Any measure with no description — blank tooltips directly affect report consumers
+**Rule M-03 — No display folder (INFO):** Any measure with no displayFolder — organisational nicety, not consumer-facing
 
 ---
 
@@ -229,7 +226,7 @@ Accumulate findings_columns[]:
 **Build relationship column set:** Collect all columns that appear as fromColumn or toColumn in any relationship.
 
 **Rule H-01 — Relationship key column not hidden (WARN):** Column used in a relationship AND isHidden = false
-**Rule H-02 — Foreign key / ID column not hidden (WARN):** Column name matches key/ID patterns (ends with Key, ID, Id, _id, _key, FK; equals id; starts with SK_, FK_, PK_) AND isHidden = false. Exclude columns already flagged by H-01.
+**Rule H-02 — Foreign key / ID column not hidden (WARN):** Column name matches key/ID patterns (ends with Key, ID, Id, _id, _key, FK; equals id; starts with SK_, FK_, PK_) AND isHidden = false. Exclude columns already flagged by H-01. **When PBIR=yes:** also exclude columns referenced in report visuals (from the Domain Pass F visual-reference scan) — a visible ID column that is deliberately used in a visual is not a hygiene problem.
 **Rule H-03 — Summary (INFO):** If ALL key columns are hidden: emit one INFO finding "All detected key/ID columns are already hidden."
 
 ---
@@ -280,8 +277,8 @@ Accumulate findings_performance[]:
 **Rule P-02 — High-cardinality column heuristic (INFO):**
 - For each column that is NOT hidden AND is NOT used in any relationship AND whose dataType is `string` AND whose name matches high-cardinality patterns: contains "Description", "Comment", "Note", "Detail", "Address", "Email", "URL", "Path", "FullName", "LongText", or ends with "_desc", "_text", "_notes"
 - Only flag if the column is NOT in a table with fewer than 3 columns (small lookup tables often have legitimate text columns)
-- Finding: `Column [TableName].[ColumnName] appears to be high-cardinality text. Consider hiding it if not used in visuals.`
-- Recommendation: `High-cardinality text columns consume memory and rarely belong in filter panes. Hide them unless they are intentionally exposed for search or display.`
+- Finding: `Column [TableName].[ColumnName] appears to be high-cardinality text. Consider removing it in Power Query if it is not used in visuals.`
+- Recommendation: `Remove unused high-cardinality columns in Power Query — hiding only declutters the field list, it does NOT reduce VertiPaq memory (hidden columns are still loaded and compressed).`
 
 ---
 
@@ -327,22 +324,22 @@ Output:
 
 ---
 
-*Audit complete. Report written to: audit-report.md*
+*Audit complete. Report written to: .pbi/audit-report.md*
 ```
 
 Domain tag format: `[Relationships]`, `[Naming]`, `[Date Table]`, `[Measures]`, `[Columns]`, `[Report]`
 
 ---
 
-### Step 5 — Write audit-report.md
+### Step 5 — Write .pbi/audit-report.md
 
-Write the exact same report content to `audit-report.md` in the project root using the Write tool.
+Write the exact same report content to `.pbi/audit-report.md` in the project root using the Write tool.
 
 ---
 
 ### Step 5b — Auto-Fix Mode (optional)
 
-After writing audit-report.md, check if there are any CRITICAL or WARN findings with available auto-fixes.
+After writing .pbi/audit-report.md, check if there are any CRITICAL or WARN findings with available auto-fixes.
 
 **Fixable finding types:**
 | Rule | Fix Action |
@@ -351,7 +348,7 @@ After writing audit-report.md, check if there are any CRITICAL or WARN findings 
 | H-01 (relationship key visible) | Add isHidden property to column |
 | H-02 (ID column visible) | Same as H-01 |
 | M-01 (empty formatString) | Skip — cannot infer correct format |
-| M-03 (no display folder) | Skip — cannot infer correct folder |
+| M-03 (no display folder) | Defer to /pbi-audit-fix, which infers folders using its AF-05 rules |
 
 If there are zero fixable findings: skip to Step 6.
 
@@ -366,6 +363,9 @@ If there are fixable findings, output:
 Apply all fixes? (y/N)
 ```
 
+**If PBI_CONFIRM=false:** do not print the `Apply all fixes? (y/N)` line and do not wait — apply all fixes directly.
+
+**If PBI_CONFIRM=true:** wait for the response:
 - n, N, Enter, or anything else: Output "No fixes applied." Skip to Step 6.
 - y or Y: proceed with fixes.
 
@@ -397,14 +397,15 @@ Output for each fix: `Fixed: [rule] — [subject] — [action taken]`
 GIT_STATUS=$(git rev-parse --is-inside-work-tree 2>/dev/null && echo "yes" || echo "no")
 if [ "$GIT_STATUS" = "yes" ]; then
   git add "$PBIP_DIR/" 2>/dev/null
-  git commit -m "fix: auto-fix [N] audit findings (R-01, H-01, H-02)" 2>/dev/null && echo "AUTO_COMMIT=ok" || echo "AUTO_COMMIT=fail"
+  # IMPORTANT: Replace [N] with the integer count only — never interpolate free-text strings into commit messages
+  git commit -m "fix: auto-fix [N] audit findings" 2>/dev/null && echo "AUTO_COMMIT=ok" || echo "AUTO_COMMIT=fail"
 else
   echo "AUTO_COMMIT=skip_no_repo"
 fi
 ```
 - AUTO_COMMIT=ok: Output "Auto-committed: fix: auto-fix [N] audit findings"
 - AUTO_COMMIT=skip_no_repo: Output "No git repo — run /pbi-commit to initialise one."
-- AUTO_COMMIT=fail: silent
+- AUTO_COMMIT=fail: Output "⚠ File written but git commit failed — run /pbi-commit to save a snapshot."
 
 **Auto-fix example walkthrough:**
 Given a model with a bidirectional relationship `Sales[ProductKey] → Product[ProductKey]` and a visible key column `Sales[ProductKey]`:
@@ -419,7 +420,7 @@ Given a model with a bidirectional relationship `Sales[ProductKey] → Product[P
 ### Step 6 — Update .pbi/context.md
 
 Use Read-then-Write to update `.pbi/context.md`:
-1. Update `## Last Command`: Command = `/pbi-audit`, Outcome = `Audit complete — [N_critical] CRITICAL, [N_warn] WARN, [N_info] INFO findings. Report written to audit-report.md`
+1. Update `## Last Command`: Command = `/pbi-audit`, Outcome = `Audit complete — [N_critical] CRITICAL, [N_warn] WARN, [N_info] INFO findings. Report written to .pbi/audit-report.md` (append " (git commit failed)" if AUTO_COMMIT=fail)
 2. Append row to `## Command History`; trim to 20 rows max
 3. Do NOT modify `## Model Context`, `## Analyst-Reported Failures`, or any other sections
 
@@ -428,3 +429,16 @@ Use Read-then-Write to update `.pbi/context.md`:
 - NEVER change relationship direction without asking which direction to keep
 - NEVER add, remove, rename, or rewrite measure expressions during audit — auto-fix only touches structural properties (isHidden, crossFilteringBehavior)
 - NEVER report findings without severity classification (CRITICAL/WARN/INFO)
+
+## Shared Rules
+
+- **PYTHON-FIRST FILE OPERATIONS (CRITICAL):** All file read/write and text search operations MUST use Python with `encoding='utf-8'` to correctly handle accented characters (French: é, è, ê, ç, à, ù, etc.). Do NOT use `grep`, `cat`, `sed`, `awk`, or shell redirects for reading/writing model files. For measure name search, use `python ".claude/skills/pbi/scripts/detect.py" search "MeasureName" "$PBIP_DIR"` instead of `grep -rlF`. Shell/bash is allowed ONLY for: git CLI commands and Python script invocation.
+- **PBIP folder naming:** Always use the `PBIP_DIR` value from detection (e.g., `Sales.SemanticModel`) — never hardcode `.SemanticModel`. Same for Report: use `PBIR_DIR` (e.g., `Sales.Report`).
+- All bash paths must be double-quoted (e.g., `"$VAR"`, `"$SM_DIR/"`)
+- Session context: Read-then-Write `.pbi/context.md`, 20 row max Command History, never touch Analyst-Reported Failures
+- TMDL: tabs only for indentation
+- TMSL expression format: preserve original form (string vs array); use array if expression has line breaks
+- Escalation state: `## Escalation State` in `.pbi/context.md` tracks gathered context during escalation.
+- **LOCAL-FIRST GIT POLICY (CRITICAL):** NEVER `git pull`, `git fetch`, `git merge`, `git rebase`, `git push`, or create PRs. Allowed: `git init`, `git add`, `git commit`, `git diff`, `git log`, `git status`, `git revert`, `git rev-parse`.
+- **Post-write staging:** After any command writes files to `$PBIP_DIR/` (and PBIP_MODE=file, GIT=yes), auto-stage: `git add "$PBIP_DIR/" 2>/dev/null`. Skip if the command already auto-committed.
+- **Confirm mode (PBI_CONFIRM):** When `PBI_CONFIRM=true`: show preview and ask `(y/N)` before writing model files or output files. When `PBI_CONFIRM=false`: write directly without asking. Commands that already have a `(y/N)` prompt respect this — if PBI_CONFIRM=false, skip the prompt and proceed.

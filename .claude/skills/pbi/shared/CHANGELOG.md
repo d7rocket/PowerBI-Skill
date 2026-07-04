@@ -3,6 +3,38 @@
 All notable changes to the PBI skill are documented here.
 Format: [Keep a Changelog](https://keepachangelog.com)
 
+## [7.1.0] — 2026-07-04
+
+### Added
+- **Simplicity-first DAX principle** across all generation commands (`/pbi-new`, `/pbi-edit`, `/pbi-deep`, `/pbi-error`): prefer the simplest DAX that meets the requirement — no CALCULATE without filter arguments, no VAR/RETURN for single-use expressions, no IFERROR/defensive BLANK-handling unless requested.
+- `/pbi-optimise` Rule 14 — flags gratuitous IFERROR (rewrite to DIVIDE or remove).
+- `validate-edit.py` now registered as a PostToolUse hook in `.claude/settings.json` (previously never executed) and validates TMDL tab-only indentation in addition to control characters.
+- `/pbi-audit-fix` fully packaged: command descriptor, installer entries (23 commands), README documentation.
+- `tests/test_detect.py` — automated test suite for detect.py subcommands.
+- Installers now download `validate-edit.py`, `gen_docx.py`, `gen_pdf.py`, and `pbi-docs-contract.md`, and clean up legacy pre-7.1 `pbi:<cmd>` command files and v5/v6 nested sub-skill directories.
+
+### Fixed
+- `/pbi-optimise` Rule 13 no longer rewrites all-time running totals to DATESYTD (semantics-changing); the case is now flag-only. Removed inaccurate "xmatch" and SWITCH-evaluation claims.
+- `/pbi-format-batch` no longer instructs 4-space indentation inside TMDL expression blocks (tabs-only, applied relative to block depth); restored the full Shared Rules block and missing Session Context detection.
+- `detect.py html-parse` now unescapes HTML entities — DAX containing `<`, `>`, `&&`, `&` is no longer written back HTML-escaped.
+- `detect.py files` now includes `relationships.tmdl`, `model.tmdl`, and `expressions.tmdl` in the File Index.
+- Base `/pbi` router updated to post-rename flat paths (`.claude/skills/pbi-<cmd>/SKILL.md`); menu/handler drift fixed (format-batch, H/S options, auto-commit list).
+- `/pbi-help` no longer calls `git ls-remote` (LOCAL-FIRST violation) — version check is now offline; added Shared Rules and the missing `/pbi-settings` row.
+- `/pbi-undo` handles empty and single-commit repos, only auto-reverts commits matching PBI auto-commit patterns, and invalidates stale session context after revert.
+- `/pbi-commit` and `/pbi-diff` now diff the whole `definition/` folder (previously missed `expressions.tmdl` and `model.tmdl` changes).
+- `/pbi-audit` parallel path now runs domains G and H; rule count corrected to 21; P-02 memory advice corrected; M-02/M-03 severities swapped; PBI_CONFIRM instruction moved out of the output template.
+- `/pbi-changelog` writes to `.pbi/changelog.md` (never overwrites a root CHANGELOG.md) and respects scope arguments beyond 50 commits.
+- `/pbi-extract` writes to `.pbi/project-extract.md` (was project root) and no longer spawns an agent for the overview tier.
+- `/pbi-error` fixes no longer prescribe redundant `CALCULATE()` wrappers in iterators or blanket BLANK→0 wrapping; `/pbi-comment` no longer forces inline comments onto trivial measures.
+- `gen_docx.py`/`gen_pdf.py`: multi-line DAX and ERD content renders correctly; PDF table cells wrap; Word page-number field renders without manual refresh.
+- `session_check` no longer crashes on timestamps without timezone; `gitignore_check` no longer corrupts a `.gitignore` lacking a trailing newline.
+
+### Changed
+- `pbi:<cmd>` → `/pbi-<cmd>` flat skill structure (rename from commit b95a530, now documented); all command descriptor `name:` fields updated.
+- Model assignments: `format`/`format-batch` → sonnet (reasoning); `help`/`version`/`settings` → haiku (mechanical).
+- `.pbi/settings.json` is no longer git-tracked (per-user preference).
+- `pbi-docs-contract.md` moved to `.claude/skills/pbi/shared/` and referenced from `/pbi-docs`.
+
 ## [7.0.1] — 2026-04-07
 
 ### Fixed

@@ -18,15 +18,15 @@ The base `/pbi` (at `.claude/skills/pbi/SKILL.md`) serves as:
 ### Command types
 
 - **Paste-in** (work anywhere): `/pbi-explain`, `/pbi-format`, `/pbi-optimise`, `/pbi-comment`, `/pbi-error`, `/pbi-new`
-- **PBIP** (require `*.SemanticModel/` directory): `/pbi-load`, `/pbi-audit`, `/pbi-diff`, `/pbi-commit`, `/pbi-edit`, `/pbi-undo`, `/pbi-comment-batch`, `/pbi-changelog`, `/pbi-extract`, `/pbi-docs`
+- **PBIP** (require `*.SemanticModel/` directory): `/pbi-load`, `/pbi-audit`, `/pbi-audit-fix`, `/pbi-diff`, `/pbi-commit`, `/pbi-edit`, `/pbi-undo`, `/pbi-comment-batch`, `/pbi-format-batch`, `/pbi-changelog`, `/pbi-extract`, `/pbi-docs`
 - **Workflow**: `/pbi-deep`
 - **Session**: `/pbi-resume`
-- **Utility** (work anywhere): `/pbi-help`, `/pbi-version`
+- **Utility** (work anywhere): `/pbi-help`, `/pbi-version`, `/pbi-settings`
 
 ### Model selection
 
-- **Sonnet** (default): DAX reasoning commands — explain, format, optimise, comment, error, new, edit, comment-batch, audit, docs, deep, extract, help, version
-- **Haiku** (set in frontmatter): file/git-heavy commands — load, diff, commit, undo, changelog, resume
+- **Sonnet** (default): DAX reasoning commands — explain, format, format-batch, optimise, comment, error, new, edit, comment-batch, audit, audit-fix, docs, deep, extract
+- **Haiku** (set in frontmatter): file/git-heavy and mechanical commands — load, diff, commit, undo, changelog, resume, help, version, settings
 - **Opus** (via Agent spawn): extract detailed tier (high token usage, deep analysis)
 
 ### Detection
@@ -58,6 +58,10 @@ Each sub-skill runs its own detection blocks on load via `!` backtick syntax:
 - **Python-first file operations**: always use Python with `encoding='utf-8'` for file read/write and text search. Use `detect.py search` instead of `grep -rlF` for measure name search. Shell/bash is only for git CLI commands.
 - **UTF-8 encoding**: model files may contain French accented characters (é, è, ê, ç, à, ù). All file operations must handle UTF-8 correctly.
 
+### DAX Style
+
+- **Simplicity-first**: generated DAX must be the simplest expression that answers the business question. A plain `SUM`/`DIVIDE` beats a `CALCULATE` wrapper with no filter arguments; no `VAR/RETURN` for a single-use expression; never add `IFERROR` or defensive BLANK-handling unless the analyst asks (`DIVIDE` already handles division by zero). Trivial self-explanatory measures get a description property only, no inline comments.
+
 ### Power BI TMDL/PBIR Conventions
 
 - When editing TMDL files, validate syntax carefully: use correct property names (e.g., `crossFilteringBehavior`), avoid stray control characters, and match expected enum types (string vs int).
@@ -83,10 +87,14 @@ Each sub-skill runs its own detection blocks on load via `!` backtick syntax:
   SKILL.md              ← base /pbi (menu + catch-all + backward-compatible router)
   scripts/
     detect.py           ← Python detection, search, HTML parsing, version check, session check, gitignore, settings, migration (UTF-8 safe, 15 subcommands)
+    validate-edit.py    ← PostToolUse hook (registered in .claude/settings.json): TMDL control-char + space-indent validation after Edit/Write
+    gen_docx.py         ← Word document generation for /pbi-docs
+    gen_pdf.py          ← PDF generation for /pbi-docs
   shared/
     api-notes.md        ← DAX Formatter API reference
     CHANGELOG.md        ← version history (read by /pbi-version)
     ui-brand.md         ← visual output standards reference
+    pbi-docs-contract.md ← docgen output contract for /pbi-docs
 .claude/skills/pbi-explain/SKILL.md      ← /pbi-explain (sonnet)
 .claude/skills/pbi-format/SKILL.md       ← /pbi-format (sonnet)
 .claude/skills/pbi-optimise/SKILL.md     ← /pbi-optimise (sonnet)
@@ -102,11 +110,13 @@ Each sub-skill runs its own detection blocks on load via `!` backtick syntax:
 .claude/skills/pbi-undo/SKILL.md         ← /pbi-undo (haiku)
 .claude/skills/pbi-comment-batch/SKILL.md ← /pbi-comment-batch (sonnet)
 .claude/skills/pbi-changelog/SKILL.md    ← /pbi-changelog (haiku)
+.claude/skills/pbi-format-batch/SKILL.md ← /pbi-format-batch (sonnet, bulk SQLBI formatting)
+.claude/skills/pbi-settings/SKILL.md     ← /pbi-settings (haiku, write-mode toggle)
 .claude/skills/pbi-deep/SKILL.md         ← /pbi-deep (sonnet)
 .claude/skills/pbi-extract/SKILL.md      ← /pbi-extract (sonnet, agents for opus tier)
 .claude/skills/pbi-docs/SKILL.md         ← /pbi-docs (sonnet)
-.claude/skills/pbi-help/SKILL.md         ← /pbi-help (sonnet)
-.claude/skills/pbi-version/SKILL.md      ← /pbi-version (sonnet)
+.claude/skills/pbi-help/SKILL.md         ← /pbi-help (haiku)
+.claude/skills/pbi-version/SKILL.md      ← /pbi-version (haiku)
 .claude/skills/pbi-resume/SKILL.md       ← /pbi-resume (haiku)
 .claude/commands/pbi-<cmd>.md            ← command descriptors (one per sub-skill)
 ```
@@ -119,7 +129,10 @@ Test fixtures are in `tests/fixtures/`:
 - `pbip-tmsl/`: TMSL project (model.bim)
 - `pbip-no-repo/`: TMDL project with no git repo (tests git init flow)
 - `pbip-empty-model/`: project with tables but no measures
+- `pbip-tmdl-no-gitignore/`: TMDL project without .gitignore (tests gitignore-check detection)
 - `context-20-rows.md`: saturated command history (tests trim-to-20 logic)
+
+Automated tests: `tests/test_detect.py` covers detect.py subcommands (run with `python tests/test_detect.py` or pytest).
 
 ## Known Limitations
 
@@ -128,4 +141,4 @@ Test fixtures are in `tests/fixtures/`:
 
 ## Version
 
-Current: 7.0.0 (set in `pbi/SKILL.md` frontmatter)
+Current: 7.1.0 (set in `pbi/SKILL.md` frontmatter — the single source of truth; `shared/CHANGELOG.md` top entry must match)

@@ -1,50 +1,48 @@
 ---
-name: pbi:format-batch
-description: "Apply SQLBI-standard DAX formatting to every measure in the model in one pass — no API dependency"
+name: pbi-format-batch
+description: "Apply SQLBI-standard DAX formatting to every measure in the model in one pass. Processes all tables, applies consistent keyword capitalisation and structure (VAR/RETURN blocks, CALCULATE arguments, indentation). Uses Claude inline formatting — no DAX Formatter API dependency. PBIP-only. Auto-commits."
 allowed-tools:
   - Read
   - Write
+  - Edit
   - Bash
+  - Agent
+  - Glob
+  - Grep
 ---
 
-## Detection
+## Detection (run once)
 
-Run ALL of the following detection commands using the Bash tool before proceeding. Save the output — subsequent steps reference these values.
+**Folder naming:** Real PBIP projects use `<ProjectName>.SemanticModel` and `<ReportName>.Report`. Test fixtures may use `.SemanticModel`. Detection globs for both patterns.
 
-Ensure .pbi/ directory exists and migrate legacy root-level files.
-```bash
-python ".claude/skills/pbi/scripts/detect.py" ensure-dir 2>/dev/null
-python ".claude/skills/pbi/scripts/detect.py" migrate 2>/dev/null
-```
+### PBI Directory Setup
+!`python ".claude/skills/pbi/scripts/detect.py" ensure-dir 2>/dev/null && python ".claude/skills/pbi/scripts/detect.py" migrate 2>/dev/null`
 
-```bash
-python ".claude/skills/pbi/scripts/detect.py" pbip 2>/dev/null || echo "PBIP_MODE=paste"
-```
+### PBIP Detection
+!`python ".claude/skills/pbi/scripts/detect.py" pbip 2>/dev/null || echo "PBIP_MODE=paste"`
 
 Save the `PBIP_DIR` value — all subsequent steps must use it.
 
-```bash
-python ".claude/skills/pbi/scripts/detect.py" files 2>/dev/null
-```
+### File Index
+!`python ".claude/skills/pbi/scripts/detect.py" files 2>/dev/null`
 
-```bash
-python ".claude/skills/pbi/scripts/detect.py" git 2>/dev/null || (echo "GIT=no" && echo "HAS_COMMITS=no")
-```
+### Git State
+!`python ".claude/skills/pbi/scripts/detect.py" git 2>/dev/null || (echo "GIT=no" && echo "HAS_COMMITS=no")`
 
-Save the PBI_CONFIRM value — use it to decide whether to ask before writing files.
-```bash
-python ".claude/skills/pbi/scripts/detect.py" settings 2>/dev/null || echo "PBI_CONFIRM=true"
-```
+### Session Context
+!`python ".claude/skills/pbi/scripts/detect.py" context 2>/dev/null || echo "No prior context found."`
+
+### Settings
+!`python ".claude/skills/pbi/scripts/detect.py" settings 2>/dev/null || echo "PBI_CONFIRM=true"`
+
+Save the `PBI_CONFIRM` value.
 
 ### Auto-Resume (session-aware)
 
-After detection, apply the following before executing the command:
+After detection blocks run, apply the following before executing the command:
 
 1. **PBIP_MODE=file — session load check**:
-   Run:
-   ```bash
-   python ".claude/skills/pbi/scripts/detect.py" session-check 2>/dev/null
-   ```
+   Run: `python ".claude/skills/pbi/scripts/detect.py" session-check 2>/dev/null`
    - If `SESSION=active`: output `Context resumed — [N] tables loaded` (from Session Context), skip full load.
    - If `SESSION=new`: load all model files, build Model Context, write to `.pbi/context.md`, output summary.
 
@@ -81,14 +79,31 @@ Loading measures...
 
 ### Step 1 — Read All Measure Expressions
 
-Read every `.tmdl` file listed in the File Index using the Read tool (TMDL), or `$PBIP_DIR/model.bim` (TMSL).
+**TMDL path:** Read every `.tmdl` file listed in the File Index using the Read tool.
 
-For each file, extract all measure blocks:
+For each file, extract all measure blocks. A measure block follows this pattern:
+```
+    measure MeasureName = <expression>
+        [optional: formatString: ...]
+        [optional: displayFolder: ...]
+        [optional: description: ...]
+```
+Or multi-line expressions:
+```
+    measure MeasureName =
+        CALCULATE(
+            ...
+        )
+```
+
+Extract for each measure:
 - `file`: path to the .tmdl file
-- `table`: infer from filename
+- `table`: infer from filename (e.g., `Sales.tmdl` → table `Sales`)
 - `name`: measure name (strip single quotes if present)
 - `expression`: the full DAX expression text (raw, as written)
-- `already_formatted`: true if expression already follows SQLBI conventions
+- `already_formatted`: true if expression already follows SQLBI conventions (keyword caps, proper indentation)
+
+**TMSL path:** Read `$PBIP_DIR/model.bim`. For each table, extract all measure objects (name + expression).
 
 Build the measure inventory. Output:
 ```
@@ -99,10 +114,12 @@ Found [N] measures across [M] tables.
 
 ### Step 2 — Apply SQLBI Formatting
 
-For each measure, apply the following formatting rules. Mark as `changed=true` if the formatted version differs from the original.
+For each measure, apply the following formatting rules to its expression. Mark as `changed=true` if the formatted version differs from the original.
+
+**SQLBI inline formatting rules:**
 
 **Keyword capitalisation — ALL DAX keywords must be UPPERCASE:**
-CALCULATE FILTER ALL ALLEXCEPT ALLSELECTED VALUES RELATED RELATEDTABLE DIVIDE IF BLANK VAR RETURN SUM SUMX AVERAGE AVERAGEX COUNT COUNTROWS COUNTBLANK MIN MAX MAXX MINX HASONEVALUE SELECTEDVALUE SWITCH TRUE FALSE AND OR NOT ISBLANK IFERROR DATESYTD DATEADD SAMEPERIODLASTYEAR DATESBETWEEN TOTALYTD RANKX TOPN EARLIER UNION INTERSECT EXCEPT GENERATE CROSSJOIN NATURALINNERJOIN NATURALLEFTOUTERJOIN USERELATIONSHIP TREATAS REMOVEFILTERS KEEPFILTERS
+`CALCULATE FILTER ALL ALLEXCEPT ALLSELECTED VALUES RELATED RELATEDTABLE DIVIDE IF BLANK VAR RETURN SUM SUMX AVERAGE AVERAGEX COUNT COUNTROWS COUNTBLANK MIN MAX MAXX MINX HASONEVALUE SELECTEDVALUE SWITCH TRUE FALSE AND OR NOT ISBLANK IFERROR DATESYTD DATEADD SAMEPERIODLASTYEAR DATESBETWEEN TOTALYTD RANKX TOPN EARLIER UNION INTERSECT EXCEPT GENERATE CROSSJOIN NATURALINNERJOIN NATURALLEFTOUTERJOIN USERELATIONSHIP TREATAS REMOVEFILTERS KEEPFILTERS ALLCROSSFILTERED ISCROSSFILTERED ISFILTERED SELECTEDVALUE HASONEFILTER HASONEVALUE`
 
 **Structure rules:**
 1. Measure name and `=` stay on the first line; expression body starts on the next line, indented 4 spaces
@@ -113,7 +130,37 @@ CALCULATE FILTER ALL ALLEXCEPT ALLSELECTED VALUES RELATED RELATEDTABLE DIVIDE IF
 6. Nested functions follow the same pattern recursively
 7. Spaces inside parentheses: `SUM ( Table[Column] )` — one space after `(` and before `)`
 
-**Skip rule:** If a measure is single-line trivial and already follows all rules, mark as `already_formatted=true` and do not modify.
+**Examples:**
+
+Simple:
+```
+Revenue =
+    SUM ( Sales[Amount] )
+```
+
+CALCULATE:
+```
+Sales YTD =
+    CALCULATE (
+        [Revenue],
+        DATESYTD ( 'Date'[Date] )
+    )
+```
+
+VAR/RETURN:
+```
+YoY Growth % =
+VAR CurrentYear = [Revenue]
+VAR PriorYear =
+    CALCULATE (
+        [Revenue],
+        DATEADD ( 'Date'[Date], -1, YEAR )
+    )
+RETURN
+    DIVIDE ( CurrentYear - PriorYear, PriorYear )
+```
+
+**Skip rule:** If a measure expression is a single-line trivial expression (e.g., `SUM ( Sales[Amount] )`) that already follows all rules, mark it as `already_formatted=true` and do not modify it.
 
 ---
 
@@ -128,16 +175,16 @@ Output a summary table:
 |---|---------|-------|--------|
 | 1 | [Name]  | [Table] | Will reformat |
 | 2 | [Name]  | [Table] | Already formatted — skip |
+...
 
 [N] measures to reformat, [M] already formatted.
-```
 
-**If PBI_CONFIRM=false:** skip the prompt below and proceed directly to Step 4.
-
-```
 Apply all formatting changes? (y/N)
 ```
 
+**If PBI_CONFIRM=false:** skip the `(y/N)` prompt in the template above (still show the preview table) and proceed directly to Step 4.
+
+**If PBI_CONFIRM=true:** wait for the analyst's response:
 - y / Y: proceed
 - n / N / Enter: `Batch cancelled. No files modified.` Stop.
 
@@ -152,12 +199,14 @@ For each `.tmdl` file that contains measures with `changed=true`:
    - Preserve the `measure Name =` declaration line
    - Replace expression lines with the formatted version (4-space indent)
    - Preserve all properties (`formatString:`, `displayFolder:`, `description:`, `/// comments`) unchanged
-   - Keep tab indentation for the overall TMDL structure
+   - Keep tab indentation throughout: expression lines are tab-indented to the block depth per the file's existing tab convention, and the SQLBI formatting indentation is applied RELATIVE to that tab prefix using additional tabs. Never introduce space indentation into TMDL files.
 3. Write the entire modified file back (Write tool) — one write per file
 
 **TMSL path:**
 1. Read `$PBIP_DIR/model.bim`
-2. For each changed measure, update the `"expression"` field (use array form if expression contains line breaks)
+2. For each changed measure, update the `"expression"` field
+   - Use array form if the formatted expression contains line breaks
+   - Preserve all other fields
 3. Write entire model.bim back (Write tool)
 
 Output per file:
@@ -167,11 +216,17 @@ Formatted: [N] measures in [file]
 
 **Auto-commit:**
 ```bash
-if git rev-parse --is-inside-work-tree 2>/dev/null; then
+GIT_STATUS=$(git rev-parse --is-inside-work-tree 2>/dev/null && echo "yes" || echo "no")
+if [ "$GIT_STATUS" = "yes" ]; then
   git add "$PBIP_DIR/" 2>/dev/null
   git commit -m "style: batch-format [TOTAL_N] DAX measures — SQLBI standard" 2>/dev/null && echo "AUTO_COMMIT=ok" || echo "AUTO_COMMIT=fail"
+else
+  echo "AUTO_COMMIT=skip_no_repo"
 fi
 ```
+- AUTO_COMMIT=ok: Output "Auto-committed: style: batch-format [TOTAL_N] DAX measures — SQLBI standard"
+- AUTO_COMMIT=skip_no_repo: Output "No git repo — run /pbi-commit to initialise one."
+- AUTO_COMMIT=fail: Output "⚠ File written but git commit failed — run /pbi-commit to save a snapshot."
 
 ---
 
@@ -187,3 +242,16 @@ Read `.pbi/context.md`, update `## Last Command` and `## Command History` (20-ro
 - NEVER convert TMDL tab indentation to spaces
 - NEVER call the DAX Formatter API — use Claude inline formatting only
 - NEVER write one file per measure — batch all changes per table file into a single Write
+
+## Shared Rules
+
+- **PYTHON-FIRST FILE OPERATIONS (CRITICAL):** All file read/write and text search operations MUST use Python with `encoding='utf-8'` to correctly handle accented characters (French: é, è, ê, ç, à, ù, etc.). Do NOT use `grep`, `cat`, `sed`, `awk`, or shell redirects for reading/writing model files. For measure name search, use `python ".claude/skills/pbi/scripts/detect.py" search "MeasureName" "$PBIP_DIR"` instead of `grep -rlF`. Shell/bash is allowed ONLY for: git CLI commands and Python script invocation.
+- **PBIP folder naming:** Always use the `PBIP_DIR` value from detection (e.g., `Sales.SemanticModel`) — never hardcode `.SemanticModel`. Same for Report: use `PBIR_DIR` (e.g., `Sales.Report`).
+- All bash paths must be double-quoted (e.g., `"$VAR"`, `"$SM_DIR/"`)
+- Session context: Read-then-Write `.pbi/context.md`, 20 row max Command History, never touch Analyst-Reported Failures
+- TMDL: tabs only for indentation
+- TMSL expression format: preserve original form (string vs array); use array if expression has line breaks
+- Escalation state: `## Escalation State` in `.pbi/context.md` tracks gathered context during escalation.
+- **LOCAL-FIRST GIT POLICY (CRITICAL):** NEVER `git pull`, `git fetch`, `git merge`, `git rebase`, `git push`, or create PRs. Allowed: `git init`, `git add`, `git commit`, `git diff`, `git log`, `git status`, `git revert`, `git rev-parse`.
+- **Post-write staging:** After any command writes files to `$PBIP_DIR/` (and PBIP_MODE=file, GIT=yes), auto-stage: `git add "$PBIP_DIR/" 2>/dev/null`. Skip if the command already auto-committed.
+- **Confirm mode (PBI_CONFIRM):** When `PBI_CONFIRM=true`: show preview and ask `(y/N)` before writing model files or output files. When `PBI_CONFIRM=false`: write directly without asking. Commands that already have a `(y/N)` prompt respect this — if PBI_CONFIRM=false, skip the prompt and proceed.

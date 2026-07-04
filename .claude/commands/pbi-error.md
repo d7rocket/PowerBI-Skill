@@ -1,64 +1,53 @@
 ---
-name: pbi:error
-description: "Diagnose DAX errors across 7 categories with root cause analysis, fix suggestions, and auto-apply"
+name: pbi-error
+description: "Diagnose DAX errors across 7 categories (syntax, type mismatch, circular dependency, missing column, ambiguous name, filter context, runtime). Produces root cause analysis with fix suggestions. In PBIP file mode, auto-applies the fix and commits. Checks prior failures to avoid repeating failed approaches."
 allowed-tools:
   - Read
   - Write
+  - Edit
   - Bash
   - Agent
   - Glob
   - Grep
 ---
 
-## Detection
+## Detection (run once)
 
-Run ALL of the following detection commands using the Bash tool before proceeding. Save the output — subsequent steps reference these values.
+**Folder naming:** Real PBIP projects use `<ProjectName>.SemanticModel` and `<ReportName>.Report`. Test fixtures may use `.SemanticModel`. Detection globs for both patterns.
 
-Ensure .pbi/ directory exists and migrate legacy root-level files.
-```bash
-python ".claude/skills/pbi/scripts/detect.py" ensure-dir 2>/dev/null
-python ".claude/skills/pbi/scripts/detect.py" migrate 2>/dev/null
-```
+### PBI Directory Setup
+!`python ".claude/skills/pbi/scripts/detect.py" ensure-dir 2>/dev/null && python ".claude/skills/pbi/scripts/detect.py" migrate 2>/dev/null`
 
-```bash
-python ".claude/skills/pbi/scripts/detect.py" pbip 2>/dev/null || echo "PBIP_MODE=paste"
-```
+### PBIP Detection
+!`python ".claude/skills/pbi/scripts/detect.py" pbip 2>/dev/null || echo "PBIP_MODE=paste"`
 
 Save the `PBIP_DIR` value from the output — all subsequent steps must use it instead of a hardcoded `.SemanticModel`.
 
-```bash
-python ".claude/skills/pbi/scripts/detect.py" files 2>/dev/null
-```
+### File Index
+!`python ".claude/skills/pbi/scripts/detect.py" files 2>/dev/null`
 
-```bash
-python ".claude/skills/pbi/scripts/detect.py" pbir 2>/dev/null || echo "PBIR=no"
-```
+### PBIR Detection
+!`python ".claude/skills/pbi/scripts/detect.py" pbir 2>/dev/null || echo "PBIR=no"`
 
-```bash
-python ".claude/skills/pbi/scripts/detect.py" git 2>/dev/null || (echo "GIT=no" && echo "HAS_COMMITS=no")
-```
+### Git State
+!`python ".claude/skills/pbi/scripts/detect.py" git 2>/dev/null || (echo "GIT=no" && echo "HAS_COMMITS=no")`
 
-```bash
-python ".claude/skills/pbi/scripts/detect.py" context 2>/dev/null || echo "No prior context found."
-```
+### Session Context
+!`python ".claude/skills/pbi/scripts/detect.py" context 2>/dev/null || echo "No prior context found."`
 
-Save the PBI_CONFIRM value — use it to decide whether to ask before writing files.
-```bash
-python ".claude/skills/pbi/scripts/detect.py" settings 2>/dev/null || echo "PBI_CONFIRM=true"
-```
+### Settings
+!`python ".claude/skills/pbi/scripts/detect.py" settings 2>/dev/null || echo "PBI_CONFIRM=true"`
+
+Save the `PBI_CONFIRM` value — commands use it to decide whether to ask before writing files.
 
 ### Auto-Resume (session-aware)
 
-After detection, apply the following before executing the command:
+After detection blocks run, apply the following before executing the command:
 
 1. **PBIP_MODE=file — session load check**:
-   Run:
-   ```bash
-   python ".claude/skills/pbi/scripts/detect.py" session-check 2>/dev/null
-   ```
+   Run: `python ".claude/skills/pbi/scripts/detect.py" session-check 2>/dev/null`
    - If output is `SESSION=active` — context was already loaded this session:
-     - Count the table rows in the Model Context table from Session Context.
-     - Output on a single line: `Context resumed — [N] tables loaded`
+     - Output on a single line: `Context resumed — [N] tables loaded` (count from Session Context)
      - Skip any "Model Context Check" (Step 0.5) below — context is already available.
    - If output is `SESSION=new` — first command this session:
      - Output: `Loading model context (first command this session)...`
@@ -67,19 +56,24 @@ After detection, apply the following before executing the command:
      - Output the summary table and: `Context loaded — [N] tables. Ready.`
 
 2. **PBIP_MODE=paste — nearby folder check**:
-   Run:
-   ```bash
-   python ".claude/skills/pbi/scripts/detect.py" nearby 2>/dev/null
-   ```
+   Run: `python ".claude/skills/pbi/scripts/detect.py" nearby 2>/dev/null`
    - If NEARBY_PBIP is found: output: `No PBIP project here, but found one at [NEARBY_PBIP]. Run cd "[NEARBY_PBIP]" first.`
    - If NEARBY_PBIP is empty: skip silently. Paste-in commands still work.
 
 After auto-resume completes, proceed to the command instructions below.
 
+
 ---
 
 # /pbi-error
 
+<purpose>
+DAX errors are cryptic — the Power BI error bar gives a message but rarely the root cause. This command bridges that gap, going from error message to working measure in one step.
+</purpose>
+
+<core_principle>
+Diagnose the root cause, not the symptom. A "type mismatch" error may actually be a missing relationship. A "circular dependency" may be an unintended context transition. Always trace back to the underlying model issue.
+</core_principle>
 
 You are a Power BI error diagnosis expert. Your job is to take a pasted error message or error log and identify the root cause and actionable fix, using session context to make your diagnosis specific.
 
@@ -123,7 +117,7 @@ If the fix targets a specific measure expression (Category A name errors with a 
 
 3. Read the identified file (Read tool).
 
-4. Show before/after preview:
+4. Show the before/after preview. The preview is ALWAYS shown, regardless of PBI_CONFIRM:
    > **Before:**
    > ```
    > [current expression — the relevant lines from the measure block]
@@ -132,19 +126,29 @@ If the fix targets a specific measure expression (Category A name errors with a 
    > ```
    > [proposed corrected expression from Step 5 Fix]
    > ```
-   >
+
+   **If PBI_CONFIRM=true:** ask:
    > Apply this fix? (y/N)
 
    Wait for the analyst's response.
    - "n", "N", or anything other than "y"/"Y": "Fix not applied. Output above is paste-ready." Proceed to Step 6.
    - "y" or "Y": proceed to write.
 
+   **If PBI_CONFIRM=false:** skip only the `(y/N)` confirmation prompt — the preview above is still shown — and proceed directly to write the fix.
+
 5. Write the fix:
+   **unappliedChanges.json check:**
+   Run bash: `ls "$PBIP_DIR/unappliedChanges.json" 2>/dev/null && echo "UNAPPLIED=yes" || echo "UNAPPLIED=no"`
+   If UNAPPLIED=yes:
+     - Output: "unappliedChanges.json detected — Desktop may have unsaved changes. Proceed anyway? (y/N)"
+     - If analyst types y or Y: continue.
+     - Otherwise: Output "Write cancelled. No files modified." Stop.
    **TMDL:** Replace the expression body in the measure block. Preserve tab indentation, formatString, displayFolder, and all properties. Only modify the expression lines. Write the entire .tmdl file back.
    **TMSL:** Update `"expression"` field only (string or array form — preserve original form; use array if fix creates line breaks). Preserve all other fields. Write entire model.bim back.
 
 6. Append write confirmation after the preview:
    > Written to: [MeasureName] expression in [file path]
+   > Reminder: Close and reopen the project in Power BI Desktop to see this change — Desktop does not hot-reload external PBIP file edits.
 
 7. Run the auto-commit bash block (inside the `y` response branch only):
    ```bash
@@ -158,7 +162,7 @@ If the fix targets a specific measure expression (Category A name errors with a 
    ```
    - AUTO_COMMIT=ok: append line `Auto-committed: chore: apply error fix in [TABLE_NAME]`
    - AUTO_COMMIT=skip_no_repo: append line `No git repo — run /pbi-commit to initialise one.`
-   - AUTO_COMMIT=fail: do not output anything (git failure is non-fatal)
+   - AUTO_COMMIT=fail: output line `⚠ File written but git commit failed — run /pbi-commit to save a snapshot.`
 
 8. Proceed to Step 6 (context update).
 
@@ -169,17 +173,17 @@ If the fix targets a specific measure expression (Category A name errors with a 
 Read Session Context for `## Model Context` section.
 
 - If `## Model Context` is present and non-empty: note the table and column context. Use it to sharpen diagnosis in Step 4 (e.g., confirm referenced column names exist in the described model). Proceed to Step 1.
-- If `## Model Context` is absent or empty:
-  - Ask: "Which table is this measure in, and what are the involved columns or tables?"
-  - Wait for the analyst's answer.
-  - Read `.pbi/context.md` with Read tool. Add `## Model Context` section with the analyst's answer. Write back with Write tool.
-  - Proceed to Step 1 using the noted context.
+- If `## Model Context` is absent or empty: proceed to Step 1 and collect the error first. After the error is received, ask: "Which table is this measure in, and what are the involved columns or tables? (optional — press enter to skip)"
+  - If the analyst answers: Read `.pbi/context.md` with Read tool. Add `## Model Context` section with the analyst's answer. Write back with Write tool. Use the noted context to sharpen diagnosis in Step 4.
+  - If the analyst skips: proceed without blocking — diagnose the pasted error as-is.
 
 ---
 
 ### Step 1: Prompt for input
 
-Respond with exactly:
+If `$ARGUMENTS` already contains an error message or a DAX expression, use it directly and skip the paste prompt.
+
+Otherwise respond with exactly:
 
 > Paste your Power BI error message or error log below:
 
@@ -215,6 +219,8 @@ If the last command was a `/pbi` command (i.e., Command is not "(none)"):
 
 Classify the pasted error into one of the categories below. If it matches multiple, choose the most specific.
 
+**Fix constraint (all categories):** Propose the minimal fix; do not add defensive wrappers around code that isn't failing.
+
 **Category A — Measure/Column Name Resolution Errors**
 - Patterns: "does not exist in the current context", "The name '[X]' does not exist", "cannot be found", "could not be found in a table", "[X] is not a valid measure or column reference"
 - Root cause: Measure or column name is misspelled, the measure's table was renamed or deleted, or the reference points to a measure that no longer exists.
@@ -228,12 +234,12 @@ Classify the pasted error into one of the categories below. If it matches multip
 **Category C — Context Transition Errors / Incorrect Results**
 - Patterns: "not valid in the current context", unexpected totals, "a table of multiple values was supplied where a single value was expected"
 - Root cause: An iterator is calling a measure reference from within a row context. The implicit CALCULATE that wraps a measure reference inside an iterator triggers a context transition.
-- Fix: Review iterators that call measure references directly. Make the context transition explicit: use `SUMX(Table, CALCULATE([Measure]))` to be clear about what you intend.
+- Fix: Review iterators that call measure references directly. A measure reference inside an iterator ALREADY performs an implicit CALCULATE — do NOT add a redundant `CALCULATE([Measure])` wrapper (it is a no-op that /pbi-optimise Rule 3 flags). Instead: verify the measure behaves correctly under the row-context-to-filter-context transition; if the iterator runs over a large table or one with duplicated values, consider iterating distinct column values (e.g., `VALUES(Table[Column])`) or restructuring the calculation.
 
 **Category C2 — Implicit BLANK Propagation**
 - Patterns: Measure returns BLANK when values are expected, subtotals show BLANK instead of a number, specific rows in a matrix are blank despite having data, "unexpected BLANK results"
 - Root cause: When any operand in an arithmetic expression is BLANK, the entire expression returns BLANK. This commonly occurs with DIVIDE (denominator returns BLANK instead of 0), subtraction involving missing periods, or measures that depend on other measures which return BLANK for certain filter combinations.
-- Fix: Identify which sub-expression returns BLANK by testing each component separately. Wrap BLANK-producing expressions with `IF(ISBLANK([Measure]), 0, [Measure])` or use `COALESCE([Measure], 0)` at the point where BLANK enters the calculation. For DIVIDE, ensure the alternate result parameter handles the BLANK case: `DIVIDE([Numerator], [Denominator], 0)`.
+- Fix: Identify which sub-expression returns BLANK by testing each component separately. Apply the BLANK→0 conversion ONLY at the single point where BLANK causes the reported symptom, using `COALESCE([Measure], 0)` — never blanket-wrap every reference, since forcing 0 defeats visual row elimination and hurts performance on sparse matrices. For DIVIDE, only add a third argument (`DIVIDE([Numerator], [Denominator], 0)`) when the visual genuinely requires 0 instead of BLANK.
 
 **Category D — Data Refresh / Data Type Errors**
 - Patterns: "DataFormat.Error", "type mismatch", "cannot convert", "Expression.Error", "We cannot convert the value", refresh failures, "column not found" in Power Query
@@ -293,3 +299,17 @@ After producing the output, update `.pbi/context.md` using Read then Write.
 - NEVER auto-apply a file fix without showing the before/after preview and getting confirmation
 - NEVER diagnose without checking prior failure history and last command correlation
 - NEVER skip the Category classification step — always classify before diagnosing
+- NEVER suggest bidirectional cross-filtering as a first approach for Category E relationship errors — prefer measure-based filtering (CALCULATE with CROSSFILTER, TREATAS) or single-direction relationship fixes
+
+## Shared Rules
+
+- **PYTHON-FIRST FILE OPERATIONS (CRITICAL):** All file read/write and text search operations MUST use Python with `encoding='utf-8'` to correctly handle accented characters (French: é, è, ê, ç, à, ù, etc.). Do NOT use `grep`, `cat`, `sed`, `awk`, or shell redirects for reading/writing model files. For measure name search, use `python ".claude/skills/pbi/scripts/detect.py" search "MeasureName" "$PBIP_DIR"` instead of `grep -rlF`. Shell/bash is allowed ONLY for: git CLI commands and Python script invocation.
+- **PBIP folder naming:** Always use the `PBIP_DIR` value from detection (e.g., `Sales.SemanticModel`) — never hardcode `.SemanticModel`. Same for Report: use `PBIR_DIR` (e.g., `Sales.Report`).
+- All bash paths must be double-quoted (e.g., `"$VAR"`, `"$SM_DIR/"`)
+- Session context: Read-then-Write `.pbi/context.md`, 20 row max Command History, never touch Analyst-Reported Failures
+- TMDL: tabs only for indentation
+- TMSL expression format: preserve original form (string vs array); use array if expression has line breaks
+- Escalation state: `## Escalation State` in `.pbi/context.md` tracks gathered context during escalation.
+- **LOCAL-FIRST GIT POLICY (CRITICAL):** NEVER `git pull`, `git fetch`, `git merge`, `git rebase`, `git push`, or create PRs. Allowed: `git init`, `git add`, `git commit`, `git diff`, `git log`, `git status`, `git revert`, `git rev-parse`.
+- **Post-write staging:** After any command writes files to `$PBIP_DIR/` (and PBIP_MODE=file, GIT=yes), auto-stage: `git add "$PBIP_DIR/" 2>/dev/null`. Skip if the command already auto-committed.
+- **Confirm mode (PBI_CONFIRM):** When `PBI_CONFIRM=true`: show preview and ask `(y/N)` before writing model files or output files. When `PBI_CONFIRM=false`: write directly without asking. Commands that already have a `(y/N)` prompt respect this — if PBI_CONFIRM=false, skip the prompt and proceed.

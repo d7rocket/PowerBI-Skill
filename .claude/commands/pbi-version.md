@@ -1,68 +1,43 @@
 ---
-name: pbi:version
-description: "Display installed version and full changelog history (offline-only)"
+name: pbi-version
+description: "Display the installed PBI skill version and full changelog history from the bundled CHANGELOG.md. Offline-only — never makes network calls. Shows complete release history with dates, features, and changes."
 allowed-tools:
   - Read
   - Write
+  - Edit
   - Bash
   - Agent
   - Glob
   - Grep
 ---
 
-## Detection
-
-Run ALL of the following detection commands using the Bash tool before proceeding. Save the output — subsequent steps reference these values.
-
-Ensure .pbi/ directory exists and migrate legacy root-level files.
-```bash
-python ".claude/skills/pbi/scripts/detect.py" ensure-dir 2>/dev/null
-python ".claude/skills/pbi/scripts/detect.py" migrate 2>/dev/null
-```
-
-```bash
-python ".claude/skills/pbi/scripts/detect.py" context 2>/dev/null || echo "No prior context found."
-```
-
-Save the PBI_CONFIRM value — use it to decide whether to ask before writing files.
-```bash
-python ".claude/skills/pbi/scripts/detect.py" settings 2>/dev/null || echo "PBI_CONFIRM=true"
-```
-
-### Auto-Resume (session-aware)
-
-After detection, apply the following before executing the command:
-
-1. **PBIP_MODE=file — session load check**:
-   Run:
-   ```bash
-   python ".claude/skills/pbi/scripts/detect.py" session-check 2>/dev/null
-   ```
-   - If output is `SESSION=active` — context was already loaded this session: skip any reload.
-   - If output is `SESSION=new` — first command this session: write `**Session-Start:** [current UTC time in ISO 8601]` to `.pbi/context.md` if a PBIP project is active. Proceed normally.
-
-2. **PBIP_MODE=paste — nearby folder check**: skip silently for version command.
-
-After auto-resume completes, proceed to the command instructions below.
-
----
-
 # /pbi-version
 
+<purpose>
+Know what version is installed and what changed in each release. Useful for troubleshooting and understanding when a feature was added.
+</purpose>
+
+<core_principle>
+Offline-only. Read from the bundled CHANGELOG.md — never make network calls. The /pbi-help command handles update checking separately.
+</core_principle>
 
 ## Instructions
 
 ### Step 1 - Read current version
 
-Run the following bash command to locate the skill file and read the installed version:
+Run the Python version check against the base skill file (no shell text-processing — Python-first):
 
 ```bash
-SKILL_FILE=$(find . -path "*/.claude/skills/pbi/SKILL.md" -print -quit 2>/dev/null)
-if [ -z "$SKILL_FILE" ]; then SKILL_FILE=$(find "$HOME" -maxdepth 5 -path "*/.claude/skills/pbi/SKILL.md" -print -quit 2>/dev/null); fi
-python ".claude/skills/pbi/scripts/detect.py" version-check "$SKILL_FILE" 2>/dev/null || echo "LOCAL=unknown"
+python ".claude/skills/pbi/scripts/detect.py" version-check ".claude/skills/pbi/SKILL.md" 2>/dev/null || echo "LOCAL=unknown"
 ```
 
-Parse the output: LOCAL = installed version (e.g., 4.3.0).
+If the output is `LOCAL=unknown`, retry against the user-level install path:
+
+```bash
+python "$HOME/.claude/skills/pbi/scripts/detect.py" version-check "$HOME/.claude/skills/pbi/SKILL.md" 2>/dev/null || echo "LOCAL=unknown"
+```
+
+Parse the output: LOCAL = installed version (e.g., 7.0.0).
 
 ### Step 2 - Read CHANGELOG.md
 

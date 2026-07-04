@@ -1,63 +1,15 @@
 ---
-name: pbi:resume
-description: "Restore session context and continue from where you left off"
+name: pbi-resume
+description: "Restore session context and continue from where you left off. Reads .pbi/context.md to reconstruct model state, command history, in-progress workflows, and git state. Use when starting a new session, after /clear, or when resuming interrupted work."
 allowed-tools:
   - Read
   - Write
+  - Edit
   - Bash
   - Agent
   - Glob
   - Grep
 ---
-
-## Detection
-
-Run ALL of the following detection commands using the Bash tool before proceeding. Save the output.
-
-Ensure .pbi/ directory exists and migrate legacy root-level files.
-```bash
-python ".claude/skills/pbi/scripts/detect.py" ensure-dir 2>/dev/null
-python ".claude/skills/pbi/scripts/detect.py" migrate 2>/dev/null
-```
-
-```bash
-python ".claude/skills/pbi/scripts/detect.py" pbip 2>/dev/null || echo "PBIP_MODE=paste"
-```
-
-Save the `PBIP_DIR` value from the output.
-
-```bash
-python ".claude/skills/pbi/scripts/detect.py" git 2>/dev/null || (echo "GIT=no" && echo "HAS_COMMITS=no")
-```
-
-```bash
-python ".claude/skills/pbi/scripts/detect.py" context 2>/dev/null || echo "No prior context found."
-```
-
-Save the PBI_CONFIRM value — use it to decide whether to ask before writing files.
-```bash
-python ".claude/skills/pbi/scripts/detect.py" settings 2>/dev/null || echo "PBI_CONFIRM=true"
-```
-
-### Auto-Resume (session-aware)
-
-After detection, apply the following before executing the command:
-
-1. **PBIP_MODE=file — session load check**:
-   Run:
-   ```bash
-   python ".claude/skills/pbi/scripts/detect.py" session-check 2>/dev/null
-   ```
-   - If output is `SESSION=active` — context was already loaded this session: proceed directly to the command instructions.
-   - If output is `SESSION=new` — first command this session: write `**Session-Start:** [current UTC time in ISO 8601]` to `.pbi/context.md` if a PBIP project is active. Proceed to the command instructions (resume reads the cached context file, not model files).
-
-2. **PBIP_MODE=paste — nearby folder check**: skip silently for resume command.
-
-After auto-resume completes, proceed to the command instructions below.
-
----
-
-# /pbi-resume
 
 <purpose>
 Claude Code sessions are ephemeral — /clear or a new terminal loses all accumulated context. Resume bridges that gap by reading the persisted .pbi/context.md file and reconstructing the working state, so the analyst can continue where they left off without re-running /pbi-load or re-explaining the project.
@@ -67,13 +19,41 @@ Claude Code sessions are ephemeral — /clear or a new terminal loses all accumu
 Restore, don't re-run. Read the cached context file to understand what was done — don't re-execute commands or re-read model files unless the context is stale or missing. Show a clear summary of restored state so the analyst knows exactly where they stand.
 </core_principle>
 
+## Detection (run once)
+
+**Folder naming:** Real PBIP projects use `<ProjectName>.SemanticModel` and `<ReportName>.Report`. Test fixtures may use `.SemanticModel`. Detection globs for both patterns.
+
+### PBI Directory Setup
+!`python ".claude/skills/pbi/scripts/detect.py" ensure-dir 2>/dev/null && python ".claude/skills/pbi/scripts/detect.py" migrate 2>/dev/null`
+
+### PBIP Detection
+!`python ".claude/skills/pbi/scripts/detect.py" pbip 2>/dev/null || echo "PBIP_MODE=paste"`
+
+Save the `PBIP_DIR` value from the output.
+
+### Git State
+!`python ".claude/skills/pbi/scripts/detect.py" git 2>/dev/null || (echo "GIT=no" && echo "HAS_COMMITS=no")`
+
+### Session Context
+!`python ".claude/skills/pbi/scripts/detect.py" context 2>/dev/null || echo "No prior context found."`
+
+### Settings
+!`python ".claude/skills/pbi/scripts/detect.py" settings 2>/dev/null || echo "PBI_CONFIRM=true"`
+
+Save the `PBI_CONFIRM` value — commands use it to decide whether to ask before writing files.
+
+---
+
+# /pbi-resume
+
+
 ## Instructions
 
 ### Step 1 — Check for context file
 
 Check if `.pbi/context.md` exists and has content beyond the template headers.
 
-- **No file or empty:** Output and stop:
+- **No file or empty:** Output the following and stop:
   > No session context found. Run `/pbi-load` to initialize the project, or use any `/pbi-` command — context is created automatically on first use.
 
 - **File exists with content:** Proceed to Step 2.
@@ -82,14 +62,14 @@ Check if `.pbi/context.md` exists and has content beyond the template headers.
 
 ### Step 2 — Parse context file
 
-Read `.pbi/context.md` with the Read tool. Extract:
+Read `.pbi/context.md` with the Read tool. Extract the following sections if present:
 
 1. **Last Command** — Command name, timestamp, measure, and outcome
-2. **Model Context** — Count tables, total measures, total relationships
-3. **Command History** — Last 5 rows from the history table
-4. **Business Question** — If present (from /pbi-deep)
-5. **Escalation State** — If present (from free-text solving)
-6. **Analyst-Reported Failures** — If present and non-empty
+2. **Model Context** — Count tables, total measures across all tables, total relationships
+3. **Command History** — Extract the last 5 rows from the history table
+4. **Business Question** — If present (set by `/pbi-deep` intake phase)
+5. **Escalation State** — If present (set by free-text solving escalation)
+6. **Analyst-Reported Failures** — If present and has data rows
 
 ---
 
@@ -100,6 +80,8 @@ If GIT=yes and HAS_COMMITS=yes, run:
 git log --oneline -5 2>/dev/null
 ```
 
+Extract the last 5 commits for display.
+
 If GIT=no: note "No git repository initialized."
 
 ---
@@ -108,21 +90,23 @@ If GIT=no: note "No git repository initialized."
 
 Parse the timestamp from `## Last Command`.
 
-- Less than 1 hour old: `Current`
-- 1–24 hours old: `Recent`
-- More than 24 hours old: `Stale — consider running /pbi-load to refresh`
-- No timestamp: `Unknown`
+- **Less than 1 hour old:** Label as `Current`
+- **1–24 hours old:** Label as `Recent`
+- **More than 24 hours old:** Label as `Stale — consider running /pbi-load to refresh`
+- **No timestamp found:** Label as `Unknown`
 
 ---
 
 ### Step 5 — Output resume summary
+
+Output the following, filling in values from Steps 2–4:
 
 ```
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
  PBI ► SESSION RESUMED
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-**Context:** [freshness] — last activity [relative time]
+**Context:** [Current | Recent | Stale] — last activity [relative time, e.g., "2 hours ago"]
 
 ### Model
 | Tables | Measures | Relationships |
@@ -130,18 +114,45 @@ Parse the timestamp from `## Last Command`.
 | [N]    | [N]      | [N]           |
 
 ### Last Command
-`[command]` — [outcome] ([timestamp])
+`[command name]` — [outcome] ([timestamp])
 
 ### Recent History
 | Time | Command | Measure | Result |
 |------|---------|---------|--------|
-[last 5 rows]
+[last 5 rows from Command History]
+```
 
-[conditional: ### Active Workflow, ### Pending Escalation, ### Known Failures]
+**Conditional sections** — include only if the data exists in the context file:
 
+If `## Business Question` is present:
+```
+### Active Workflow
+**Business question:** [question text]
+**Status:** [infer from context — "Intake complete" if model review exists, "In development" if DAX was written, etc.]
+```
+
+If `## Escalation State` contains "awaiting":
+```
+### Pending Escalation
+**Awaiting:** [gap type]
+**Question asked:** [the escalation question]
+```
+
+If `## Analyst-Reported Failures` has data rows:
+```
+### Known Failures
+[N] reported failure(s) on file — these measures will use alternative approaches when re-attempted.
+```
+
+Git state section:
+```
 ### Git State
-[last 5 commits or "No git repository"]
+[If GIT=yes: show last 5 commits from Step 3]
+[If GIT=no: "No git repository — run /pbi-commit to initialize one."]
+```
 
+Close with:
+```
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Ready to continue. Type any /pbi- command or describe what you need.
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -151,14 +162,32 @@ Ready to continue. Type any /pbi- command or describe what you need.
 
 ### Step 6 — Update session context
 
-Read-then-Write `.pbi/context.md`:
-- `## Last Command`: Command = `/pbi-resume`, Outcome = `Session resumed — [N] tables, context [freshness]`
-- Prepend row to `## Command History`; trim to 20 rows max
-- Do NOT modify `## Model Context` or `## Analyst-Reported Failures`
+Read `.pbi/context.md` with Read tool and update:
+
+- `## Last Command`: Set Command = `/pbi-resume`, Timestamp = current ISO 8601, Measure = `—`, Outcome = `Session resumed — [N] tables, context [freshness]`
+- `## Command History`: Prepend row `| [timestamp] | /pbi-resume | — | Session resumed |`
+- Trim Command History to 20 rows max
+- Do NOT modify `## Model Context`, `## Analyst-Reported Failures`, or any other sections
+
+Write back with Write tool.
 
 ### Anti-Patterns
-- NEVER re-read model files during resume — use cached context only
-- NEVER modify the Model Context section
+- NEVER re-read model files during resume — use the cached context only
+- NEVER modify the Model Context section — resume is read-only for model data
 - NEVER suggest git pull or git push
-- NEVER skip freshness check
+- NEVER skip the freshness check — always inform the analyst about context age
+- NEVER output partial state — if a section exists in context, display it fully
 - NEVER run /pbi-load automatically — only suggest it if context is stale
+
+## Shared Rules
+
+- **PYTHON-FIRST FILE OPERATIONS (CRITICAL):** All file read/write and text search operations MUST use Python with `encoding='utf-8'` to correctly handle accented characters (French: é, è, ê, ç, à, ù, etc.). Do NOT use `grep`, `cat`, `sed`, `awk`, or shell redirects for reading/writing model files. For measure name search, use `python ".claude/skills/pbi/scripts/detect.py" search "MeasureName" "$PBIP_DIR"` instead of `grep -rlF`. Shell/bash is allowed ONLY for: git CLI commands and Python script invocation.
+- **PBIP folder naming:** Always use the `PBIP_DIR` value from detection (e.g., `Sales.SemanticModel`) — never hardcode `.SemanticModel`. Same for Report: use `PBIR_DIR` (e.g., `Sales.Report`).
+- All bash paths must be double-quoted (e.g., `"$VAR"`, `"$SM_DIR/"`)
+- Session context: Read-then-Write `.pbi/context.md`, 20 row max Command History, never touch Analyst-Reported Failures
+- TMDL: tabs only for indentation
+- TMSL expression format: preserve original form (string vs array); use array if expression has line breaks
+- Escalation state: `## Escalation State` in `.pbi/context.md` tracks gathered context during escalation.
+- **LOCAL-FIRST GIT POLICY (CRITICAL):** NEVER `git pull`, `git fetch`, `git merge`, `git rebase`, `git push`, or create PRs. Allowed: `git init`, `git add`, `git commit`, `git diff`, `git log`, `git status`, `git revert`, `git rev-parse`.
+- **Post-write staging:** After any command writes files to `$PBIP_DIR/` (and PBIP_MODE=file, GIT=yes), auto-stage: `git add "$PBIP_DIR/" 2>/dev/null`. Skip if the command already auto-committed.
+- **Confirm mode (PBI_CONFIRM):** When `PBI_CONFIRM=true`: show preview and ask `(y/N)` before writing model files or output files. When `PBI_CONFIRM=false`: write directly without asking. Commands that already have a `(y/N)` prompt respect this — if PBI_CONFIRM=false, skip the prompt and proceed.

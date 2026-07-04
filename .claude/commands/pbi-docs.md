@@ -1,64 +1,53 @@
 ---
-name: pbi:docs
-description: "Generate polished, stakeholder-ready project documentation with executive summary and data dictionary"
+name: pbi-docs
+description: "Generate polished, stakeholder-ready project documentation combining model metadata, measure catalog, relationship diagram, data dictionary, and usage guidelines. Formatted for direct sharing — no technical jargon, clear section headers, executive summary."
 allowed-tools:
   - Read
   - Write
+  - Edit
   - Bash
   - Agent
   - Glob
   - Grep
 ---
 
-## Detection
+## Detection (run once)
 
-Run ALL of the following detection commands using the Bash tool before proceeding. Save the output — subsequent steps reference these values.
+**Folder naming:** Real PBIP projects use `<ProjectName>.SemanticModel` and `<ReportName>.Report`. Test fixtures may use `.SemanticModel`. Detection globs for both patterns.
 
-Ensure .pbi/ directory exists and migrate legacy root-level files.
-```bash
-python ".claude/skills/pbi/scripts/detect.py" ensure-dir 2>/dev/null
-python ".claude/skills/pbi/scripts/detect.py" migrate 2>/dev/null
-```
+### PBI Directory Setup
+!`python ".claude/skills/pbi/scripts/detect.py" ensure-dir 2>/dev/null && python ".claude/skills/pbi/scripts/detect.py" migrate 2>/dev/null`
 
-```bash
-python ".claude/skills/pbi/scripts/detect.py" pbip 2>/dev/null || echo "PBIP_MODE=paste"
-```
+### PBIP Detection
+!`python ".claude/skills/pbi/scripts/detect.py" pbip 2>/dev/null || echo "PBIP_MODE=paste"`
 
 Save the `PBIP_DIR` value from the output — all subsequent steps must use it instead of a hardcoded `.SemanticModel`.
 
-```bash
-python ".claude/skills/pbi/scripts/detect.py" files 2>/dev/null
-```
+### File Index
+!`python ".claude/skills/pbi/scripts/detect.py" files 2>/dev/null`
 
-```bash
-python ".claude/skills/pbi/scripts/detect.py" pbir 2>/dev/null || echo "PBIR=no"
-```
+### PBIR Detection
+!`python ".claude/skills/pbi/scripts/detect.py" pbir 2>/dev/null || echo "PBIR=no"`
 
-```bash
-python ".claude/skills/pbi/scripts/detect.py" git 2>/dev/null || (echo "GIT=no" && echo "HAS_COMMITS=no")
-```
+### Git State
+!`python ".claude/skills/pbi/scripts/detect.py" git 2>/dev/null || (echo "GIT=no" && echo "HAS_COMMITS=no")`
 
-```bash
-python ".claude/skills/pbi/scripts/detect.py" context 2>/dev/null || echo "No prior context found."
-```
+### Session Context
+!`python ".claude/skills/pbi/scripts/detect.py" context 2>/dev/null || echo "No prior context found."`
 
-Save the PBI_CONFIRM value — use it to decide whether to ask before writing files.
-```bash
-python ".claude/skills/pbi/scripts/detect.py" settings 2>/dev/null || echo "PBI_CONFIRM=true"
-```
+### Settings
+!`python ".claude/skills/pbi/scripts/detect.py" settings 2>/dev/null || echo "PBI_CONFIRM=true"`
+
+Save the `PBI_CONFIRM` value — commands use it to decide whether to ask before writing files.
 
 ### Auto-Resume (session-aware)
 
-After detection, apply the following before executing the command:
+After detection blocks run, apply the following before executing the command:
 
 1. **PBIP_MODE=file — session load check**:
-   Run:
-   ```bash
-   python ".claude/skills/pbi/scripts/detect.py" session-check 2>/dev/null
-   ```
+   Run: `python ".claude/skills/pbi/scripts/detect.py" session-check 2>/dev/null`
    - If output is `SESSION=active` — context was already loaded this session:
-     - Count the table rows in the Model Context table from Session Context.
-     - Output on a single line: `Context resumed — [N] tables loaded`
+     - Output on a single line: `Context resumed — [N] tables loaded` (count from Session Context)
      - Skip any "Model Context Check" (Step 0.5) below — context is already available.
    - If output is `SESSION=new` — first command this session:
      - Output: `Loading model context (first command this session)...`
@@ -67,19 +56,24 @@ After detection, apply the following before executing the command:
      - Output the summary table and: `Context loaded — [N] tables. Ready.`
 
 2. **PBIP_MODE=paste — nearby folder check**:
-   Run:
-   ```bash
-   python ".claude/skills/pbi/scripts/detect.py" nearby 2>/dev/null
-   ```
+   Run: `python ".claude/skills/pbi/scripts/detect.py" nearby 2>/dev/null`
    - If NEARBY_PBIP is found: output: `No PBIP project here, but found one at [NEARBY_PBIP]. Run cd "[NEARBY_PBIP]" first.`
    - If NEARBY_PBIP is empty: skip silently. Paste-in commands still work.
 
 After auto-resume completes, proceed to the command instructions below.
 
+
 ---
 
 # /pbi-docs
 
+<purpose>
+Stakeholders need to understand the model without opening Power BI Desktop. This command produces documentation that answers "what does this model do?" for anyone in the organization.
+</purpose>
+
+<core_principle>
+Write for business stakeholders, not developers. Every section should be understandable by someone who has never opened Power BI Desktop. Include an executive summary. Organize by business domain, not by table structure.
+</core_principle>
 
 ## Instructions
 
@@ -89,7 +83,7 @@ After auto-resume completes, proceed to the command instructions below.
 
 > No PBIP project found in this directory. Run `/pbi-docs` from a directory containing a `*.SemanticModel/` folder.
 
-**If PBIP_MODE=file:** proceed to Step 1. (Do NOT output anything yet — questions must be answered first.)
+**If PBIP_MODE=file:** proceed to Step 1. (Do NOT output anything yet — Step 4 asks questions first.)
 
 ---
 
@@ -130,196 +124,231 @@ Classify each table:
 
 ---
 
-### Step 3 — Ask before generating
+### Step 3 — Build structured document data
 
-**STOP. Ask TWO questions before generating or writing anything. These are REQUIRED regardless of PBI_CONFIRM — they are not confirm prompts, they are required inputs.**
+Construct the following JSON object in memory from everything extracted in Steps 1–2. This is the data contract the generator scripts read.
+
+```
+{
+  "meta": {
+    "project_name": "<infer from $PBIP_DIR — strip .SemanticModel suffix>",
+    "pbip_dir": "<PBIP_DIR value>",
+    "format": "<tmdl|tmsl>",
+    "generated_at": "<current UTC time in ISO 8601>",
+    "language": "<en|fr — match model language>"
+  },
+  "summary": {
+    "table_count": <N>,
+    "fact_count": <N>,
+    "dimension_count": <N>,
+    "other_count": <N>,
+    "measure_count": <N>,
+    "documented_measures": <N — count with non-empty description>,
+    "column_count": <N>,
+    "calc_columns": <N>,
+    "hidden_columns": <N>,
+    "relationship_count": <N>,
+    "bidi_count": <N>,
+    "report_pages": <N or 0>
+  },
+  "overview": "<3-paragraph plain-language description of what this model does. Reference actual table/measure names. If French model, write in French.>",
+  "erd": "<text-based ERD using ASCII arrows. Fact tables centre, dimensions around them. Example:\n  Date ────┐\n           ├──── Sales ──── Customer\n  Product ─┘\n  Cardinality: ──* many-side, 1── one-side. Bidi: <──>. >",
+  "tables": [
+    {
+      "name": "<table name>",
+      "type": "<fact|dimension|other>",
+      "description": "<1-2 sentence inferred purpose>",
+      "columns": [
+        {
+          "name": "<col name>",
+          "data_type": "<dataType>",
+          "is_key": <true|false>,
+          "is_hidden": <true|false>,
+          "notes": "<e.g. → Product[ProductKey] if FK, or empty>"
+        }
+      ],
+      "measures": [
+        {
+          "name": "<measure name>",
+          "expression": "<full DAX, properly indented per SQLBI conventions>",
+          "description": "<existing description or empty>",
+          "format": "<formatString or empty>",
+          "folder": "<displayFolder or empty>"
+        }
+      ]
+    }
+  ],
+  "relationships": [
+    {
+      "from_table": "<>",
+      "from_column": "<>",
+      "to_table": "<>",
+      "to_column": "<>",
+      "cardinality": "<many-to-one|one-to-one|...>",
+      "bidi": <true|false>,
+      "active": <true|false>
+    }
+  ],
+  "data_sources": [
+    {
+      "table": "<table name>",
+      "type": "<SQL Server|CSV|Excel|SharePoint|DirectQuery|...>",
+      "connection": "<inferred from M expression: server/db, file path, or URL>"
+    }
+  ],
+  "business_logic": "<4-5 paragraph narrative: domain, key KPIs, DAX patterns, how tables work together. Reference actual names. Write in model language.>",
+  "health": {
+    "bidi_relationships": ["<table1 <──> table2>", ...],
+    "undocumented_count": <N>,
+    "missing_format_count": <N>,
+    "unhidden_keys": ["<Table[Column]>", ...],
+    "isolated_tables": ["<TableName>", ...],
+    "summary": "<one sentence health summary>"
+  },
+  "report_pages": [
+    {
+      "name": "<page name>",
+      "visual_count": <N>,
+      "visual_types": ["bar chart", "card", ...]
+    }
+  ]
+}
+```
+
+Hold this JSON in memory — do NOT write any files yet.
+
+---
+
+### Step 4 — Select detail level and output format(s)
+
+**STOP. Ask TWO questions before generating anything. Do NOT write any files until both are answered. These questions are REQUIRED regardless of PBI_CONFIRM setting — they are not confirm prompts, they are required inputs.**
 
 **Question 1 — Detail level:**
 
 ```
 How detailed should the document be?
 
-  [1] Quick  — Overview, table summary, measure names only (no DAX)
-  [2] Normal — Full structure, all measures with DAX, relationships, health notes
-  [3] Full   — Everything: extended narrative, all columns, full DAX, data sources
+  [1] Quick       — Executive summary, table overview, measure names only (no DAX)
+  [2] Normal      — Full structure, all measures with DAX, relationships, health summary
+  [3] Full        — Everything: extended business narrative, all columns, full DAX,
+                    data sources, health detail, report pages
+
+Note: the Markdown file (.pbi/project-docs.md) always receives Full detail
+regardless of this choice — it is the complete reference copy.
 
 Enter 1, 2, or 3:
 ```
 
-Wait for reply. Save as DETAIL_LEVEL (quick / normal / full).
+Wait for the user's reply. Save the chosen level as DETAIL_LEVEL (quick / normal / full).
 
-**Question 2 — Confirm write:**
+---
+
+**Question 2 — Output format(s):**
 
 ```
-Write documentation to .pbi/project-docs.md? (y/N)
+Select output format(s):
+
+  [1] Markdown  — .pbi/project-docs.md   (no dependencies)
+  [2] PDF       — .pbi/project-docs.pdf  (requires: pip install reportlab)
+  [3] Word      — .pbi/project-docs.docx (requires: pip install python-docx)
+  [4] All 3
+
+Enter number(s), e.g. 1 or 1,3 or 4:
 ```
 
-Wait for reply. On n/N/Enter: output "Cancelled." and stop.
-
-Only after both replies, proceed to Step 4.
+Wait for the user's reply. **Do not write any files until both questions are answered.**
 
 ---
 
-### Step 4 — Generate documentation
+**Only after both replies:**
 
-Apply DETAIL_LEVEL rules:
-- **Quick:** Include sections 1, 2 (table list only, no column details), 3 (measure names + descriptions only, no DAX), 7 (health). Omit DAX blocks, column tables, sections 4–6.
-- **Normal:** Include all sections. Include DAX in `<details>` blocks. Include columns. Omit extended business narrative.
-- **Full:** Include all sections. Full DAX, full column listings, extended business logic (3–5 paragraphs), data sources, report pages.
+1. Write the JSON data (from Step 3) to `.pbi/doc_data.json` using the Write tool.
+2. Then generate the selected format(s):
 
-Write a polished, stakeholder-ready Markdown document. Use clear headings, tables, and formatting. Write in a professional but accessible tone. Adapt language to the model (e.g., if tables/measures use French names, write documentation in French).
+**Detail level rules — apply to PDF and Word only (Markdown always uses Full):**
 
-Output format:
+| Level  | Sections included |
+|:-------|:-----------------|
+| Quick  | Title + overview (1 paragraph) + table summary table (name / type / measure count) + measure names by folder (no DAX) + key relationships (max 10) |
+| Normal | All Quick sections + full measure table with DAX in fenced blocks + all relationships + health summary (1 paragraph) |
+| Full   | All Normal sections + extended business logic narrative + full column listings per table + data sources + report pages + full health detail with finding list |
 
-```
-# [Project Name] — Power BI Documentation
+**Markdown** (choice 1 or 4 — always Full detail regardless of DETAIL_LEVEL):
+- If PBI_CONFIRM=true: ask "Write to .pbi/project-docs.md? (y/N)". On n/N/Enter: output "Write cancelled." and stop.
+- Generate a clean markdown document directly from the JSON data (do NOT re-read model files — the JSON has everything). Always include all sections using `##` H2 headings with the exact heading text below:
+  - `# [project_name] — Power BI Documentation`
+  - `> Generated by /pbi-docs on [date]. Source: $PBIP_DIR ([FORMAT])`
+  - `## Overview` (use `overview` field)
+  - `## Data Model` (use `erd` + table summary pipe table)
+  - `## Measures & KPIs` (grouped by folder; wrap each DAX expression in ` ```dax ` fenced blocks; wrap M/Power Query expressions in ` ```m ` fenced blocks)
+  - `## Business Logic` (use `business_logic` field — extended narrative)
+  - `## Columns` (full per-table column listings as pipe tables)
+  - `## Data Sources` (pipe table with table / type / connection columns)
+  - `## Report Pages` (only if report_pages non-empty; pipe table)
+  - `## Model Health` (full finding list)
+- **Docgen contract reference:** the full output contract (headings, code blocks, tables) is defined in `.claude/skills/pbi/shared/pbi-docs-contract.md` — consult it when in doubt.
+- **Code block rules (CRITICAL — required for docgen pipeline compatibility):**
+  - DAX expressions: always use ` ```dax ` fenced blocks — NEVER plain indented text
+  - M / Power Query expressions: always use ` ```m ` fenced blocks
+  - SQL: use ` ```sql ` fenced blocks
+  - Generic code: use plain ` ``` ` fenced blocks
+  - NEVER use `CODE_BLOCK:` / `END_CODE_BLOCK` markers — these break the docgen pipeline
+- **Table rules:** All tabular data (measure tables, column listings, relationship tables, source lists) MUST use standard pipe table format: `| Col A | Col B |` / `|-------|-------|` — NEVER use `TABLE:` / `END_TABLE` markers
+- Write using the Write tool.
+- Output: `Markdown written to .pbi/project-docs.md (Full detail)`
 
-> Auto-generated by `/pbi-docs` on [UTC date]. Source: `$PBIP_DIR` ([TMDL/TMSL])
+**PDF** (choice 2 or 4 — uses DETAIL_LEVEL):
+- If PBI_CONFIRM=true: ask "Write to .pbi/project-docs.pdf? (y/N)". On n/N/Enter: output "PDF write cancelled." and skip PDF generation.
+- **Pre-validate dependencies** before attempting generation:
+  Run: `python -c "from reportlab.lib.pagesizes import A4; print('PDF_DEPS=ok')" 2>&1`
+  If output does NOT contain `PDF_DEPS=ok`: output `PDF export requires reportlab — run: pip install reportlab` and skip PDF generation. Do not attempt the generator script.
+- Run: `python ".claude/skills/pbi/scripts/gen_pdf.py" ".pbi/doc_data.json" ".pbi/project-docs.pdf" "<DETAIL_LEVEL>" 2>&1`
+- If output starts with `PDF_OK`: output `PDF written to .pbi/project-docs.pdf ([DETAIL_LEVEL] detail)`
+- If output starts with `MISSING_DEP`: output `PDF export requires reportlab — run: pip install reportlab`
+- On any other error: show the error output.
 
----
+**Word** (choice 3 or 4 — uses DETAIL_LEVEL):
+- If PBI_CONFIRM=true: ask "Write to .pbi/project-docs.docx? (y/N)". On n/N/Enter: output "Word write cancelled." and skip Word generation.
+- **Pre-validate dependencies** before attempting generation:
+  Run: `python -c "from docx import Document; from docx.shared import RGBColor, Pt; print('DOCX_DEPS=ok')" 2>&1`
+  If output does NOT contain `DOCX_DEPS=ok`: output `Word export requires python-docx — run: pip install python-docx` and skip Word generation. Do not attempt the generator script.
+- Run: `python ".claude/skills/pbi/scripts/gen_docx.py" ".pbi/doc_data.json" ".pbi/project-docs.docx" "<DETAIL_LEVEL>" 2>&1`
+- If output starts with `DOCX_OK`: output `Word document written to .pbi/project-docs.docx ([DETAIL_LEVEL] detail)`
+- If output starts with `MISSING_DEP`: output `Word export requires python-docx — run: pip install python-docx`
+- On any other error: show the error output.
 
-## 1. Project Overview
-
-[Brief description of what this model covers, inferred from table names, measure names, and business logic. 2–3 sentences. Be specific — reference the actual domain.]
-
-| Metric | Value |
-|--------|-------|
-| Tables | [N] ([F] fact, [D] dimension, [O] other) |
-| Measures | [N] ([with_desc] documented) |
-| Columns | [N] ([calc] calculated, [hidden] hidden) |
-| Relationships | [N] ([bidi] bidirectional) |
-| Report pages | [N or "N/A"] |
-
----
-
-## 2. Data Model
-
-### Entity Relationship Diagram
-
-[Text-based diagram using arrows to show relationships. Group fact tables in center, dimensions around them:]
-
-    Date ─────┐
-              │
-    Product ──┤── Sales ──── Customer
-              │
-    Store ────┘
-
-[Show cardinality: ──* for many-side, ──1 for one-side. Mark bidirectional with <──>.]
-
-### Table Details
-
-#### [TableName] _(Fact / Dimension / Other)_
-
-[1–2 sentence description: inferred purpose from columns, measures, and relationships. Use the table's own description if set.]
-
-**Columns:**
-
-| Column | Type | Key | Hidden | Notes |
-|--------|------|-----|--------|-------|
-| [Name] | [dataType] | [PK/FK/—] | [Yes/—] | [e.g., "→ Product[ProductKey]" if FK] |
-
-[Repeat for each table. Order: fact tables first, then dimensions, then other.]
-
----
-
-## 3. Measures & KPIs
-
-[Group by displayFolder. If no folders defined, group by source table.]
-
-### [Display Folder Name or Table Name]
-
-| Measure | Description | Format |
-|---------|-------------|--------|
-| [Name] | [description if exists, otherwise infer 1-sentence purpose from DAX] | [formatString or "—"] |
-
-<details>
-<summary>DAX — [MeasureName]</summary>
-
-```dax
-[full DAX expression, properly indented]
-```
-
-</details>
-
-[Repeat <details> block for each measure in this group.]
-
-[Repeat section for each display folder / table.]
+**After all format attempts (success OR failure):**
+- Delete `.pbi/doc_data.json` (cleanup — always run regardless of individual format success/failure):
+  `python -c "import os; os.remove('.pbi/doc_data.json')" 2>/dev/null`
 
 ---
 
-## 4. Business Logic Summary
-
-[In plain English, describe the model's purpose and logic. Cover:]
-- What domain this model serves (sales, finance, HR, inventory, etc.)
-- Key KPIs tracked and how they are calculated (reference actual measure names)
-- Notable DAX patterns used (time intelligence, ratios, conditional logic, iterators)
-- How fact and dimension tables work together to support the analysis
-- Any calculation groups or field parameters detected
-
-[3–5 paragraphs. Be specific — reference actual table and measure names throughout.]
-
----
-
-## 5. Data Sources
-
-[If M/Power Query expressions are available in expressions.tmdl or model.bim:]
-
-| Table | Source Type | Connection |
-|-------|------------|------------|
-| [Name] | [SQL Server / CSV / Excel / SharePoint / API / etc.] | [inferred from M expression: server/database, file path, URL] |
-
-[If no expressions available: "Source expressions not available in this project format."]
-
----
-
-## 6. Report Pages
-
-[Only include this section if PBIR=yes.]
-
-| Page | Visuals | Key Visual Types |
-|------|---------|-----------------|
-| [PageName] | [N] | [bar chart, card, table, matrix, slicer, etc.] |
-
-[If PBIR=no: omit this section entirely.]
-
----
-
-## 7. Model Health Notes
-
-[Brief summary of notable model characteristics. Check for:]
-- Bidirectional relationships: [count, with table names if any]
-- Undocumented measures: [count] / [total] without descriptions
-- Missing format strings: [count] / [total]
-- Unhidden key columns: [count] (columns used in relationships but not hidden)
-- Isolated tables: [any tables with no relationships]
-
-[If model is clean: "No significant health concerns detected. Model follows best practices."]
-
----
-
-*Generated by `/pbi-docs` on [UTC timestamp]*
-```
-
----
-
-### Step 5 — Write output file
-
-Write the generated document to `.pbi/project-docs.md` using the Write tool.
-
-Output: `Documentation written to .pbi/project-docs.md ([DETAIL_LEVEL] detail)`
-
----
-
-### Step 6 — Update .pbi/context.md
+### Step 5 — Update .pbi/context.md
 
 Use Read-then-Write to update `.pbi/context.md`:
-1. Update `## Last Command`: Command = `/pbi-docs`, Outcome = `Documentation generated — [N] tables, [M] measures. Written to project-docs.md`
+1. Update `## Last Command`: Command = `/pbi-docs`, Outcome = `Documentation generated — [N] tables, [M] measures. Written to .pbi/project-docs.md`
 2. Append row to `## Command History`; trim to 20 rows max
 3. Do NOT modify `## Model Context`, `## Analyst-Reported Failures`, or any other sections
 
 ### Anti-Patterns
 - NEVER output raw file contents without structure — always format as polished documentation
 - NEVER include implementation details (file paths, TMDL syntax, internal IDs) in the documentation — keep it stakeholder-friendly
-- NEVER skip the Business Logic Summary (Section 4) — it is the most valuable section for non-technical readers
+- NEVER skip the Business Logic Summary (`## Business Logic`) — it is the most valuable section for non-technical readers
 - NEVER generate documentation from cached context alone — always read the actual model files to ensure accuracy
-- NEVER hardcode English — if the model uses French (or other language) names, write the documentation in that language
+- NEVER hardcode English — if the model uses French (or other language) names, write the documentation in that language. Default to French for client-facing content unless the model language is clearly English.
+- NEVER use `CODE_BLOCK:` / `END_CODE_BLOCK` or `TABLE:` / `END_TABLE` markers — use standard fenced code blocks and pipe tables only (docgen pipeline requirement)
+- NEVER attempt Word or PDF generation without pre-validating dependencies first — missing imports (RGBColor, python-docx, reportlab) waste long generation runs that fail near the end
+- NEVER write DAX or M expressions as plain indented text — always use fenced code blocks with the correct language tag (`dax`, `m`, `sql`)
+
+## Shared Rules
+
+- **PYTHON-FIRST FILE OPERATIONS (CRITICAL):** All file read/write and text search operations MUST use Python with `encoding='utf-8'` to correctly handle accented characters (French: é, è, ê, ç, à, ù, etc.). Do NOT use `grep`, `cat`, `sed`, `awk`, or shell redirects for reading/writing model files. For measure name search, use `python ".claude/skills/pbi/scripts/detect.py" search "MeasureName" "$PBIP_DIR"` instead of `grep -rlF`. Shell/bash is allowed ONLY for: git CLI commands and Python script invocation.
+- **PBIP folder naming:** Always use the `PBIP_DIR` value from detection (e.g., `Sales.SemanticModel`) — never hardcode `.SemanticModel`. Same for Report: use `PBIR_DIR` (e.g., `Sales.Report`).
+- All bash paths must be double-quoted (e.g., `"$VAR"`, `"$SM_DIR/"`)
+- Session context: Read-then-Write `.pbi/context.md`, 20 row max Command History, never touch Analyst-Reported Failures
+- TMDL: tabs only for indentation
+- TMSL expression format: preserve original form (string vs array); use array if expression has line breaks
+- Escalation state: `## Escalation State` in `.pbi/context.md` tracks gathered context during escalation.
+- **LOCAL-FIRST GIT POLICY (CRITICAL):** NEVER `git pull`, `git fetch`, `git merge`, `git rebase`, `git push`, or create PRs. Allowed: `git init`, `git add`, `git commit`, `git diff`, `git log`, `git status`, `git revert`, `git rev-parse`.
+- **Post-write staging:** After any command writes files to `$PBIP_DIR/` (and PBIP_MODE=file, GIT=yes), auto-stage: `git add "$PBIP_DIR/" 2>/dev/null`. Skip if the command already auto-committed.
+- **Confirm mode (PBI_CONFIRM):** When `PBI_CONFIRM=true`: show preview and ask `(y/N)` before writing model files or output files. When `PBI_CONFIRM=false`: write directly without asking. Commands that already have a `(y/N)` prompt respect this — if PBI_CONFIRM=false, skip the prompt and proceed.

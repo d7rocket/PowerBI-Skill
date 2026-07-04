@@ -1,19 +1,25 @@
 ---
-name: pbi:settings
-description: "Manage write mode — toggle between auto (no confirmation) and confirm (ask before every file write)"
+name: pbi-settings
+description: "Manage write mode — toggle between auto (no confirmation) and confirm (ask before every file write). Shows current settings when invoked with no arguments."
 allowed-tools:
+  - Read
+  - Write
+  - Edit
   - Bash
+  - Agent
+  - Glob
+  - Grep
 ---
 
 ## Detection
 
-Run the following detection command using the Bash tool before proceeding:
+### PBI Directory Setup
+!`python ".claude/skills/pbi/scripts/detect.py" ensure-dir 2>/dev/null && python ".claude/skills/pbi/scripts/detect.py" migrate 2>/dev/null`
 
-```bash
-python ".claude/skills/pbi/scripts/detect.py" settings 2>/dev/null || echo "PBI_CONFIRM=true"
-```
+### Settings
+!`python ".claude/skills/pbi/scripts/detect.py" settings 2>/dev/null || echo "PBI_CONFIRM=true"`
 
-Save the `PBI_CONFIRM` value — this is the current write mode.
+Save the `PBI_CONFIRM` value — this is the current write mode setting.
 
 ---
 
@@ -21,15 +27,17 @@ Save the `PBI_CONFIRM` value — this is the current write mode.
 
 ## Instructions
 
-Parse the argument after `settings` (from `$ARGUMENTS`):
+Parse the argument after `settings`:
 
-- `auto` → Run: `python ".claude/skills/pbi/scripts/detect.py" settings-set confirm_writes false 2>/dev/null`
-  Output: `Write mode set to **auto** — changes will be applied without confirmation.`
+- `auto` → Run: `python ".claude/skills/pbi/scripts/detect.py" settings-set confirm_writes false`
+  - If exit code ≠ 0: output the error message and stop.
+  - On success: Output `Write mode set to **auto** — changes will be applied without confirmation.`
 
-- `confirm` → Run: `python ".claude/skills/pbi/scripts/detect.py" settings-set confirm_writes true 2>/dev/null`
-  Output: `Write mode set to **confirm** — you'll be asked before every file write.`
+- `confirm` → Run: `python ".claude/skills/pbi/scripts/detect.py" settings-set confirm_writes true`
+  - If exit code ≠ 0: output the error message and stop.
+  - On success: Output `Write mode set to **confirm** — you'll be asked before every file write.`
 
-- No argument → Read current PBI_CONFIRM value from the detection output above.
+- No argument → Read current PBI_CONFIRM value from Settings detection output.
   Output:
   ```
   **Current settings**
@@ -41,6 +49,7 @@ Parse the argument after `settings` (from `$ARGUMENTS`):
 
 Stop. Do not proceed to any other handler.
 
-### Anti-Patterns
-- NEVER edit `.pbi/settings.json` directly — always use `detect.py settings-set`
-- NEVER apply a setting without confirming the change in output
+## Shared Rules
+
+- Settings are stored in `.pbi/settings.json`. Use `detect.py settings-set` to write them — never edit the JSON file directly.
+- `PBI_CONFIRM=true` means confirm mode (default). `PBI_CONFIRM=false` means auto mode.
