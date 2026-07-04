@@ -1,4 +1,4 @@
-param(
+﻿param(
     [ValidateSet("project","user")]
     [string]$Scope = "user"
 )
