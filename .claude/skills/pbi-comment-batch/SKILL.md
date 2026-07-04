@@ -6,7 +6,7 @@ allowed-tools: Read, Write, Bash, Agent
 disable-model-invocation: true
 metadata:
   author: d7rocket
-  version: 6.1.0
+  version: 7.1.0
   category: data-analytics
   tags: [power-bi, dax, pbip, semantic-model]
 ---
@@ -165,11 +165,12 @@ Output a summary table:
 
 [N] measures will be commented, [M] skipped.
 
-**If PBI_CONFIRM=false:** skip the confirmation prompt below — proceed directly to Step 5 (write).
-
 Apply all comments? (y/N)
 ```
 
+**If PBI_CONFIRM=false:** do not print the `Apply all comments? (y/N)` line and do not wait — proceed directly to Step 5 (write).
+
+**If PBI_CONFIRM=true:** wait for the response:
 - y or Y: proceed to Step 5.
 - n, N, Enter, or anything else: Output "Batch cancelled. No files modified." Stop.
 
@@ -224,7 +225,7 @@ Read `.pbi/context.md` (Read tool), update these sections, then Write the full f
 
 ### Anti-Patterns
 - NEVER write one file per measure — batch all changes for a table file into a single Write
-- NEVER skip the confirmation prompt
+- NEVER skip the confirmation prompt when PBI_CONFIRM=true
 - NEVER modify measures marked as "already commented" unless the analyst explicitly requests overwrite
 - NEVER convert tabs to spaces in TMDL files
 

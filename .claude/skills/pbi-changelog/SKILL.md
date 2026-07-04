@@ -1,12 +1,12 @@
 ---
 name: pbi-changelog
-description: "Generate structured release notes from local git history in Keep a Changelog format. Groups commits by type (Added, Changed, Fixed, Removed). Covers a configurable range. Writes to CHANGELOG.md. Translates commit messages into user-facing release notes."
+description: "Generate structured release notes from local git history in Keep a Changelog format. Groups commits by type (Added, Changed, Fixed, Removed). Covers a configurable range. Writes to .pbi/changelog.md. Translates commit messages into user-facing release notes."
 model: haiku
 allowed-tools: Read, Write, Bash, Agent
 disable-model-invocation: true
 metadata:
   author: d7rocket
-  version: 6.1.0
+  version: 7.1.0
   category: data-analytics
   tags: [power-bi, dax, pbip, semantic-model]
 ---
@@ -75,9 +75,6 @@ Stakeholders need to know what changed in the model without reading git logs. Th
 Write for stakeholders, not developers. "Added year-to-date revenue measure" is useful. "feat: add Revenue YTD to Sales table via /pbi-new" is not. Strip technical prefixes and translate to business language.
 </core_principle>
 
-## Git Log
-!`git log --oneline --no-decorate -50 2>/dev/null || echo "NO_LOG"`
-
 ## Instructions
 
 ### Step 0 — Guards
@@ -99,16 +96,40 @@ Otherwise proceed to Step 1.
 
 Read `$ARGUMENTS`:
 - `--since [tag/date/hash]` → only include commits after that ref
-- `--all` or empty → include all commits
+- `--all` → include all commits (no cap)
 - `--last [N]` → include last N commits
 
-Default: all commits.
+Default (no argument): last 50 commits.
 
 ---
 
-### Step 2 — Parse Commit Messages
+### Step 2 — Read and Parse Commit History
 
-Read the Git Log output. For each commit line (`[hash] [message]`), classify by conventional commit prefix:
+Run the git log command that matches the scope from Step 1:
+
+**`--all`:**
+```bash
+git log --oneline --no-decorate 2>/dev/null || echo "NO_LOG"
+```
+
+**`--since [ref]`:**
+```bash
+git log --oneline --no-decorate "[ref]..HEAD" 2>/dev/null || echo "NO_LOG"
+```
+
+**`--last [N]`:**
+```bash
+git log --oneline --no-decorate -[N] 2>/dev/null || echo "NO_LOG"
+```
+
+**Default (no argument):**
+```bash
+git log --oneline --no-decorate -50 2>/dev/null || echo "NO_LOG"
+```
+
+If the output is `NO_LOG` or empty: output "No commit history available." and stop.
+
+For each commit line (`[hash] [message]`), classify by conventional commit prefix:
 
 | Prefix | Category |
 |--------|----------|
@@ -160,13 +181,19 @@ Rules:
 
 ### Step 4 — Output and Write
 
-Output the changelog to chat.
+Output the changelog to chat as a preview.
 
-Then write to `CHANGELOG.md` in the project root:
-1. Attempt to Read `CHANGELOG.md` (may not exist)
-2. Write the full changelog using the Write tool
+**If PBI_CONFIRM=true:** ask `Write to .pbi/changelog.md? (y/N)`. On n, N, Enter, or anything else: output "Write cancelled — changelog shown above only." and skip to Step 5.
 
-Output: "Changelog written to CHANGELOG.md"
+**If PBI_CONFIRM=false:** proceed directly to writing.
+
+Then write to `.pbi/changelog.md`:
+1. Attempt to Read `.pbi/changelog.md` (may not exist)
+2. Write the full changelog to `.pbi/changelog.md` using the Write tool
+
+**Do NOT touch a root-level `CHANGELOG.md`** — if one exists in the project root, leave it as-is.
+
+Output: "Changelog written to .pbi/changelog.md" — and if a root `CHANGELOG.md` exists, add: "(root CHANGELOG.md left untouched)"
 
 ---
 

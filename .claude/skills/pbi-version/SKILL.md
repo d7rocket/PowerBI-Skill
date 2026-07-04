@@ -1,12 +1,12 @@
 ---
 name: pbi-version
 description: "Display the installed PBI skill version and full changelog history from the bundled CHANGELOG.md. Offline-only — never makes network calls. Shows complete release history with dates, features, and changes."
-model: sonnet
+model: haiku
 allowed-tools: Read, Write, Bash, Agent
 disable-model-invocation: true
 metadata:
   author: d7rocket
-  version: 6.1.0
+  version: 7.1.0
   category: data-analytics
   tags: [power-bi, dax, pbip, semantic-model]
 ---
@@ -25,15 +25,19 @@ Offline-only. Read from the bundled CHANGELOG.md — never make network calls. T
 
 ### Step 1 - Read current version
 
-Run the following bash command to locate the skill file and read the installed version:
+Run the Python version check against the base skill file (no shell text-processing — Python-first):
 
 ```bash
-SKILL_FILE=$(find . -path "*/.claude/skills/pbi/SKILL.md" -print -quit 2>/dev/null)
-if [ -z "$SKILL_FILE" ]; then SKILL_FILE=$(find "$HOME" -maxdepth 5 -path "*/.claude/skills/pbi/SKILL.md" -print -quit 2>/dev/null); fi
-python ".claude/skills/pbi/scripts/detect.py" version-check "$SKILL_FILE" 2>/dev/null || echo "LOCAL=unknown"
+python ".claude/skills/pbi/scripts/detect.py" version-check ".claude/skills/pbi/SKILL.md" 2>/dev/null || echo "LOCAL=unknown"
 ```
 
-Parse the output: LOCAL = installed version (e.g., 4.3.0).
+If the output is `LOCAL=unknown`, retry against the user-level install path:
+
+```bash
+python "$HOME/.claude/skills/pbi/scripts/detect.py" version-check "$HOME/.claude/skills/pbi/SKILL.md" 2>/dev/null || echo "LOCAL=unknown"
+```
+
+Parse the output: LOCAL = installed version (e.g., 7.0.0).
 
 ### Step 2 - Read CHANGELOG.md
 

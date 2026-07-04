@@ -1,6 +1,6 @@
 ---
 name: pbi-audit-fix
-description: "Autonomous audit-then-fix pipeline — scan the TMDL/TMSL model, auto-fix WARN-level issues (missing descriptions, stray control characters, unhidden key columns, missing format strings), validate integrity, and commit only if clean. Eliminates iterative manual debugging."
+description: "Autonomous audit-then-fix pipeline — scan the TMDL/TMSL model, auto-fix WARN-level issues (missing descriptions, stray control characters, unhidden key columns, missing display folders), validate integrity, and commit only if clean. Eliminates iterative manual debugging."
 model: sonnet
 allowed-tools: Read, Write, Bash, Agent
 disable-model-invocation: true
@@ -232,10 +232,14 @@ print('VALIDATE_OK')
 " "[file_path]" 2>&1
 ```
 
+**Before applying fixes (Step 3), keep the original pre-fix content of every file you are about to modify in memory** — this is the revert source when no git repo exists.
+
 **If any file fails validation:**
 1. Output: `Validation FAILED for [filename]: [error]`
-2. Revert that specific file: `git checkout -- "[file_path]" 2>/dev/null`
-3. Output: `Reverted [filename] — flagged for manual review.`
+2. Restore the file:
+   - **If GIT=yes:** revert that specific file: `git checkout -- "[file_path]" 2>/dev/null` (or `git restore "[file_path]"`)
+   - **If GIT=no:** re-Write the pre-fix content held in memory back to the file using the Write tool
+3. Only after the restore actually succeeded, output: `Reverted [filename] — flagged for manual review.` If the restore itself failed (git error, or no pre-fix copy available), output: `Could not revert [filename] — manual restore required.` and do NOT claim it was reverted.
 4. Continue validating remaining files.
 
 **If all files pass:**
@@ -252,7 +256,7 @@ GIT_STATUS=$(git rev-parse --is-inside-work-tree 2>/dev/null && echo "yes" || ec
 if [ "$GIT_STATUS" = "yes" ]; then
   git add "$PBIP_DIR/" 2>/dev/null
   # IMPORTANT: Replace [N] with the integer count only — never interpolate free-text strings into commit messages
-  git commit -m "fix: auto-fix ${FIXES_COUNT} audit findings" 2>/dev/null && echo "AUTO_COMMIT=ok" || echo "AUTO_COMMIT=fail"
+  git commit -m "fix: auto-fix [N] audit findings" 2>/dev/null && echo "AUTO_COMMIT=ok" || echo "AUTO_COMMIT=fail"
 else
   echo "AUTO_COMMIT=skip_no_repo"
 fi
@@ -324,6 +328,6 @@ Use Read-then-Write to update `.pbi/context.md`:
 - TMDL: tabs only for indentation
 - TMSL expression format: preserve original form (string vs array); use array if expression has line breaks
 - Escalation state: `## Escalation State` in `.pbi/context.md` tracks gathered context during escalation.
-- **LOCAL-FIRST GIT POLICY (CRITICAL):** NEVER `git pull`, `git fetch`, `git merge`, `git rebase`, `git push`, or create PRs. Allowed: `git init`, `git add`, `git commit`, `git diff`, `git log`, `git status`, `git revert`, `git rev-parse`.
+- **LOCAL-FIRST GIT POLICY (CRITICAL):** NEVER `git pull`, `git fetch`, `git merge`, `git rebase`, `git push`, or create PRs. Allowed: `git init`, `git add`, `git commit`, `git diff`, `git log`, `git status`, `git revert`, `git rev-parse`, `git checkout -- <path>` (or `git restore <path>`) for reverting a failed-validation file in Step 4.
 - **Post-write staging:** After any command writes files to `$PBIP_DIR/` (and PBIP_MODE=file, GIT=yes), auto-stage: `git add "$PBIP_DIR/" 2>/dev/null`. Skip if the command already auto-committed.
 - **Confirm mode (PBI_CONFIRM):** When `PBI_CONFIRM=true`: show preview and ask `(y/N)` before writing model files or output files. When `PBI_CONFIRM=false`: write directly without asking. Commands that already have a `(y/N)` prompt respect this — if PBI_CONFIRM=false, skip the prompt and proceed.

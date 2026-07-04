@@ -6,7 +6,7 @@ allowed-tools: Read, Write, Bash, Agent
 disable-model-invocation: true
 metadata:
   author: d7rocket
-  version: 6.1.0
+  version: 7.1.0
   category: data-analytics
   tags: [power-bi, dax, pbip, semantic-model]
 ---
@@ -109,8 +109,10 @@ Based on PBIP_FORMAT, run the appropriate scoped diff command:
 
 **If PBIP_FORMAT=tmdl and HAS_COMMITS=yes:**
 ```bash
-git diff HEAD -- "$PBIP_DIR/definition/tables/" "$PBIP_DIR/definition/relationships.tmdl" 2>/dev/null
+git diff HEAD -- "$PBIP_DIR/definition/" 2>/dev/null
 ```
+
+This covers the whole definition folder — tables, relationships.tmdl, expressions.tmdl, model.tmdl, and any other definition files.
 
 **If PBIP_FORMAT=tmsl and HAS_COMMITS=yes:**
 ```bash
@@ -153,6 +155,12 @@ Apply these parsing rules to the diff text captured in Step 2. Build an internal
 
 **Model property changes (metadata-only):**
 - If only `formatString`, `displayFolder`, or `///` description lines changed inside a measure block — classify as a MODEL PROPERTY UPDATE.
+
+**Power Query expressions (expressions.tmdl):**
+- Any `+`/`-` lines in `expressions.tmdl` (or inside a `partition`/`source` M block) — report as "Power Query expression changed" (name the expression/table if visible in the diff).
+
+**Model-level properties (model.tmdl):**
+- Any `+`/`-` lines in `model.tmdl` — report as "model-level property changed" (e.g., culture, discourageImplicitMeasures, annotations).
 
 #### TMSL parsing rules (when PBIP_FORMAT=tmsl)
 

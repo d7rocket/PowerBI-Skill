@@ -1,12 +1,12 @@
 ---
 name: pbi-extract
-description: "Generate a structured documentation export of the PBIP project at three detail levels. Overview: one-page model summary. Standard: full model documentation with expressions. Deep-dive: comprehensive analysis with lineage and dependencies (spawns Opus agent). Writes to project-summary.md."
+description: "Generate a structured documentation export of the PBIP project at three detail levels. Overview: one-page model summary. Standard: full model documentation with expressions. Deep-dive: comprehensive analysis with lineage and dependencies (spawns Opus agent). Writes to .pbi/project-extract.md."
 model: sonnet
 allowed-tools: Read, Write, Bash, Agent
 disable-model-invocation: true
 metadata:
   author: d7rocket
-  version: 6.1.0
+  version: 7.1.0
   category: data-analytics
   tags: [power-bi, dax, pbip, semantic-model]
 ---
@@ -93,7 +93,7 @@ Parse `$ARGUMENTS` (after the `extract` keyword) for a tier keyword:
 
 | Keyword | Tier | Model | Token Profile |
 |---------|------|-------|---------------|
-| `overview`, `quick`, `brief`, `lite` | Overview | Haiku | ~500–1,500 tokens output |
+| `overview`, `quick`, `brief`, `lite` | Overview | Inline (current context) | ~500–1,500 tokens output |
 | `standard`, `normal`, `default` | Standard | Sonnet | ~2,000–5,000 tokens output |
 | `deep-dive`, `deep`, `full`, `comprehensive` | Deep Dive | Opus | ~5,000–15,000+ tokens output |
 | (no keyword / empty) | — | — | Prompt user to choose |
@@ -103,7 +103,7 @@ Parse `$ARGUMENTS` (after the `extract` keyword) for a tier keyword:
 ```
 Which extraction depth?
 
-**A — Overview** (Haiku)
+**A — Overview** (inline, fast)
   Table/measure/relationship counts. Fast, low token usage.
   Best for: quick orientation, sharing a snapshot in chat.
 
@@ -171,7 +171,7 @@ Count:
 
 #### Tier: Overview
 
-**Execution model:** Spawn a **haiku Agent** with the following prompt: "Generate a Project Extract — Overview report. Here is the extracted metadata: [pass the full metadata counts, table names, measure names by table, and relationship list]. Format the output exactly as specified below."
+**Execution model:** Run directly in current context — format the report inline from the extracted metadata. Do NOT spawn an Agent for this tier: the output is only ~1k tokens, so the agent-spawn overhead exceeds any benefit.
 
 Output format:
 
@@ -196,7 +196,7 @@ Output format:
 [... one line per relationship]
 
 ---
-*Extracted with /pbi-extract overview (Haiku)*
+*Extracted with /pbi-extract overview*
 ```
 
 ---
@@ -344,16 +344,16 @@ Complexity rules (with examples):
 
 ### Step 5 — Write output file
 
-Write the generated report to `project-extract.md` in the project root using the Write tool.
+Write the generated report to `.pbi/project-extract.md` using the Write tool.
 
-Output: `Extract written to project-extract.md`
+Output: `Extract written to .pbi/project-extract.md`
 
 ---
 
 ### Step 6 — Update .pbi/context.md
 
 Use Read-then-Write to update `.pbi/context.md`:
-1. Update `## Last Command`: Command = `/pbi-extract [tier]`, Outcome = `Extract complete — [tier] tier, [N] tables, [M] measures. Written to project-extract.md`
+1. Update `## Last Command`: Command = `/pbi-extract [tier]`, Outcome = `Extract complete — [tier] tier, [N] tables, [M] measures. Written to .pbi/project-extract.md`
 2. Append row to `## Command History`; trim to 20 rows max
 3. Do NOT modify `## Model Context`, `## Analyst-Reported Failures`, or any other sections
 

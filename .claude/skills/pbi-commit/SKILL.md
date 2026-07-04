@@ -6,7 +6,7 @@ allowed-tools: Read, Write, Bash, Agent
 disable-model-invocation: true
 metadata:
   author: d7rocket
-  version: 6.1.0
+  version: 7.1.0
   category: data-analytics
   tags: [power-bi, dax, pbip, semantic-model]
 ---
@@ -136,8 +136,10 @@ Proceed to Step 5 (context update).
 
 **TMDL:**
 ```bash
-git diff HEAD -- "$PBIP_DIR/definition/tables/" "$PBIP_DIR/definition/relationships.tmdl" 2>/dev/null
+git diff HEAD -- "$PBIP_DIR/definition/" 2>/dev/null
 ```
+
+This covers the whole definition folder — tables, relationships.tmdl, expressions.tmdl, model.tmdl, and any other definition files.
 
 **TMSL:**
 ```bash
@@ -163,6 +165,8 @@ Only process lines starting with `+` (not `+++`) or `-` (not `---`). Ignore cont
 - Extract table name: from file path `tables/TableName.tmdl`.
 - **RELATIONSHIP ADDED/REMOVED:** `+`/`-` relationship lines.
 - **TABLE ADDED/REMOVED:** `+`/`-` table lines.
+- **POWER QUERY EXPRESSION CHANGED:** any `+`/`-` lines in `expressions.tmdl` (or inside a `partition`/`source` M block) → describe as "Power Query expression changed" (extract the expression/table name if visible).
+- **MODEL-LEVEL PROPERTY CHANGED:** any `+`/`-` lines in `model.tmdl` → describe as "model-level property changed" (e.g., culture, discourageImplicitMeasures, annotations).
 
 #### TMSL parsing rules
 

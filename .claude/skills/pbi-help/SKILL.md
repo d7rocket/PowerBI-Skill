@@ -1,12 +1,12 @@
 ---
 name: pbi-help
-description: "Display the complete PBI skill command reference with version check, organized by category (paste-in, PBIP, workflow, utility). Shows model assignment for each command. Checks for remote updates."
-model: sonnet
+description: "Display the complete PBI skill command reference with version check, organized by category (paste-in, PBIP, workflow, utility). Shows model assignment for each command. Offline version check against the bundled changelog — never contacts a remote."
+model: haiku
 allowed-tools: Read, Write, Bash, Agent
 disable-model-invocation: true
 metadata:
   author: d7rocket
-  version: 6.1.0
+  version: 7.1.0
   category: data-analytics
   tags: [power-bi, dax, pbip, semantic-model]
 ---
@@ -23,33 +23,31 @@ Show everything in one view. No pagination, no "type help <cmd> for details". Th
 
 ## Instructions
 
-### Step 1 — Version check
+### Step 1 — Version check (offline)
 
-Run the following bash command to read the local version and check the remote for updates:
+Run the Python version check against the base skill file (no network calls — LOCAL-FIRST policy):
 
 ```bash
-SKILL_FILE=$(find . -path "*/.claude/skills/pbi/SKILL.md" -print -quit 2>/dev/null)
-if [ -z "$SKILL_FILE" ]; then SKILL_FILE=$(find "$HOME" -maxdepth 5 -path "*/.claude/skills/pbi/SKILL.md" -print -quit 2>/dev/null); fi
-python .claude/skills/pbi/scripts/detect.py version-check "$SKILL_FILE" 2>/dev/null || echo "LOCAL=unknown"
-
-# Fetch latest remote tag (timeout 5s to avoid blocking on no network)
-REMOTE_VER=$(git ls-remote --tags --sort=-v:refname origin 2>/dev/null | head -1 | sed 's/.*refs\/tags\///' | sed 's/\^{}//')
-if [ -z "$REMOTE_VER" ]; then
-  echo "REMOTE=unavailable"
-else
-  echo "REMOTE=$REMOTE_VER"
-fi
+python ".claude/skills/pbi/scripts/detect.py" version-check ".claude/skills/pbi/SKILL.md" 2>/dev/null || echo "LOCAL=unknown"
 ```
 
-Parse the output:
-- `LOCAL` = installed version (e.g., `4.0.0`)
-- `REMOTE` = latest git tag (e.g., `v4.1.0`) or `unavailable`
+If the output is `LOCAL=unknown`, retry against the user-level install path:
+
+```bash
+python "$HOME/.claude/skills/pbi/scripts/detect.py" version-check "$HOME/.claude/skills/pbi/SKILL.md" 2>/dev/null || echo "LOCAL=unknown"
+```
+
+Parse the output: `LOCAL` = installed version (e.g., `7.0.0`).
+
+Then use the Read tool to read `.claude/skills/pbi/shared/CHANGELOG.md` (fall back to `~/.claude/skills/pbi/shared/CHANGELOG.md`). Take the version number from the topmost `## [X.Y.Z]` heading — call it `CHANGELOG_TOP`.
 
 Build the version line for the header:
 
-- If REMOTE is `unavailable`: `**Version:** LOCAL (could not check for updates)`
-- If LOCAL matches REMOTE (strip leading `v`): `**Version:** LOCAL ✓ up to date`
-- If LOCAL is behind REMOTE: `**Version:** LOCAL → **Update available: REMOTE** — download the latest release manually from the repository`
+- If LOCAL is `unknown` OR the changelog could not be read: `**Version:** LOCAL (changelog not available)`
+- If LOCAL matches CHANGELOG_TOP: `**Version:** LOCAL ✓ (matches changelog)`
+- If they differ: `**Version:** LOCAL — changelog top entry is CHANGELOG_TOP (frontmatter and CHANGELOG.md are out of sync)`
+
+Never run `git ls-remote`, `git fetch`, or any other network command — the version check is offline-only.
 
 ### Step 2 — Output help reference
 
@@ -94,9 +92,10 @@ Output the following, inserting the version line from Step 1:
 |---------|-------------|-------|
 | `/pbi-deep` | Guided multi-phase workflow: intake → model review → DAX dev → verification | Sonnet |
 | `/pbi-resume` | Restore session context and continue from where you left off | Haiku |
-| `/pbi-version` | Display installed version and full changelog | Sonnet |
+| `/pbi-version` | Display installed version and full changelog | Haiku |
 | `/pbi-docs` | Generate polished, stakeholder-ready project documentation | Sonnet |
-| `/pbi-help` | Show this reference with version check | — |
+| `/pbi-settings` | Toggle write mode: auto (silent writes) vs confirm (ask first) | Haiku |
+| `/pbi-help` | Show this reference with version check | Haiku |
 
 ## Quick Start
 
@@ -119,4 +118,18 @@ Stop. Do not output anything else.
 
 ### Anti-Patterns
 - NEVER suggest git pull or git push
+- NEVER run `git ls-remote`, `git fetch`, or any network command — version check is offline-only
 - NEVER output anything after the help reference — stop immediately
+
+## Shared Rules
+
+- **PYTHON-FIRST FILE OPERATIONS (CRITICAL):** All file read/write and text search operations MUST use Python with `encoding='utf-8'` to correctly handle accented characters (French: é, è, ê, ç, à, ù, etc.). Do NOT use `grep`, `cat`, `sed`, `awk`, or shell redirects for reading/writing model files. For measure name search, use `python ".claude/skills/pbi/scripts/detect.py" search "MeasureName" "$PBIP_DIR"` instead of `grep -rlF`. Shell/bash is allowed ONLY for: git CLI commands and Python script invocation.
+- **PBIP folder naming:** Always use the `PBIP_DIR` value from detection (e.g., `Sales.SemanticModel`) — never hardcode `.SemanticModel`. Same for Report: use `PBIR_DIR` (e.g., `Sales.Report`).
+- All bash paths must be double-quoted (e.g., `"$VAR"`, `"$SM_DIR/"`)
+- Session context: Read-then-Write `.pbi/context.md`, 20 row max Command History, never touch Analyst-Reported Failures
+- TMDL: tabs only for indentation
+- TMSL expression format: preserve original form (string vs array); use array if expression has line breaks
+- Escalation state: `## Escalation State` in `.pbi/context.md` tracks gathered context during escalation.
+- **LOCAL-FIRST GIT POLICY (CRITICAL):** NEVER `git pull`, `git fetch`, `git merge`, `git rebase`, `git push`, or create PRs. Allowed: `git init`, `git add`, `git commit`, `git diff`, `git log`, `git status`, `git revert`, `git rev-parse`.
+- **Post-write staging:** After any command writes files to `$PBIP_DIR/` (and PBIP_MODE=file, GIT=yes), auto-stage: `git add "$PBIP_DIR/" 2>/dev/null`. Skip if the command already auto-committed.
+- **Confirm mode (PBI_CONFIRM):** When `PBI_CONFIRM=true`: show preview and ask `(y/N)` before writing model files or output files. When `PBI_CONFIRM=false`: write directly without asking. Commands that already have a `(y/N)` prompt respect this — if PBI_CONFIRM=false, skip the prompt and proceed.

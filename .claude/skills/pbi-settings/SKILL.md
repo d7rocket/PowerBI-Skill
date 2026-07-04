@@ -1,12 +1,12 @@
 ---
 name: pbi-settings
 description: "Manage write mode — toggle between auto (no confirmation) and confirm (ask before every file write). Shows current settings when invoked with no arguments."
-model: sonnet
+model: haiku
 allowed-tools: Bash, Read
 disable-model-invocation: true
 metadata:
   author: d7rocket
-  version: 6.1.0
+  version: 7.1.0
   category: data-analytics
   tags: [power-bi, dax, pbip, semantic-model]
 ---

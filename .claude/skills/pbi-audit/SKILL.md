@@ -1,12 +1,12 @@
 ---
 name: pbi-audit
-description: "Run a comprehensive 19-rule health check across 8 domains: relationships, naming, date table, measure quality, hidden columns, report layer, advanced features, and performance. Severity-graded output (CRITICAL/WARN/INFO) with auto-fix for structural issues. Parallel agents for 5+ table models."
+description: "Run a comprehensive 21-rule health check across 8 domains: relationships, naming, date table, measure quality, hidden columns, report layer, advanced features, and performance. Severity-graded output (CRITICAL/WARN/INFO) with auto-fix for structural issues. Parallel agents for 5+ table models."
 model: sonnet
 allowed-tools: Read, Write, Bash, Agent
 disable-model-invocation: true
 metadata:
   author: d7rocket
-  version: 6.1.0
+  version: 7.1.0
   category: data-analytics
   tags: [power-bi, dax, pbip, semantic-model]
 ---
@@ -150,10 +150,12 @@ Pass the extracted metadata (all table/measure/column names, measure properties)
 - Domain Pass B: Naming (rules N-01, N-02, N-03)
 - Domain Pass D: Measures (rules M-01, M-02, M-03)
 
-**Agent 3 — Hidden Columns + PBIR Visuals:**
-Pass the extracted metadata (columns with isHidden, relationship columns, PBIR detection output) and run:
+**Agent 3 — Hidden Columns + PBIR Visuals + Advanced Features + Performance:**
+Pass the extracted metadata (columns with isHidden, relationship columns, table-level properties, calculation group / NAMEOF markers, PBIR detection output) and run:
 - Domain Pass E: Hidden Column Hygiene (rules H-01, H-02, H-03)
 - Domain Pass F: Report Layer (rules V-01, V-02, V-03 — only if PBIR=yes)
+- Domain Pass G: Advanced Features (rules AF-01, AF-02)
+- Domain Pass H: Performance Heuristics (rules P-01, P-02)
 
 Each agent returns its findings as a list. Collect all findings after all 3 agents complete.
 
@@ -167,6 +169,7 @@ Accumulate findings_relationships[]:
 - Any relationship where crossFilteringBehavior = "bothDirections"
 - Finding: `Bidirectional filter set on relationship from [FromTable][FromColumn] to [ToTable][ToColumn].`
 - Recommendation: `Change crossFilteringBehavior to single-direction. Bidirectional filters create ambiguous filter paths and degrade query performance.`
+- **Exception note (include in the finding):** if this is a deliberate many-to-many bridge or RLS-propagation pattern (securityFilteringBehavior), document it instead of changing it.
 
 **Rule R-02 — Isolated table heuristic (WARN):**
 - Tables with NO outbound or inbound relationships AND whose name matches fact table patterns (contains "Sales", "Orders", "Transactions", "Invoice", "Fact", or starts without "Dim"/"Date"/"Calendar" prefix) AND has at least one numeric column (dataType: int64, double, decimal)
@@ -211,8 +214,8 @@ If a date table IS found and IS correctly configured: add INFO finding noting it
 Accumulate findings_measures[]:
 
 **Rule M-01 — Empty formatString (WARN):** Any measure with no formatString property
-**Rule M-02 — Empty description (INFO):** Any measure with no description
-**Rule M-03 — No display folder (WARN):** Any measure with no displayFolder
+**Rule M-02 — Empty description (WARN):** Any measure with no description — blank tooltips directly affect report consumers
+**Rule M-03 — No display folder (INFO):** Any measure with no displayFolder — organisational nicety, not consumer-facing
 
 ---
 
@@ -223,7 +226,7 @@ Accumulate findings_columns[]:
 **Build relationship column set:** Collect all columns that appear as fromColumn or toColumn in any relationship.
 
 **Rule H-01 — Relationship key column not hidden (WARN):** Column used in a relationship AND isHidden = false
-**Rule H-02 — Foreign key / ID column not hidden (WARN):** Column name matches key/ID patterns (ends with Key, ID, Id, _id, _key, FK; equals id; starts with SK_, FK_, PK_) AND isHidden = false. Exclude columns already flagged by H-01.
+**Rule H-02 — Foreign key / ID column not hidden (WARN):** Column name matches key/ID patterns (ends with Key, ID, Id, _id, _key, FK; equals id; starts with SK_, FK_, PK_) AND isHidden = false. Exclude columns already flagged by H-01. **When PBIR=yes:** also exclude columns referenced in report visuals (from the Domain Pass F visual-reference scan) — a visible ID column that is deliberately used in a visual is not a hygiene problem.
 **Rule H-03 — Summary (INFO):** If ALL key columns are hidden: emit one INFO finding "All detected key/ID columns are already hidden."
 
 ---
@@ -274,8 +277,8 @@ Accumulate findings_performance[]:
 **Rule P-02 — High-cardinality column heuristic (INFO):**
 - For each column that is NOT hidden AND is NOT used in any relationship AND whose dataType is `string` AND whose name matches high-cardinality patterns: contains "Description", "Comment", "Note", "Detail", "Address", "Email", "URL", "Path", "FullName", "LongText", or ends with "_desc", "_text", "_notes"
 - Only flag if the column is NOT in a table with fewer than 3 columns (small lookup tables often have legitimate text columns)
-- Finding: `Column [TableName].[ColumnName] appears to be high-cardinality text. Consider hiding it if not used in visuals.`
-- Recommendation: `High-cardinality text columns consume memory and rarely belong in filter panes. Hide them unless they are intentionally exposed for search or display.`
+- Finding: `Column [TableName].[ColumnName] appears to be high-cardinality text. Consider removing it in Power Query if it is not used in visuals.`
+- Recommendation: `Remove unused high-cardinality columns in Power Query — hiding only declutters the field list, it does NOT reduce VertiPaq memory (hidden columns are still loaded and compressed).`
 
 ---
 
@@ -345,7 +348,7 @@ After writing .pbi/audit-report.md, check if there are any CRITICAL or WARN find
 | H-01 (relationship key visible) | Add isHidden property to column |
 | H-02 (ID column visible) | Same as H-01 |
 | M-01 (empty formatString) | Skip — cannot infer correct format |
-| M-03 (no display folder) | Skip — cannot infer correct folder |
+| M-03 (no display folder) | Defer to /pbi-audit-fix, which infers folders using its AF-05 rules |
 
 If there are zero fixable findings: skip to Step 6.
 
@@ -357,11 +360,12 @@ If there are fixable findings, output:
 [N] findings can be fixed automatically:
 - [list each fixable finding: rule, subject, fix action]
 
-**If PBI_CONFIRM=false:** skip the confirmation prompt — apply all fixes directly.
-
 Apply all fixes? (y/N)
 ```
 
+**If PBI_CONFIRM=false:** do not print the `Apply all fixes? (y/N)` line and do not wait — apply all fixes directly.
+
+**If PBI_CONFIRM=true:** wait for the response:
 - n, N, Enter, or anything else: Output "No fixes applied." Skip to Step 6.
 - y or Y: proceed with fixes.
 
@@ -394,7 +398,7 @@ GIT_STATUS=$(git rev-parse --is-inside-work-tree 2>/dev/null && echo "yes" || ec
 if [ "$GIT_STATUS" = "yes" ]; then
   git add "$PBIP_DIR/" 2>/dev/null
   # IMPORTANT: Replace [N] with the integer count only — never interpolate free-text strings into commit messages
-  git commit -m "fix: auto-fix ${FIXES_COUNT} audit findings" 2>/dev/null && echo "AUTO_COMMIT=ok" || echo "AUTO_COMMIT=fail"
+  git commit -m "fix: auto-fix [N] audit findings" 2>/dev/null && echo "AUTO_COMMIT=ok" || echo "AUTO_COMMIT=fail"
 else
   echo "AUTO_COMMIT=skip_no_repo"
 fi

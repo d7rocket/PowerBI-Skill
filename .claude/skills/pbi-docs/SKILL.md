@@ -6,7 +6,7 @@ allowed-tools: Read, Write, Bash, Agent
 disable-model-invocation: true
 metadata:
   author: d7rocket
-  version: 7.0.1
+  version: 7.1.0
   category: data-analytics
   tags: [power-bi, dax, pbip, semantic-model]
 ---
@@ -286,6 +286,7 @@ Wait for the user's reply. **Do not write any files until both questions are ans
   - `## Data Sources` (pipe table with table / type / connection columns)
   - `## Report Pages` (only if report_pages non-empty; pipe table)
   - `## Model Health` (full finding list)
+- **Docgen contract reference:** the full output contract (headings, code blocks, tables) is defined in `.claude/skills/pbi/shared/pbi-docs-contract.md` — consult it when in doubt.
 - **Code block rules (CRITICAL — required for docgen pipeline compatibility):**
   - DAX expressions: always use ` ```dax ` fenced blocks — NEVER plain indented text
   - M / Power Query expressions: always use ` ```m ` fenced blocks
@@ -297,6 +298,7 @@ Wait for the user's reply. **Do not write any files until both questions are ans
 - Output: `Markdown written to .pbi/project-docs.md (Full detail)`
 
 **PDF** (choice 2 or 4 — uses DETAIL_LEVEL):
+- If PBI_CONFIRM=true: ask "Write to .pbi/project-docs.pdf? (y/N)". On n/N/Enter: output "PDF write cancelled." and skip PDF generation.
 - **Pre-validate dependencies** before attempting generation:
   Run: `python -c "from reportlab.lib.pagesizes import A4; print('PDF_DEPS=ok')" 2>&1`
   If output does NOT contain `PDF_DEPS=ok`: output `PDF export requires reportlab — run: pip install reportlab` and skip PDF generation. Do not attempt the generator script.
@@ -306,6 +308,7 @@ Wait for the user's reply. **Do not write any files until both questions are ans
 - On any other error: show the error output.
 
 **Word** (choice 3 or 4 — uses DETAIL_LEVEL):
+- If PBI_CONFIRM=true: ask "Write to .pbi/project-docs.docx? (y/N)". On n/N/Enter: output "Word write cancelled." and skip Word generation.
 - **Pre-validate dependencies** before attempting generation:
   Run: `python -c "from docx import Document; from docx.shared import RGBColor, Pt; print('DOCX_DEPS=ok')" 2>&1`
   If output does NOT contain `DOCX_DEPS=ok`: output `Word export requires python-docx — run: pip install python-docx` and skip Word generation. Do not attempt the generator script.

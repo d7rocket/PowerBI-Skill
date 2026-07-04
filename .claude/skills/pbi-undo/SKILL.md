@@ -6,7 +6,7 @@ allowed-tools: Read, Write, Bash, Agent
 disable-model-invocation: true
 metadata:
   author: d7rocket
-  version: 6.1.0
+  version: 7.1.0
   category: data-analytics
   tags: [power-bi, dax, pbip, semantic-model]
 ---
@@ -83,7 +83,11 @@ Use git revert (not git reset) to preserve history. Only revert commits made by 
 
 > No git repo found. Nothing to undo.
 
-**If GIT=yes:** proceed to Step 1.
+**If GIT=yes and HAS_COMMITS=no:** output exactly this message and stop:
+
+> No commits found — nothing to undo.
+
+**If GIT=yes and HAS_COMMITS=yes:** proceed to Step 1.
 
 ---
 
@@ -96,14 +100,25 @@ git log --oneline -1 2>/dev/null
 ```
 
 ```bash
-git diff HEAD~1..HEAD --stat 2>/dev/null
+git show --stat HEAD 2>/dev/null
 ```
 
-Capture both outputs.
+Capture both outputs. (`git show --stat HEAD` works even on a single-commit repo, where `HEAD~1` does not exist.)
 
-**Auto-commit check:** If the last commit message does NOT start with `chore:`, `feat:`, or `fix:` (i.e., it doesn't look like an auto-commit from PBI skills), output this warning:
+**Auto-commit check:** Compare the last commit message against the specific auto-commit patterns used by the PBI suite:
 
-> The last commit does not appear to be a PBI auto-commit. Proceed with caution.
+- `chore: initial PBIP model commit` (/pbi-commit init flows)
+- `chore: update [measure] comment in [table]` (/pbi-comment)
+- `chore: apply error fix in [table]` (/pbi-error)
+- `chore: batch comment [N] measures in [scope]` (/pbi-comment-batch)
+- `feat: add [measure] measure to [table]` (/pbi-new)
+- `fix: auto-fix [N] audit findings` (/pbi-audit, /pbi-audit-fix)
+- `style: batch-format [N] DAX measures — SQLBI standard` (/pbi-format-batch)
+- `feat:`/`fix:`/`chore:` + `[verb] [entity] in [table]` shape (/pbi-edit, /pbi-commit generated messages)
+
+If the last commit message does NOT match any of these patterns (a bare `chore:`/`feat:`/`fix:` prefix alone is NOT enough), output this warning and require an explicit `y` confirmation in Step 2 **regardless of the PBI_CONFIRM setting**:
+
+> Last commit does not look like a PBI auto-commit. Proceed with caution.
 
 Output to analyst:
 
@@ -144,7 +159,8 @@ Read `.pbi/context.md` (Read tool), update these sections, then Write the full f
 
 1. Update `## Last Command` section: Command = `/pbi-undo`, Timestamp = current UTC ISO 8601, Outcome = `Reverted [commit message]`.
 2. Append a new row to `## Command History`. Keep last 20 rows maximum.
-3. Do NOT modify `## Analyst-Reported Failures` or any other sections.
+3. **If REVERT=ok:** remove the `**Session-Start:**` line from the `## Model Context` section (the cached context no longer matches the reverted files — removing the line forces a fresh load on the next command). Then output: `Model Context is stale — next /pbi command will re-load.`
+4. Do NOT modify `## Analyst-Reported Failures` or any other sections.
 
 ### Anti-Patterns
 - NEVER revert without showing the commit details and getting confirmation
