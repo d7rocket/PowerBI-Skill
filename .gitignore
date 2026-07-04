@@ -19,6 +19,9 @@ SecurityBindings
 # GSD planning artifacts
 .planning/
 
+# Local reference material (not part of the product)
+The-Complete-Guide-to-Building-Skill-for-Claude.pdf
+
 # Python
 __pycache__/
 *.pyc

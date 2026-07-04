@@ -22,7 +22,7 @@ The core design principle: **never block a data analyst.** When you ask a DAX qu
 
 ### Model awareness across commands
 
-On first use, the skill reads your PBIP project files (TMDL or TMSL), extracts every table, measure, column, and relationship, and caches the structure in `.pbi-context.md`. Every subsequent command — explain, audit, edit, new — references your actual model. When the skill generates a measure, it uses your real table names and validates against your real relationships.
+On first use, the skill reads your PBIP project files (TMDL or TMSL), extracts every table, measure, column, and relationship, and caches the structure in `.pbi/context.md`. Every subsequent command — explain, audit, edit, new — references your actual model. When the skill generates a measure, it uses your real table names and validates against your real relationships.
 
 ### Version control that speaks business
 
@@ -30,7 +30,7 @@ PBIP files are text, but `git diff` on a `.tmdl` file is noise. The skill transl
 
 ### Session continuity
 
-`.pbi-context.md` persists model context, command history (20 rows max), analyst-reported failures, escalation state, and in-progress workflow data. The `/pbi-resume` command reconstructs the full working state in a new session — what you were doing, what the model looks like, and what failed before.
+`.pbi/context.md` persists model context, command history (20 rows max), analyst-reported failures, escalation state, and in-progress workflow data. The `/pbi-resume` command reconstructs the full working state in a new session — what you were doing, what the model looks like, and what failed before.
 
 ## The 20 Commands
 
@@ -38,7 +38,7 @@ PBIP files are text, but `git diff` on a `.tmdl` file is noise. The skill transl
 |----------|----------|-------------|
 | **Understand DAX** | explain, format, optimise | Break down, reformat, or performance-scan any measure |
 | **Fix & Build DAX** | error, new, comment | Diagnose errors, scaffold new measures, add documentation |
-| **Audit the Model** | audit, comment-batch | 19-rule health check with auto-fix, batch documentation |
+| **Audit the Model** | audit, audit-fix, comment-batch | 21-rule health check with auto-fix, autonomous fix pipeline, batch documentation |
 | **Edit the Model** | edit, load | Plain-English model changes, context loading |
 | **Version Control** | diff, commit, undo, changelog | Business-language diffs, commits, reverts, release notes |
 | **Documentation** | docs, extract | Stakeholder-ready docs, 3-tier model summaries |
@@ -70,6 +70,8 @@ PBIP files are text, but `git diff` on a `.tmdl` file is noise. The skill transl
 | 4.4 | 2026-03-24 | Context tracker progress bar, post-command footer |
 | 5.0 | 2026-03-28 | Sub-skill architecture — each command is its own `/pbi-<cmd>` skill |
 | 6.0 | 2026-03-28 | Resume command, rich descriptions, visual branding, GSD-level quality |
+| 7.0 | 2026-04-01 | Flat sub-skill structure, /pbi-settings, /pbi-format-batch, .pbi/ directory |
+| 7.1 | 2026-07-04 | Simplicity-first DAX, /pbi-audit-fix packaged, edit-validation hook, 21-rule audit |
 
 ## Who This Is For
 
