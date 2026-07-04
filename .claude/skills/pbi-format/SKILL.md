@@ -1,12 +1,12 @@
 ---
 name: pbi-format
 description: "Reformat DAX expressions for maximum readability using the DAX Formatter API (daxformatter.com). Handles long expressions, nested functions, and multi-line VAR/RETURN blocks. Preserves semantic meaning while applying consistent indentation and spacing. Auto-applies to PBIP files when detected."
-model: haiku
+model: sonnet
 allowed-tools: Read, Write, Bash, Agent
 disable-model-invocation: true
 metadata:
   author: d7rocket
-  version: 6.1.0
+  version: 7.1.0
   category: data-analytics
   tags: [power-bi, dax, pbip, semantic-model]
 ---
@@ -78,11 +78,13 @@ Use the external DAX Formatter API for consistent, community-standard formatting
 > DAX Formatter API reference is in `shared/api-notes.md` (read if needed).
 
 ## Format API Status
-!`TMPCHECK=$(mktemp); curl -s -L -X POST "https://www.daxformatter.com" -d "fx=1%2B1&r=US&embed=1" --max-time 5 -o "$TMPCHECK" 2>/dev/null; CURL_EXIT=$?; if [ "$CURL_EXIT" -eq 28 ]; then echo "API_TIMEOUT"; elif python3 -c "import sys; d=open('$TMPCHECK','r',errors='replace').read(); sys.exit(0 if 'formatted' in d else 1)" 2>/dev/null; then echo "API_OK"; else echo "API_FAIL"; fi; rm -f "$TMPCHECK"`
+!`TMPCHECK=$(mktemp); curl -s -L -X POST "https://www.daxformatter.com" -d "fx=1%2B1&r=US&embed=1" --max-time 5 -o "$TMPCHECK" 2>/dev/null; CURL_EXIT=$?; if [ "$CURL_EXIT" -eq 28 ]; then echo "API_TIMEOUT"; elif python -c "import sys; d=open('$TMPCHECK','r',errors='replace').read(); sys.exit(0 if 'formatted' in d else 1)" 2>/dev/null; then echo "API_OK"; else echo "API_FAIL"; fi; rm -f "$TMPCHECK"`
 
 ## Instructions
 
-Respond to the analyst with exactly: "Paste your DAX measure below:"
+If `$ARGUMENTS` already contains a DAX expression, use it directly and skip the paste prompt.
+
+Otherwise respond to the analyst with exactly: "Paste your DAX measure below:"
 
 Once the analyst pastes a DAX measure, follow these steps in order.
 
@@ -192,7 +194,7 @@ VAR PriorYear =
         DATEADD ( 'Date'[Date], -1, YEAR )
     )
 RETURN
-DIVIDE ( CurrentYear - PriorYear, PriorYear, BLANK () )
+DIVIDE ( CurrentYear - PriorYear, PriorYear )
 ```
 
 ### Step 5 — Output Structure
@@ -200,10 +202,11 @@ DIVIDE ( CurrentYear - PriorYear, PriorYear, BLANK () )
 Present the output in this order:
 
 1. (Only if prior failure warning applies): Warning line
-2. (Only if API_FAIL): `_DAX Formatter API unavailable — formatted inline by Claude_`
-3. (Only if --table flag was passed): `Table context: TableName`
-4. The formatted measure in a fenced `dax` code block
-5. Next steps line: `**Next steps:** /pbi-explain · /pbi-optimise · /pbi-comment · /pbi-error`
+2. (Only if API_TIMEOUT): `_DAX Formatter API timed out (5 s) — formatted inline by Claude_`
+3. (Only if API_FAIL): `_DAX Formatter API unavailable — formatted inline by Claude_`
+4. (Only if --table flag was passed): `Table context: TableName`
+5. The formatted measure in a fenced `dax` code block
+6. Next steps line: `**Next steps:** /pbi-explain · /pbi-optimise · /pbi-comment · /pbi-error`
 
 ### Step 6 — Update .pbi/context.md
 

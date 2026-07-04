@@ -6,7 +6,7 @@ allowed-tools: Read, Write, Bash, Agent
 disable-model-invocation: true
 metadata:
   author: d7rocket
-  version: 6.1.0
+  version: 7.1.0
   category: data-analytics
   tags: [power-bi, dax, pbip, semantic-model]
 ---
@@ -93,6 +93,13 @@ If PBIP_MODE=file:
 
 **Confirm check:** If PBI_CONFIRM=true, show a preview of the changes and ask "Write this change? (y/N)" before writing. On n/N/Enter: "Write cancelled. Output above is paste-ready." Skip file write and auto-commit. On y/Y: proceed. If PBI_CONFIRM=false: proceed directly to write (current behavior).
 
+**unappliedChanges.json check:**
+Run bash: `ls "$PBIP_DIR/unappliedChanges.json" 2>/dev/null && echo "UNAPPLIED=yes" || echo "UNAPPLIED=no"`
+If UNAPPLIED=yes:
+  - Output: "unappliedChanges.json detected — Desktop may have unsaved changes. Proceed anyway? (y/N)"
+  - If analyst types y or Y: continue.
+  - Otherwise: Output "Write cancelled. No files modified." Stop.
+
 Use the measure name extracted in Step 2 as the search key.
 
 **If PBIP_FORMAT=tmdl:**
@@ -163,15 +170,15 @@ Use the measure name extracted in Step 2 as the search key.
 Read Session Context for `## Model Context` section.
 
 - If `## Model Context` is present and non-empty: note the table context. Use it to make inline comments more specific (e.g., reference actual column names when explaining filter logic). Proceed to Step 1.
-- If `## Model Context` is absent or empty:
-  - Ask: "Which table does this measure belong to?"
-  - Wait for the analyst's answer.
-  - Read `.pbi/context.md` with Read tool. Add `## Model Context` section with the analyst's answer. Write back with Write tool.
-  - Proceed to Step 1 using the noted table context.
+- If `## Model Context` is absent or empty: proceed to Step 1 and collect the measure first. After the measure is received, ask: "Which table does this measure belong to? (optional — press enter to skip)"
+  - If the analyst answers: Read `.pbi/context.md` with Read tool. Add `## Model Context` section with the analyst's answer. Write back with Write tool. Use the noted table context.
+  - If the analyst skips: proceed without blocking — comment the pasted measure as-is.
 
 ### Step 1 — Initial Response
 
-Respond immediately with:
+If `$ARGUMENTS` already contains a DAX expression, use it directly and skip the paste prompt.
+
+Otherwise respond immediately with:
 
 > Paste your DAX measure below:
 
@@ -200,7 +207,7 @@ Add `//` inline comments to the DAX measure according to these rules:
 - Add comments **on or above CALCULATE arguments** explaining the filter logic in business terms — not DAX terms. Say `// Filter to current year only`, not `// DATESYTD applies a year-to-date time intelligence filter`.
 - Add comments **above or on VAR declarations** explaining what each variable holds in business terms. Example: `// Total orders placed before the selected date`.
 - Add a comment **above the RETURN statement** (when variables are used) stating plainly what is being returned. Example: `// Return the ratio of converted leads to total leads`.
-- For **simple single-line measures** (e.g., `Revenue = SUM(Sales[Amount])`): add exactly one comment above the expression describing the business calculation in a full sentence. Example: `// Total sales revenue — sums the Amount column across all visible rows`.
+- For **simple single-line self-explanatory measures** (e.g., `Revenue = SUM(Sales[Amount])`): do NOT add an inline comment — write only the description property (Step 5). Reserve inline comments for measures whose intent is non-obvious.
 
 **What not to do:**
 - Do NOT add a comment on every line — only comment lines where the intent is non-obvious.

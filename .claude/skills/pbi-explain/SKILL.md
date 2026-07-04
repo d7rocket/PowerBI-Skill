@@ -6,7 +6,7 @@ allowed-tools: Read, Write, Bash, Agent
 disable-model-invocation: true
 metadata:
   author: d7rocket
-  version: 6.1.0
+  version: 7.1.0
   category: data-analytics
   tags: [power-bi, dax, pbip, semantic-model]
 ---
@@ -82,17 +82,17 @@ Explain intent and behavior, not syntax. The output should help someone who has 
 Read Session Context for `## Model Context` section.
 
 - If `## Model Context` is present and non-empty: note the table context. Proceed to Step 1. Use the noted table when describing filter context in Step 5 output.
-- If `## Model Context` is absent or empty:
-  - Ask: "Which table does this measure belong to?"
-  - Wait for the analyst's answer.
-  - Read `.pbi/context.md` with Read tool. Add `## Model Context` section with the analyst's answer. Write back with Write tool.
-  - Proceed to Step 1 using the noted table context.
+- If `## Model Context` is absent or empty: proceed to Step 1 and collect the measure first. After the measure is received, ask: "Which table does this measure belong to? (optional — press enter to skip)"
+  - If the analyst answers: Read `.pbi/context.md` with Read tool. Add `## Model Context` section with the analyst's answer. Write back with Write tool. Use the noted table context.
+  - If the analyst skips: proceed without blocking — explain the pasted measure as-is.
 
 ---
 
 ### Step 1 — Initial Response
 
-Respond to the analyst with exactly:
+If `$ARGUMENTS` already contains a DAX expression, use it directly and skip the paste prompt.
+
+Otherwise respond to the analyst with exactly:
 
 > Paste your DAX measure below:
 
@@ -160,7 +160,7 @@ _Complexity: [Simple | Intermediate | Advanced]_
 [One paragraph plain-English summary of what the measure calculates. For Simple measures, avoid DAX jargon entirely. For Advanced measures, name the patterns explicitly and explain the implications.]
 
 ### Filter Context
-[Describe what filters are active when this measure evaluates. Include: filters from CALCULATE arguments, filters inherited from visuals/slicers (row context only relevant when called from a visual), ALL/ALLEXCEPT overrides if present. If no explicit filter manipulation is present, state what context the measure inherits from the report visual.]
+[Describe what filters are active when this measure evaluates. Include: filters from CALCULATE arguments, filters inherited from visuals/slicers (visuals and slicers contribute filter context — they never create row context), ALL/ALLEXCEPT overrides if present. If no explicit filter manipulation is present, state what context the measure inherits from the report visual.]
 
 ### Row Context
 [State whether row context is present. Row context exists inside iterator functions (SUMX, AVERAGEX, etc.) and inside calculated columns. If the measure uses an iterator, describe which table provides the row context and what columns are accessible per row. If no iterator is present and this is not a calculated column, state that no row context is active.]
@@ -188,7 +188,7 @@ After producing the output, update `.pbi/context.md` using the following steps:
      - `Timestamp: [current ISO 8601 timestamp, e.g. 2026-03-12T10:30:00Z]`
      - `Measure: [extracted measure name]`
      - `Outcome: Success — [one-line summary of what was explained, e.g. "Year-to-date revenue using DATESYTD"]`
-   - **"## Command History" table:** Prepend a new row at the top of the table body:
+   - **"## Command History" table:** Append a new row at the bottom of the table body:
      `| [timestamp] | /pbi-explain | [measure name] | Success |`
    - **Keep Command History to the last 20 rows** — if the table has more than 20 data rows after adding the new one, drop the oldest rows until exactly 20 remain.
    - **Do NOT modify the "## Analyst-Reported Failures" section** — the analyst manages that section manually.

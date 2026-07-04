@@ -1,12 +1,12 @@
 ---
 name: pbi-optimise
-description: "Run a 13-rule performance scan on any DAX measure, identifying anti-patterns like unnecessary iterators, FILTER on full tables, nested CALCULATE chains, and missing variable extraction. Produces a severity-graded report with before/after diffs. Works with pasted DAX and PBIP-embedded measures."
+description: "Run a 14-rule performance scan on any DAX measure, identifying anti-patterns like unnecessary iterators, FILTER on full tables, nested CALCULATE chains, and gratuitous IFERROR wrappers. Produces a severity-graded report with before/after diffs. Works with pasted DAX and PBIP-embedded measures."
 model: sonnet
 allowed-tools: Read, Write, Bash, Agent
 disable-model-invocation: true
 metadata:
   author: d7rocket
-  version: 6.1.0
+  version: 7.1.0
   category: data-analytics
   tags: [power-bi, dax, pbip, semantic-model]
 ---
@@ -77,7 +77,9 @@ Suggest only changes with measurable performance impact. Never recommend changes
 
 ## Instructions
 
-Respond with: "Paste your DAX measure below:"
+If `$ARGUMENTS` already contains a DAX expression, use it directly and skip the paste prompt.
+
+Otherwise respond with: "Paste your DAX measure below:"
 
 Wait for the analyst to paste a DAX measure, then follow these steps in order.
 
@@ -91,10 +93,9 @@ Read Session Context for `## Model Context` section.
 
 - If `## Model Context` is present and non-empty: note the table and related table context. Proceed to Step 1. Use this context when generating rationale for any rewrites.
 - If `## Model Context` is absent or empty:
-  - Ask: "Which table does this measure belong to, and are there any related tables involved?"
-  - Wait for the analyst's answer.
-  - Read `.pbi/context.md` with Read tool. Add `## Model Context` section with the answer. Write back with Write tool.
-  - Proceed to Step 1 using the noted context.
+  - Ask: "Which table does this measure belong to, and are there any related tables involved? (optional — press enter to skip)"
+  - If the analyst answers: Read `.pbi/context.md` with Read tool. Add `## Model Context` section with the answer. Write back with Write tool. Proceed to Step 1 using the noted context.
+  - If the analyst skips: proceed to Step 1 without blocking — analyse the pasted measure as-is.
 
 ---
 
@@ -150,8 +151,8 @@ CALCULATE([Measure], Sales[Region] = "North")
 ```
 
 RATIONALE (brief for simple, full paragraph for complex):
-- Simple case: "Column filter uses xmatch internally and avoids a full table scan row-by-row. This is more storage-engine-friendly and typically 10-100x faster on large tables."
-- Complex case: Provide a full paragraph explaining the storage engine vs formula engine distinction, xmatch mechanics, and the specific performance implication for the measure's table size and filter cardinality.
+- Simple case: "Column predicate filters compile to efficient storage-engine filters, while FILTER over a table iterates the rows in the formula engine. The direct column filter is faster, especially on large tables."
+- Complex case: Provide a full paragraph explaining the storage engine vs formula engine distinction and the specific performance implication for the measure's table size and filter cardinality.
 
 ---
 
@@ -207,7 +208,7 @@ REWRITE:
 SWITCH(Table[Col], "A", result1, "B", result2, default)
 ```
 
-RATIONALE: "SWITCH with a value argument evaluates the expression once and matches. SWITCH(TRUE()) evaluates every condition sequentially even after a match is found in some engines. Use the value form when all conditions test the same expression."
+RATIONALE: "SWITCH with a value argument evaluates the switch expression once and matches against it — clearer intent, and the shared expression is not re-evaluated in every condition. DAX SWITCH short-circuits in both forms, so the gain is readability plus a single evaluation of the switch expression. Use the value form when all conditions test the same expression."
 
 ---
 
@@ -294,7 +295,7 @@ If the condition is complex (multiple columns, OR logic, dynamic filters), FLAG 
 
 ---
 
-**Rule 13 — Semi-Additive Pattern Opportunities**
+**Rule 13 — Manual Time-Intelligence Patterns**
 
 DETECT: Manual date filtering patterns that replicate built-in time intelligence:
 - `CALCULATE([Measure], FILTER(ALL('Date'), 'Date'[Date] <= MAX('Date'[Date])))` → running total
@@ -303,8 +304,9 @@ DETECT: Manual date filtering patterns that replicate built-in time intelligence
 
 FLAG: "This measure implements manual date filtering that could use a built-in time intelligence function. Built-in functions (TOTALYTD, DATEADD, SAMEPERIODLASTYEAR, DATESYTD) are engine-optimised and handle edge cases (fiscal years, blank dates) more reliably."
 
-REWRITE ONLY IF the pattern directly maps to a standard function:
-- Running total with `<= MAX(Date)` → `CALCULATE([Measure], DATESYTD('Date'[Date]))`
+**Running total with `<= MAX(Date)` — FLAG ONLY, never rewrite.** An all-time running total and DATESYTD are NOT equivalent: DATESYTD resets each January 1, while the manual pattern accumulates across all time. Converting it changes business logic. Surface the pattern in the **Flags** section, explain this difference, and let the analyst decide whether a YTD reset is actually wanted.
+
+REWRITE ONLY IF the pattern directly maps to a standard function with identical semantics:
 - Year-to-date with year/date filter → `TOTALYTD([Measure], 'Date'[Date])`
 - Prior year comparison → `CALCULATE([Measure], SAMEPERIODLASTYEAR('Date'[Date]))`
 
@@ -312,7 +314,19 @@ If the pattern uses custom fiscal calendars or non-standard date hierarchies, fl
 
 ---
 
-### Step 6 — Multiple Valid Rewrites
+**Rule 14 — Gratuitous IFERROR**
+
+DETECT: `IFERROR(a / b, ...)` wrapping a division, or IFERROR wrapping an expression with no plausible error source (plain aggregations, measure references, arithmetic over numeric columns).
+
+REWRITE:
+- `IFERROR(a / b, alternate)` → `DIVIDE(a, b)` — add a third argument only if the alternate result is genuinely required
+- IFERROR with no plausible error source → remove the wrapper entirely
+
+RATIONALE: "This is de-complication, not just performance. DIVIDE handles division by zero natively, so IFERROR around a division is redundant. IFERROR also forces the engine into a slower error-handling evaluation mode and hides real errors; wrapping expressions that cannot fail adds overhead and noise with no benefit."
+
+---
+
+### Step 5 — Multiple Valid Rewrites
 
 If more than one valid rewrite exists for any portion of the measure, show each option as a labelled alternative with a brief trade-off comparison.
 
@@ -322,7 +336,7 @@ Format:
 
 ---
 
-### Step 7 — Complexity Inference
+### Step 6 — Complexity Inference
 
 Infer complexity using the same rules as `/pbi-explain`:
 - **Simple**: SUM, DIVIDE, basic CALCULATE with one filter, straightforward arithmetic
@@ -336,7 +350,7 @@ Rationale depth follows complexity:
 
 ---
 
-### Step 8 — Output
+### Step 7 — Output
 
 Produce output in this structure:
 
@@ -372,7 +386,7 @@ If no Flags apply, omit the Flags section entirely.
 
 ---
 
-### Step 9 — Update .pbi/context.md
+### Step 8 — Update .pbi/context.md
 
 After producing output, update `.pbi/context.md` using Read then Write:
 

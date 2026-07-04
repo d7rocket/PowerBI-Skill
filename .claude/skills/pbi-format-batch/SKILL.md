@@ -1,12 +1,12 @@
 ---
 name: pbi-format-batch
 description: "Apply SQLBI-standard DAX formatting to every measure in the model in one pass. Processes all tables, applies consistent keyword capitalisation and structure (VAR/RETURN blocks, CALCULATE arguments, indentation). Uses Claude inline formatting — no DAX Formatter API dependency. PBIP-only. Auto-commits."
-model: haiku
+model: sonnet
 allowed-tools: Read, Write, Bash
 disable-model-invocation: true
 metadata:
   author: d7rocket
-  version: 6.1.0
+  version: 7.1.0
   category: data-analytics
   tags: [power-bi, dax, pbip, semantic-model]
 ---
@@ -28,6 +28,9 @@ Save the `PBIP_DIR` value — all subsequent steps must use it.
 
 ### Git State
 !`python ".claude/skills/pbi/scripts/detect.py" git 2>/dev/null || (echo "GIT=no" && echo "HAS_COMMITS=no")`
+
+### Session Context
+!`python ".claude/skills/pbi/scripts/detect.py" context 2>/dev/null || echo "No prior context found."`
 
 ### Settings
 !`python ".claude/skills/pbi/scripts/detect.py" settings 2>/dev/null || echo "PBI_CONFIRM=true"`
@@ -154,7 +157,7 @@ VAR PriorYear =
         DATEADD ( 'Date'[Date], -1, YEAR )
     )
 RETURN
-    DIVIDE ( CurrentYear - PriorYear, PriorYear, BLANK () )
+    DIVIDE ( CurrentYear - PriorYear, PriorYear )
 ```
 
 **Skip rule:** If a measure expression is a single-line trivial expression (e.g., `SUM ( Sales[Amount] )`) that already follows all rules, mark it as `already_formatted=true` and do not modify it.
@@ -176,11 +179,12 @@ Output a summary table:
 
 [N] measures to reformat, [M] already formatted.
 
-**If PBI_CONFIRM=false:** skip the prompt below and proceed directly to Step 4.
-
 Apply all formatting changes? (y/N)
 ```
 
+**If PBI_CONFIRM=false:** skip the `(y/N)` prompt in the template above (still show the preview table) and proceed directly to Step 4.
+
+**If PBI_CONFIRM=true:** wait for the analyst's response:
 - y / Y: proceed
 - n / N / Enter: `Batch cancelled. No files modified.` Stop.
 
@@ -195,7 +199,7 @@ For each `.tmdl` file that contains measures with `changed=true`:
    - Preserve the `measure Name =` declaration line
    - Replace expression lines with the formatted version (4-space indent)
    - Preserve all properties (`formatString:`, `displayFolder:`, `description:`, `/// comments`) unchanged
-   - Keep tab indentation for the overall TMDL structure — only the expression body uses 4-space indent within the expression block
+   - Keep tab indentation throughout: expression lines are tab-indented to the block depth per the file's existing tab convention, and the SQLBI formatting indentation is applied RELATIVE to that tab prefix using additional tabs. Never introduce space indentation into TMDL files.
 3. Write the entire modified file back (Write tool) — one write per file
 
 **TMSL path:**
@@ -241,9 +245,13 @@ Read `.pbi/context.md`, update `## Last Command` and `## Command History` (20-ro
 
 ## Shared Rules
 
-- **PYTHON-FIRST FILE OPERATIONS (CRITICAL):** All file read/write operations MUST use Python with `encoding='utf-8'`. Shell/bash only for git commands.
-- **PBIP folder naming:** Always use `PBIP_DIR` from detection — never hardcode `.SemanticModel`.
-- Session context: Read-then-Write `.pbi/context.md`, 20-row max Command History, never touch Analyst-Reported Failures.
-- TMDL: tabs only for overall file indentation.
-- **LOCAL-FIRST GIT POLICY (CRITICAL):** NEVER `git pull`, `git fetch`, `git merge`, `git push`. Local files are source of truth.
-- **Confirm mode (PBI_CONFIRM):** When true, show preview and ask `(y/N)`. When false, proceed directly.
+- **PYTHON-FIRST FILE OPERATIONS (CRITICAL):** All file read/write and text search operations MUST use Python with `encoding='utf-8'` to correctly handle accented characters (French: é, è, ê, ç, à, ù, etc.). Do NOT use `grep`, `cat`, `sed`, `awk`, or shell redirects for reading/writing model files. For measure name search, use `python ".claude/skills/pbi/scripts/detect.py" search "MeasureName" "$PBIP_DIR"` instead of `grep -rlF`. Shell/bash is allowed ONLY for: git CLI commands and Python script invocation.
+- **PBIP folder naming:** Always use the `PBIP_DIR` value from detection (e.g., `Sales.SemanticModel`) — never hardcode `.SemanticModel`. Same for Report: use `PBIR_DIR` (e.g., `Sales.Report`).
+- All bash paths must be double-quoted (e.g., `"$VAR"`, `"$SM_DIR/"`)
+- Session context: Read-then-Write `.pbi/context.md`, 20 row max Command History, never touch Analyst-Reported Failures
+- TMDL: tabs only for indentation
+- TMSL expression format: preserve original form (string vs array); use array if expression has line breaks
+- Escalation state: `## Escalation State` in `.pbi/context.md` tracks gathered context during escalation.
+- **LOCAL-FIRST GIT POLICY (CRITICAL):** NEVER `git pull`, `git fetch`, `git merge`, `git rebase`, `git push`, or create PRs. Allowed: `git init`, `git add`, `git commit`, `git diff`, `git log`, `git status`, `git revert`, `git rev-parse`.
+- **Post-write staging:** After any command writes files to `$PBIP_DIR/` (and PBIP_MODE=file, GIT=yes), auto-stage: `git add "$PBIP_DIR/" 2>/dev/null`. Skip if the command already auto-committed.
+- **Confirm mode (PBI_CONFIRM):** When `PBI_CONFIRM=true`: show preview and ask `(y/N)` before writing model files or output files. When `PBI_CONFIRM=false`: write directly without asking. Commands that already have a `(y/N)` prompt respect this — if PBI_CONFIRM=false, skip the prompt and proceed.

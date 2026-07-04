@@ -6,7 +6,7 @@ allowed-tools: Read, Write, Bash, Agent
 disable-model-invocation: true
 metadata:
   author: d7rocket
-  version: 6.1.0
+  version: 7.1.0
   category: data-analytics
   tags: [power-bi, dax, pbip, semantic-model]
 ---
@@ -163,7 +163,7 @@ For **update-expression**: Find the expression body lines. Replace with new expr
 
 For **update-formatString / update-displayFolder / update-description**: Locate the property line in the measure block. Replace the value. If the property line does not exist, insert it after the expression body.
 
-For **add (new measure, TMDL)**: Ask the analyst for formatString and displayFolder if not provided (or use defaults: formatString: 0, displayFolder: ""). Scaffold:
+For **add (new measure, TMDL)**: Ask the analyst for formatString and displayFolder if not provided (or use defaults: a contextual format string inferred from the measure type as in /pbi-new — currency/revenue → `"$#,##0.00"`, percentage/ratio → `"0.0%"`, count/integer → `"#,##0"`, otherwise `"#,##0.00"`; displayFolder: ""). Never skip the format string. Generated DAX must follow the simplicity-first rule: the simplest expression that meets the requirement — no gratuitous CALCULATE, VAR/RETURN, or IFERROR. Scaffold:
 ```
 	measure '[EntityName]' =
 			[expression]

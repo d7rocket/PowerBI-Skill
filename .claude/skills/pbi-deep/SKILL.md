@@ -6,7 +6,7 @@ allowed-tools: Read, Write, Bash, Agent
 disable-model-invocation: true
 metadata:
   author: d7rocket
-  version: 6.1.0
+  version: 7.1.0
   category: data-analytics
   tags: [power-bi, dax, pbip, semantic-model]
 ---
@@ -72,7 +72,7 @@ Complex DAX work fails when context is gathered piecemeal. Deep mode front-loads
 </purpose>
 
 <core_principle>
-Front-load context, then execute. Never write DAX before completing intake and model review. Hard gates between phases prevent premature solutions. The business question drives everything — every measure must trace back to a stated business need.
+Front-load context, then execute. Never write DAX before completing intake and model review. Hard gates between phases prevent premature solutions. The business question drives everything — every measure must trace back to a stated business need. Measures should be the simplest expression that answers the business question.
 </core_principle>
 
 ## Instructions

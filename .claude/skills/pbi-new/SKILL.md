@@ -6,7 +6,7 @@ allowed-tools: Read, Write, Bash, Agent
 disable-model-invocation: true
 metadata:
   author: d7rocket
-  version: 6.1.0
+  version: 7.1.0
   category: data-analytics
   tags: [power-bi, dax, pbip, semantic-model]
 ---
@@ -72,7 +72,7 @@ Writing DAX from scratch requires knowing both the business requirement and the 
 </purpose>
 
 <core_principle>
-Generate correct, idiomatic DAX that follows the model's existing patterns. Match naming conventions, display folder structure, and format string patterns already in use. Never generate DAX that references tables or columns not in the model.
+Generate correct, idiomatic DAX that follows the model's existing patterns. Match naming conventions, display folder structure, and format string patterns already in use. Never generate DAX that references tables or columns not in the model. Prefer the simplest DAX that satisfies the requirement — a plain SUM or DIVIDE beats CALCULATE with no filter arguments; do not use VAR/RETURN for a single-use expression; never add IFERROR or defensive BLANK-handling unless the analyst asked for it (DIVIDE already handles division by zero).
 </core_principle>
 
 ## Instructions
@@ -173,7 +173,7 @@ If **pattern detected**:
      - Noted: [current ISO 8601 timestamp]
      ```
      Write back with Write tool.
-     Proceed to Step 3, incorporating the visual context into the DAX design (e.g., if placed in a card, consider CALCULATE with explicit date filter; if in a matrix with row context, note the slicer interactions).
+     Proceed to Step 3, incorporating the visual context into the DAX design (e.g., if placed in a card, only add explicit filters when the visual context genuinely can't supply them; if in a matrix with row context, note the slicer interactions).
 
 ---
 
@@ -188,7 +188,7 @@ Generate all five components:
 
 **3b. DAX Expression:**
 - Write correct, efficient DAX that implements the business intent
-- Use appropriate functions: SUM/AVERAGE for simple aggregations, CALCULATE with time intelligence for date-based measures, DIVIDE for ratios (with BLANK() default)
+- Use appropriate functions: SUM/AVERAGE for simple aggregations, CALCULATE with time intelligence for date-based measures, DIVIDE for ratios (omit the third argument — BLANK() is the default)
 - Reference actual column names from model context when available
 - Follow the same optimisation principles as /pbi-optimise (no unnecessary FILTER on tables, use SUM over SUMX for single columns, etc.)
 
@@ -254,6 +254,13 @@ If PBIP_MODE=file:
 **Confirm target table:**
 If the analyst did not specify a table, ask: "Which table should this measure be added to?"
 
+**unappliedChanges.json check:**
+Run bash: `ls "$PBIP_DIR/unappliedChanges.json" 2>/dev/null && echo "UNAPPLIED=yes" || echo "UNAPPLIED=no"`
+If UNAPPLIED=yes:
+  - Output: "unappliedChanges.json detected — Desktop may have unsaved changes. Proceed anyway? (y/N)"
+  - If analyst types y or Y: continue.
+  - Otherwise: Output "Write cancelled. No files modified." Stop.
+
 **If PBIP_FORMAT=tmdl:**
 1. Run bash: `python ".claude/skills/pbi/scripts/detect.py" search "table " "$PBIP_DIR" 2>/dev/null` to verify the target table file exists. If no output is returned, the table was not found — output "Table [TableName] not found in $PBIP_DIR/definition/tables/. Check the table name and try again." and stop.
 2. Read the target `.tmdl` file using the Read tool.
@@ -315,6 +322,9 @@ Read `.pbi/context.md` (Read tool), update these sections, then Write the full f
 ### Anti-Patterns
 - NEVER generate a measure that references columns not in the model (when model context is available)
 - NEVER use FILTER(Table, ...) when a direct column filter suffices
+- NEVER wrap an expression in CALCULATE without filter arguments
+- NEVER use VAR/RETURN when the expression is used only once
+- NEVER add IFERROR/ISERROR unless the analyst explicitly requested it
 - NEVER skip the format string — every measure should have one
 - NEVER auto-push to remote
 
