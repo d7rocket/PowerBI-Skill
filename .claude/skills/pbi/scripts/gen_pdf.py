@@ -49,6 +49,9 @@ def make_styles():
         'code': S('Code', fontName='Courier', fontSize=8.5,
                   textColor=HexColor(C_GREEN), spaceBefore=2, spaceAfter=4, leading=11,
                   leftIndent=14, backColor=HexColor('#F8F8F8')),
+        'mono': S('Mono', fontName='Courier', fontSize=8.5,
+                  textColor=HexColor(C_DGREY), spaceBefore=2, spaceAfter=4,
+                  leading=10),
         'cover_title': S('CT', fontName='Helvetica-Bold', fontSize=36,
                          textColor=HexColor(C_NAVY), alignment=TA_CENTER,
                          spaceBefore=0, spaceAfter=6),
@@ -72,11 +75,24 @@ def make_styles():
 
 
 def make_table(headers, rows, col_widths=None):
-    from reportlab.platypus import Table, TableStyle
+    from reportlab.platypus import Table, TableStyle, Paragraph
+    from reportlab.lib.styles import ParagraphStyle
     from reportlab.lib.colors import HexColor
     from reportlab.lib.units import cm
+    from xml.sax.saxutils import escape
 
-    data = [headers] + rows
+    # Wrap every cell in a Paragraph so long text wraps within the column
+    # instead of overflowing the table cell.
+    head_style = ParagraphStyle('TblHead', fontName='Helvetica-Bold', fontSize=9,
+                                leading=11, textColor=HexColor(C_WHITE))
+    cell_style = ParagraphStyle('TblCell', fontName='Helvetica', fontSize=9,
+                                leading=11, textColor=HexColor(C_DGREY))
+
+    def cell(val, style):
+        return Paragraph(escape(str(val) if val is not None else ''), style)
+
+    data = [[cell(h, head_style) for h in headers]] + \
+           [[cell(v, cell_style) for v in row] for row in rows]
     col_w = [cm(w) for w in col_widths] if col_widths else None
     t = Table(data, colWidths=col_w, repeatRows=1)
     t.setStyle(TableStyle([
@@ -143,8 +159,9 @@ def main():
     from reportlab.lib.colors import HexColor
     from reportlab.platypus import (
         SimpleDocTemplate, Paragraph, Spacer,
-        PageBreak, HRFlowable, KeepTogether
+        PageBreak, HRFlowable, KeepTogether, XPreformatted
     )
+    from xml.sax.saxutils import escape as xml_escape
 
     with open(sys.argv[1], 'r', encoding='utf-8') as f:
         data = json.load(f)
@@ -169,7 +186,7 @@ def main():
         leftMargin=cm(2.54), rightMargin=cm(2.54),
         topMargin=cm(2.0),   bottomMargin=cm(2.0),
         title=f'{project} — Power BI Documentation',
-        author='pbi:docs',
+        author='pbi-docs',
     )
 
     story = []
@@ -250,9 +267,8 @@ def main():
     h2('2.1', 'Entity Relationship Diagram')
     erd = data.get('erd', '')
     if erd:
-        safe = erd.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
-        story.append(Paragraph(f'<font name="Courier" size="8.5">{safe}</font>',
-                               ST['body']))
+        # XPreformatted preserves line breaks (Paragraph collapses them)
+        story.append(XPreformatted(xml_escape(erd), ST['mono']))
 
     h2('2.2', 'Tables')
     if tables:
@@ -310,11 +326,8 @@ def main():
             if meta_parts:
                 parts.append(Paragraph('  ·  '.join(meta_parts), ST['caption']))
             if m.get('expression'):
-                safe_expr = (m['expression']
-                             .replace('&', '&amp;')
-                             .replace('<', '&lt;')
-                             .replace('>', '&gt;'))
-                parts.append(Paragraph(safe_expr, ST['code']))
+                # XPreformatted keeps DAX line breaks (Paragraph collapses them)
+                parts.append(XPreformatted(xml_escape(m['expression']), ST['code']))
             story.append(KeepTogether(parts))
     story.append(PageBreak())
 

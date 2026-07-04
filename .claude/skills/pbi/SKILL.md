@@ -4,10 +4,10 @@ description: Power BI DAX co-pilot — menu, free-text solver, and backward-comp
 license: MIT
 disable-model-invocation: true
 model: sonnet
-allowed-tools: Read, Write, Bash, Agent
+allowed-tools: Read, Write, Bash, Glob, Agent
 metadata:
   author: d7rocket
-  version: 7.0.0
+  version: 7.1.0
   category: data-analytics
   tags: [power-bi, dax, pbip, semantic-model]
 ---
@@ -91,7 +91,7 @@ Parse `$ARGUMENTS` first word/keyword to determine the subcommand. Match against
 | help, commands, "what can you do", "list commands" | `/pbi-help` |
 | resume, "pick up where I left off", "what was I doing", "continue", "restore context" | `/pbi-resume` |
 | version, "version history", "what version" | `/pbi-version` |
-| settings, "write mode", "auto mode", "confirm mode" | `settings/SKILL.md` |
+| settings, "write mode", "auto mode", "confirm mode" | `/pbi-settings` |
 | (no keyword match — free-text) | Solve-first handler (inline below) |
 
 If intent is ambiguous between two commands: pick the most specific match and note it — "Routing to /pbi-edit (you can also use /pbi-comment if you only need to add comments)."
@@ -100,7 +100,7 @@ If intent is ambiguous between two commands: pick the most specific match and no
 
 When a keyword match is found:
 
-1. Use the Glob tool to find the sub-skill file: `.claude/skills/pbi/<cmd>/SKILL.md`
+1. Use the Glob tool to find the sub-skill file: `.claude/skills/pbi-<cmd>/SKILL.md`
 2. Use the Read tool to load the sub-skill SKILL.md.
 3. Execute the instructions from the loaded file. The detection block outputs from this SKILL.md (above) are already available — skip the sub-skill's detection section (it's redundant since this router already ran detection). Execute the command instructions, starting from the first `## Instructions` or `## File Mode Branch` or `## Phase A` heading in the loaded file.
 4. Pass through any remaining `$ARGUMENTS` after the subcommand keyword.
@@ -152,15 +152,15 @@ On analyst response:
 - "A": Ask — "Which DAX command? **explain** · **format** · **optimise** · **comment** · **new**" — then route to the matching `/pbi-<cmd>`.
 - "B": Route directly to `/pbi-audit`. Output "Routing to /pbi-audit — running a full model health check." then proceed.
 - "C": Ask — "Which command? **diff** — see what changed · **commit** — save a snapshot · **undo** — revert the last commit · **changelog** — generate release notes" — then route.
-- "D": Ask — "Which command? **edit** — change a specific entity · **comment-batch** — comment all measures at once" — then route.
+- "D": Ask — "Which command? **edit** — change a specific entity · **comment-batch** — comment all measures at once · **format-batch** — reformat all measures at once" — then route.
 - "E": Route to `/pbi-deep`.
 - "F": Route to `/pbi-extract`.
 - "G": Route to `/pbi-docs`. Output "Routing to /pbi-docs — generating project documentation." then proceed.
 - "H": Route to `/pbi-resume`. Output "Routing to /pbi-resume — restoring session context." then proceed.
-- "S": Route to `/pbi-settings`. Load and execute `settings/SKILL.md`.
+- "S": Route to `/pbi-settings`. Load and execute `.claude/skills/pbi-settings/SKILL.md`.
 - "?": Route to `/pbi-help`.
 - Free-text response: Apply the keyword matching from the Routing table above. If no keyword matches, route to **Solve-First Default** handler.
-- Unrecognised response: Output "I didn't catch that — type A, B, C, D, E, F, G, or ? — or describe what you need."
+- Unrecognised response: Output "I didn't catch that — type A, B, C, D, E, F, G, H, S, or ? — or describe what you need."
 
 ## Solve-First Default
 
@@ -228,7 +228,7 @@ After any subcommand completes (including the Solve-First Default handler):
    Output: `Staged locally | Context updated`
 
 2. **Skip conditions**: If PBIP_MODE=paste, or GIT=no, or the command did not write any files (e.g., explain in paste mode, help, diff), skip the auto-stage step (but still run context tracking below).
-3. **Auto-committing commands**: Commands that auto-commit (comment, new, edit, error, audit, comment-batch) already run `git add` + `git commit`. The epilogue's `git add` is a harmless no-op in those cases — skip the "Staged locally" output if the command already output an "Auto-committed" message.
+3. **Auto-committing commands**: Commands that auto-commit (comment, new, edit, error, audit, comment-batch, format-batch, audit-fix) already run `git add` + `git commit`. The epilogue's `git add` is a harmless no-op in those cases — skip the "Staged locally" output if the command already output an "Auto-committed" message.
 
 
 ## Shared Rules

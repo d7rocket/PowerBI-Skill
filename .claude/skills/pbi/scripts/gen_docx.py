@@ -159,11 +159,16 @@ def add_footer(doc, project_name):
             r.bold = bold
             r.font.color.rgb = RGBColor(*color)
 
-        # PAGE field
+        # PAGE field — full begin/instrText/separate/result/end sequence so
+        # the page number renders without requiring a manual F9 field update.
         fld = OxmlElement('w:fldChar')
         fld.set(qn('w:fldCharType'), 'begin')
         instr = OxmlElement('w:instrText')
         instr.text = ' PAGE '
+        fld_sep = OxmlElement('w:fldChar')
+        fld_sep.set(qn('w:fldCharType'), 'separate')
+        result = OxmlElement('w:t')
+        result.text = '1'  # placeholder result; Word refreshes it on render
         fld2 = OxmlElement('w:fldChar')
         fld2.set(qn('w:fldCharType'), 'end')
         run_xml = OxmlElement('w:r')
@@ -177,6 +182,8 @@ def add_footer(doc, project_name):
         run_xml.append(rpr)
         run_xml.append(fld)
         run_xml.append(instr)
+        run_xml.append(fld_sep)
+        run_xml.append(result)
         run_xml.append(fld2)
         fp._p.append(run_xml)
 
@@ -278,10 +285,16 @@ def main():
     add_heading(doc, '2.1', 'Entity Relationship Diagram', level=2)
     erd = data.get('erd', '')
     if erd:
+        # One run per line with explicit line breaks — a single run containing
+        # '\n' renders the newlines as spaces in Word.
         p = doc.add_paragraph()
-        r = p.add_run(erd)
-        r.font.name = 'Courier New'
-        r.font.size = Pt(8.5)
+        erd_lines = erd.split('\n')
+        for li, line in enumerate(erd_lines):
+            r = p.add_run(line)
+            r.font.name = 'Courier New'
+            r.font.size = Pt(8.5)
+            if li < len(erd_lines) - 1:
+                r.add_break()
 
     add_heading(doc, '2.2', 'Tables', level=2)
     if tables:
@@ -347,10 +360,16 @@ def main():
                 p.paragraph_format.left_indent = Cm(0.5)
                 p.paragraph_format.space_before = Pt(2)
                 p.paragraph_format.space_after  = Pt(6)
-                r = p.add_run(m['expression'])
-                r.font.name = 'Courier New'
-                r.font.size = Pt(8.5)
-                r.font.color.rgb = RGBColor(*CGREEN)
+                # One run per line with explicit line breaks — a single run
+                # containing '\n' renders the newlines as spaces in Word.
+                expr_lines = m['expression'].split('\n')
+                for li, line in enumerate(expr_lines):
+                    r = p.add_run(line)
+                    r.font.name = 'Courier New'
+                    r.font.size = Pt(8.5)
+                    r.font.color.rgb = RGBColor(*CGREEN)
+                    if li < len(expr_lines) - 1:
+                        r.add_break()
     doc.add_page_break()
 
     # ── 5. BUSINESS LOGIC ────────────────────────────────────────────────────

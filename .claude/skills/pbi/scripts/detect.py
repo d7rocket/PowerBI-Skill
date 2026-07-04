@@ -45,25 +45,32 @@ def migrate_files():
     """Move legacy root-level files into .pbi/ folder.
 
     Migrates:
-      .pbi-context.md  -> .pbi/context.md
-      project-docs.md  -> .pbi/project-docs.md
-      audit-report.md  -> .pbi/audit-report.md
+      .pbi-context.md     -> .pbi/context.md
+      project-docs.md     -> .pbi/project-docs.md
+      audit-report.md     -> .pbi/audit-report.md
+      project-extract.md  -> .pbi/project-extract.md
     """
     os.makedirs(PBI_DIR, exist_ok=True)
     migrations = [
         ('.pbi-context.md', CONTEXT_FILE),
         ('project-docs.md', os.path.join(PBI_DIR, 'project-docs.md')),
         ('audit-report.md', os.path.join(PBI_DIR, 'audit-report.md')),
+        ('project-extract.md', os.path.join(PBI_DIR, 'project-extract.md')),
     ]
     moved = []
+    skipped = []
     for src, dst in migrations:
-        if os.path.isfile(src) and not os.path.isfile(dst):
-            os.rename(src, dst)
-            moved.append(f'{src} -> {dst}')
-    if moved:
-        for m in moved:
-            print('MIGRATED: ' + m)
-    else:
+        if os.path.isfile(src):
+            if os.path.isfile(dst):
+                skipped.append(src)
+            else:
+                os.rename(src, dst)
+                moved.append(f'{src} -> {dst}')
+    for m in moved:
+        print('MIGRATED: ' + m)
+    for s in skipped:
+        print(f'MIGRATE_SKIPPED {s} (destination exists)')
+    if not moved and not skipped:
         print('MIGRATE_OK')
 
 
@@ -104,12 +111,14 @@ def detect_pbip():
     dirs = glob.glob('*.SemanticModel') + glob.glob('.SemanticModel')
     if dirs:
         sm = dirs[0]
+        if len(dirs) > 1:
+            print(f'PBIP_WARN=multiple SemanticModel folders found, using {sm}')
         if os.path.isfile(os.path.join(sm, 'model.bim')):
             print('PBIP_MODE=file PBIP_FORMAT=tmsl PBIP_DIR=' + sm)
         elif os.path.isdir(os.path.join(sm, 'definition', 'tables')):
             print('PBIP_MODE=file PBIP_FORMAT=tmdl PBIP_DIR=' + sm)
         else:
-            print('PBIP_MODE=file PBIP_FORMAT=tmdl PBIP_DIR=' + sm)
+            print('PBIP_MODE=file PBIP_FORMAT=unknown PBIP_DIR=' + sm)
     else:
         print('PBIP_MODE=paste')
 
@@ -125,6 +134,12 @@ def detect_files():
     if os.path.isdir(tbl):
         for f in sorted(glob.glob(os.path.join(tbl, '**', '*.tmdl'), recursive=True)):
             print(f)
+        # Also list model-level TMDL files (Auto-Resume extracts relationships
+        # from the File Index, so relationships.tmdl must appear here).
+        for extra in ('relationships.tmdl', 'model.tmdl', 'expressions.tmdl'):
+            p = os.path.join(sm, 'definition', extra)
+            if os.path.isfile(p):
+                print(p)
     elif os.path.isfile(bim):
         print('tmsl:' + bim)
 
@@ -135,7 +150,8 @@ def detect_pbir():
     if dirs:
         rpt = dirs[0]
         count = 0
-        for root, _, files in os.walk(rpt):
+        for root, walk_dirs, files in os.walk(rpt):
+            walk_dirs.sort()  # deterministic traversal order across platforms
             for f in sorted(files):
                 if f.endswith('.json') and f not in ('item.config.json', 'item.metadata.json'):
                     if count < 20:
@@ -225,15 +241,16 @@ def html_parse(tmpfile):
     UTF-8 safe — handles accented DAX identifiers.
     """
     import re
+    import html as html_lib
     try:
         with open(tmpfile, 'r', encoding='utf-8') as f:
-            html = f.read()
+            raw = f.read()
     except (OSError, IOError):
         return  # Silent — format.md API_FAIL branch handles empty output
 
     # Extract content inside <div class="formatted"...>...</div>
     # Use greedy match so nested </div> tags don't truncate multi-block responses
-    m = re.search(r'<div class="formatted"[^>]*>(.*)</div>', html, re.DOTALL)
+    m = re.search(r'<div class="formatted"[^>]*>(.*)</div>', raw, re.DOTALL)
     if not m:
         return  # Silent empty — triggers API_FAIL fallback in format.md
 
@@ -247,6 +264,11 @@ def html_parse(tmpfile):
     text = text.replace('&nbsp;', ' ')
     # Strip the outer div tags (already extracted via group(1), but clean residual tags)
     text = re.sub(r'<[^>]+>', '', text)
+    # Unescape remaining HTML entities (&lt; &gt; &amp; etc.) so DAX operators
+    # like <, >, && are not written back HTML-escaped
+    text = html_lib.unescape(text)
+    # Non-breaking spaces (from unescaped &nbsp;/&#160;) -> regular spaces
+    text = text.replace('\xa0', ' ')
     # Print each line stripped of trailing whitespace
     for line in text.split('\n'):
         print(line.rstrip())
@@ -288,11 +310,14 @@ def session_check():
                     ts_str = line.strip().split('**Session-Start:**')[1].strip()
                     try:
                         loaded = datetime.fromisoformat(ts_str.replace('Z', '+00:00'))
+                        if loaded.tzinfo is None:
+                            # Naive timestamp — assume UTC so comparison works
+                            loaded = loaded.replace(tzinfo=timezone.utc)
                         now = datetime.now(timezone.utc)
                         if now - loaded < timedelta(hours=2):
                             print('SESSION=active')
                             return
-                    except (ValueError, IndexError):
+                    except (ValueError, IndexError, TypeError):
                         pass
     except FileNotFoundError:
         pass
@@ -322,6 +347,10 @@ def gitignore_check():
 
     if to_add:
         with open('.gitignore', 'a', encoding='utf-8') as f:
+            # If the existing file doesn't end with a newline, add one first so
+            # the appended entry doesn't glue onto the last existing line
+            if existing_lines and not existing_lines[-1].endswith('\n'):
+                f.write('\n')
             for entry in to_add:
                 f.write(entry + '\n')
 

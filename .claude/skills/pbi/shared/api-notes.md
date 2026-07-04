@@ -70,30 +70,15 @@ SUM ( Sales[Amount] )
 
 ---
 
-## HTML Stripping Steps (in order)
+## HTML Stripping — canonical parser
 
-The skill uses these sed transformations to extract clean DAX text:
+The canonical parser is `detect.py html-parse`:
 
-1. Extract content inside `<div class="formatted">...</div>`
-2. Replace `<br>` with newlines
-3. Strip all `<span ...>` and `</span>` tags
-4. Convert `&nbsp;` to regular spaces
-5. Strip leading/trailing whitespace per line
-
-**Shell pipeline used in skill:**
 ```bash
-curl -s -L -X POST "https://www.daxformatter.com" \
-  --data-urlencode "fx=$DAX_INPUT" \
-  -d "r=US&embed=1" \
-  --max-time 5 2>/dev/null | \
-  grep -o '<div class="formatted"[^>]*>.*</div>' | \
-  sed 's/<div class="formatted"[^>]*>//g' | \
-  sed 's/<\/div>.*//g' | \
-  sed 's/<br>/\n/g' | \
-  sed 's/<span[^>]*>//g' | \
-  sed 's/<\/span>//g' | \
-  sed 's/&nbsp;/ /g'
+python ".claude/skills/pbi/scripts/detect.py" html-parse "<tmpfile-with-response>"
 ```
+
+Save the raw HTTP response to a temp file, then pass it to `html-parse`. It extracts the `<div class="formatted">` content, converts `<br>` to newlines, strips span/div tags, converts `&nbsp;` to spaces, **unescapes HTML entities** (`&lt;` `&gt;` `&amp;` etc. — so DAX operators like `<`, `>`, `&&` come back as real characters, not escaped text), normalises non-breaking spaces, and prints clean UTF-8 DAX. Do NOT use grep/sed pipelines for this — they miss entity-unescaping and break on accented characters.
 
 ---
 
