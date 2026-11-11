@@ -1,0 +1,74 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 480" width="1280" height="480" role="img" aria-labelledby="t d">
+  <title id="t">pbi - Power BI DAX co-pilot for Claude Code</title>
+  <desc id="d">Banner showing the /pbi wordmark next to a terminal where /pbi:edit previews a measure change, asks for confirmation, then verifies and commits it.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#12151C"/>
+      <stop offset="1" stop-color="#0B0D12"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.12" cy="0.1" r="0.7">
+      <stop offset="0" stop-color="#F2C811" stop-opacity="0.13"/>
+      <stop offset="1" stop-color="#F2C811" stop-opacity="0"/>
+    </radialGradient>
+    <pattern id="grid" width="32" height="32" patternUnits="userSpaceOnUse">
+      <circle cx="1" cy="1" r="1" fill="#FFFFFF" fill-opacity="0.045"/>
+    </pattern>
+    <clipPath id="frame"><rect width="1280" height="480" rx="20"/></clipPath>
+  </defs>
+
+  <g clip-path="url(#frame)">
+    <rect width="1280" height="480" fill="url(#bg)"/>
+    <rect width="1280" height="480" fill="url(#grid)"/>
+    <rect width="1280" height="480" fill="url(#glow)"/>
+  </g>
+  <rect x="0.5" y="0.5" width="1279" height="479" rx="19.5" fill="none" stroke="#FFFFFF" stroke-opacity="0.08"/>
+
+  <!-- Left: identity -->
+  <g font-family="ui-monospace, 'Cascadia Code', 'SF Mono', Menlo, Consolas, monospace">
+    <text x="72" y="104" font-size="15" letter-spacing="3" fill="#F2C811">CLAUDE CODE PLUGIN  ·  V8</text>
+    <text x="68" y="212" font-size="108" font-weight="700" letter-spacing="-3"><tspan fill="#F2C811">/</tspan><tspan fill="#F5F6F8">pbi</tspan></text>
+  </g>
+  <g font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif">
+    <text x="72" y="272" font-size="30" font-weight="600" fill="#F5F6F8">Power BI DAX co-pilot</text>
+    <text x="72" y="312" font-size="21" fill="#A9B0BC">Explain, write, fix and audit measures and</text>
+    <text x="72" y="340" font-size="21" fill="#A9B0BC">semantic models, straight from your terminal.</text>
+  </g>
+  <g font-family="ui-monospace, 'Cascadia Code', 'SF Mono', Menlo, Consolas, monospace" font-size="15" fill="#D3D8E0">
+    <rect x="72" y="376" width="134" height="34" rx="17" fill="#FFFFFF" fill-opacity="0.06" stroke="#FFFFFF" stroke-opacity="0.16"/>
+    <text x="139" y="398" text-anchor="middle">22 commands</text>
+    <rect x="216" y="376" width="134" height="34" rx="17" fill="#FFFFFF" fill-opacity="0.06" stroke="#FFFFFF" stroke-opacity="0.16"/>
+    <text x="283" y="398" text-anchor="middle">PBIP-native</text>
+    <rect x="360" y="376" width="146" height="34" rx="17" fill="#F2C811" fill-opacity="0.1" stroke="#F2C811" stroke-opacity="0.5"/>
+    <text x="433" y="398" text-anchor="middle" fill="#F2C811">live Desktop</text>
+    <rect x="516" y="376" width="122" height="34" rx="17" fill="#FFFFFF" fill-opacity="0.06" stroke="#FFFFFF" stroke-opacity="0.16"/>
+    <text x="577" y="398" text-anchor="middle">local only</text>
+  </g>
+
+  <!-- Right: terminal -->
+  <g>
+    <rect x="664" y="36" width="544" height="408" rx="14" fill="#07090D" stroke="#FFFFFF" stroke-opacity="0.12"/>
+    <path d="M664 78h544" stroke="#FFFFFF" stroke-opacity="0.08"/>
+    <circle cx="688" cy="57" r="5.5" fill="#3A3F4A"/>
+    <circle cx="707" cy="57" r="5.5" fill="#3A3F4A"/>
+    <circle cx="726" cy="57" r="5.5" fill="#3A3F4A"/>
+    <text x="936" y="62" text-anchor="middle" font-family="ui-monospace, 'Cascadia Code', 'SF Mono', Menlo, Consolas, monospace" font-size="14" fill="#8A92A0">claude  ·  Sales.SemanticModel</text>
+
+    <g font-family="ui-monospace, 'Cascadia Code', 'SF Mono', Menlo, Consolas, monospace" font-size="17">
+      <text x="692" y="126"><tspan fill="#F2C811">&gt; </tspan><tspan fill="#F5F6F8" font-weight="700">/pbi:edit</tspan><tspan fill="#A9B0BC"> Margin % uses gross margin</tspan></text>
+
+      <text x="692" y="164" font-size="15" fill="#8A92A0">Sales  ·  measure  ·  Margin %</text>
+
+      <text x="692" y="204" font-size="13" letter-spacing="2" fill="#8A92A0">BEFORE</text>
+      <rect x="692" y="212" width="488" height="38" rx="6" fill="#F0626E" fill-opacity="0.12"/>
+      <text x="706" y="237" fill="#F5A9B0">- DIVIDE ( [Profit], [Revenue] )</text>
+
+      <text x="692" y="280" font-size="13" letter-spacing="2" fill="#8A92A0">AFTER</text>
+      <rect x="692" y="288" width="488" height="38" rx="6" fill="#4CC38A" fill-opacity="0.12"/>
+      <text x="706" y="313" fill="#9BE3BF">+ DIVIDE ( [Gross Margin], [Revenue] )</text>
+
+      <path d="M692 346h488" stroke="#FFFFFF" stroke-opacity="0.08"/>
+      <text x="692" y="381"><tspan fill="#D3D8E0">Apply? (y/N) </tspan><tspan fill="#F2C811" font-weight="700">y</tspan></text>
+      <text x="692" y="414"><tspan fill="#4CC38A">✓ </tspan><tspan fill="#A9B0BC">Written, re-read, committed locally</tspan></text>
+    </g>
+  </g>
+</svg>

@@ -1,32 +1,56 @@
 <p align="center">
-  <img src="https://img.shields.io/badge/Claude_Code-Plugin-blueviolet?style=for-the-badge" alt="Claude Code Plugin">
-  <img src="https://img.shields.io/badge/version-8.0.0-blue?style=for-the-badge" alt="Version 8.0.0">
-  <img src="https://img.shields.io/badge/license-MIT-green?style=for-the-badge" alt="MIT License">
-  <img src="https://img.shields.io/badge/Power_BI-DAX-F2C811?style=for-the-badge&logo=powerbi&logoColor=black" alt="Power BI DAX">
+  <img src="assets/banner.svg" alt="pbi - Power BI DAX co-pilot for Claude Code. A terminal shows /pbi:edit previewing a measure change, asking for confirmation, then verifying and committing it." width="100%">
 </p>
 
-<div align="center">
+<p align="center">
+  <img src="https://img.shields.io/badge/Claude_Code-plugin-8A63D2?style=flat-square" alt="Claude Code plugin">
+  <img src="https://img.shields.io/badge/version-8.0.0-F2C811?style=flat-square&labelColor=1b1f27" alt="Version 8.0.0">
+  <img src="https://img.shields.io/badge/license-MIT-4CC38A?style=flat-square&labelColor=1b1f27" alt="MIT License">
+  <img src="https://img.shields.io/badge/Power_BI-DAX_·_PBIP-9BA3B0?style=flat-square&labelColor=1b1f27" alt="Power BI, DAX, PBIP">
+</p>
+
+<p align="center">
+  <b>Explain, write, fix, optimise and audit DAX measures and semantic models, directly from your terminal.</b><br>
+  Works with pasted DAX, with <a href="https://learn.microsoft.com/en-us/power-bi/developer/projects/projects-overview">Power BI Project (PBIP)</a> files on disk, and live against the model open in Power BI Desktop.
+</p>
+
+<p align="center">
+  <a href="#install">Install</a> ·
+  <a href="#commands">Commands</a> ·
+  <a href="#how-it-works">How it works</a> ·
+  <a href="#examples">Examples</a> ·
+  <a href="#update-and-upgrade">Update</a> ·
+  <a href="#requirements">Requirements</a>
+</p>
+
+---
+
+## Install
+
+In Claude Code:
 
 ```
-  ╔═══════════════════════════════════════════════════════╗
-  ║                                                       ║
-  ║   ██████╗ ██████╗ ██╗  · Power BI DAX Co-pilot        ║
-  ║   ██╔══██╗██╔══██╗██║  · for Claude Code              ║
-  ║   ██████╔╝██████╔╝██║  ·                              ║
-  ║   ██╔═══╝ ██╔══██╗██║  · 22 commands  ·  PBIP-native  ║
-  ║   ██║     ██████╔╝██║  · UTF-8 safe   ·  local-first  ║
-  ║   ╚═╝     ╚═════╝ ╚═╝                        v8.0    ║
-  ║                                                       ║
-  ╚═══════════════════════════════════════════════════════╝
+/plugin marketplace add d7rocket/PowerBI-Skill
+/plugin install pbi@powerbi-skill
 ```
 
-**Explain, write, fix, optimise and audit DAX measures and semantic models, directly from your terminal.**
+Or one line from a shell:
 
-Works with pasted DAX, with [Power BI Project (PBIP)](https://learn.microsoft.com/en-us/power-bi/developer/projects/projects-overview) files on disk, and live against the model open in Power BI Desktop.
+```bash
+claude plugin install pbi --marketplace d7rocket/PowerBI-Skill
+```
 
-[Quick Start](#quick-start) · [Commands](#commands) · [How It Works](#how-it-works) · [Design Principles](#design-principles) · [Installation](#installation) · [Examples](#examples)
+Then, from any folder:
 
-</div>
+```
+/pbi:help
+```
+
+| You have | You get |
+|:---------|:--------|
+| Nothing but a DAX snippet | Paste it into `/pbi:explain`, `/pbi:optimise`, `/pbi:error` and the other measure commands |
+| A PBIP project on disk | Model-aware commands that edit the TMDL or TMSL files, with preview, verification and a local commit |
+| Power BI Desktop open | Run `/pbi:setup` once for live mode: changes land in the open model and measures are executed before you accept them. Optional, and it asks before installing anything |
 
 ---
 
@@ -41,26 +65,6 @@ Power BI developers live in two disconnected worlds: DAX gets written in a GUI w
 PBI turns Claude Code into a **model-aware Power BI co-pilot**: every command indexes your PBIP project from disk in under a second, so explain, audit, edit and new all work against your *actual* tables and relationships.
 With the optional live mode, changes land straight in the model open in Power BI Desktop and new measures are executed before you accept them.
 Read the full story in [PROJECT-OVERVIEW.md](PROJECT-OVERVIEW.md).
-
----
-
-## Quick Start
-
-In Claude Code:
-
-```
-/plugin install pbi --marketplace d7rocket/PowerBI-Skill
-```
-
-Then, from any folder:
-
-```
-/pbi:help
-```
-
-No PBIP project? The measure commands work with DAX pasted straight into the terminal.
-
-Want live editing and DAX testing against Power BI Desktop? Run `/pbi:setup` once. It is optional and asks before installing anything.
 
 ---
 
@@ -242,28 +246,15 @@ All commits are local only. The plugin never touches your remotes.
 
 ---
 
-## Installation
-
-### Install
-
-Inside Claude Code (version 2.1.275 or later):
-
-```
-/plugin install pbi --marketplace d7rocket/PowerBI-Skill
-```
-
-Or from a shell:
-
-```bash
-claude plugin marketplace add d7rocket/PowerBI-Skill
-claude plugin install pbi@powerbi-skill
-```
+## Update and upgrade
 
 ### Update
 
+```bash
+claude plugin update pbi
 ```
-/plugin update pbi
-```
+
+Restart Claude Code to load the new version.
 
 ### Upgrading from version 7
 
