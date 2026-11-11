@@ -22,7 +22,7 @@ The core design principle: **never block a data analyst.** When you ask a DAX qu
 
 ### Model awareness across commands
 
-On first use, the skill reads your PBIP project files (TMDL or TMSL), extracts every table, measure, column, and relationship, and caches the structure in `.pbi/context.md`. Every subsequent command — explain, audit, edit, new — references your actual model. When the skill generates a measure, it uses your real table names and validates against your real relationships.
+On every command, the skill indexes your PBIP project files (TMDL or TMSL) from disk in under a second: every table, measure, column count, and relationship. Nothing is cached, so the index is never stale. Every command — explain, audit, edit, new — references your actual model. When the skill generates a measure, it uses your real table names and validates against your real relationships.
 
 ### Version control that speaks business
 
@@ -30,20 +30,21 @@ PBIP files are text, but `git diff` on a `.tmdl` file is noise. The skill transl
 
 ### Session continuity
 
-`.pbi/context.md` persists model context, command history (20 rows max), analyst-reported failures, escalation state, and in-progress workflow data. The `/pbi-resume` command reconstructs the full working state in a new session — what you were doing, what the model looks like, and what failed before.
+`.pbi/context.md` persists command history (20 rows max), analyst-reported failures, escalation state, and in-progress workflow data. The `/pbi:resume` command reconstructs the full working state in a new session — what you were doing, what the model looks like, and what failed before.
 
-## The 20 Commands
+## The 22 Commands
 
 | Category | Commands | What they do |
 |----------|----------|-------------|
 | **Understand DAX** | explain, format, optimise | Break down, reformat, or performance-scan any measure |
 | **Fix & Build DAX** | error, new, comment | Diagnose errors, scaffold new measures, add documentation |
-| **Audit the Model** | audit, audit-fix, comment-batch | 21-rule health check with auto-fix, autonomous fix pipeline, batch documentation |
-| **Edit the Model** | edit, load | Plain-English model changes, context loading |
-| **Version Control** | diff, commit, undo, changelog | Business-language diffs, commits, reverts, release notes |
+| **Audit the Model** | audit | 21-rule health check, severity-graded, report only |
+| **Edit the Model** | edit, load, undo | Plain-English model changes with preview and confirmation, model overview, one-step undo |
+| **Live Desktop** | query, setup | Run DAX against the model open in Power BI Desktop, opt-in live editing through Microsoft's Power BI Modeling MCP |
+| **Version Control** | diff, commit, changelog | Business-language diffs, commits, reverts, release notes |
 | **Documentation** | docs, extract | Stakeholder-ready docs, 3-tier model summaries |
 | **Workflow** | deep, resume | Guided multi-phase DAX dev, cross-session context restore |
-| **Utility** | help, version | Command reference, installed version + changelog |
+| **Utility** | menu, help, version | Menu and free-text solver, command reference, installed version + changelog |
 
 ## Design Decisions That Matter
 
@@ -51,11 +52,11 @@ PBIP files are text, but `git diff` on a `.tmdl` file is noise. The skill transl
 
 **Local-first git.** The skill never runs `git pull`, `git fetch`, `git push`, or creates PRs. This exists because pulling remote changes has previously overwritten local PBIP files and broken table relationships. Git is used only as a local versioning tool.
 
-**Python-first file operations.** All file reads, writes, and text searches use Python with `encoding='utf-8'`. Shell tools like `grep` and `sed` fail silently on French accented characters (é, è, ç, à). The `detect.py` script centralizes all file operations with 10 subcommands.
+**Python-first file operations.** All file reads, writes, and text searches use Python with `encoding='utf-8'`. Shell tools like `grep` and `sed` fail silently on French accented characters (é, è, ç, à). The `detect.py` script centralizes detection, the model index, the session log and the change journal.
 
 **Model selection by task.** Haiku handles file/git operations (load, diff, commit, undo, changelog, resume) — fast and cheap. Sonnet handles DAX reasoning (explain, audit, edit, new) — accurate and detailed. Opus handles deep-dive extraction — thorough but expensive.
 
-**Hard gates in deep mode.** The `/pbi-deep` four-phase workflow (intake → model review → DAX development → verification) uses hard gates — no phase advances without explicit user confirmation. This prevents premature solutions that skip context gathering.
+**Hard gates in deep mode.** The `/pbi:deep` four-phase workflow (intake → model review → DAX development → verification) uses hard gates — no phase advances without explicit user confirmation. This prevents premature solutions that skip context gathering.
 
 ## Evolution
 
@@ -72,6 +73,7 @@ PBIP files are text, but `git diff` on a `.tmdl` file is noise. The skill transl
 | 6.0 | 2026-03-28 | Resume command, rich descriptions, visual branding, GSD-level quality |
 | 7.0 | 2026-04-01 | Flat sub-skill structure, /pbi-settings, /pbi-format-batch, .pbi/ directory |
 | 7.1 | 2026-07-04 | Simplicity-first DAX, /pbi-audit-fix packaged, edit-validation hook, 21-rule audit |
+| 8.0 | 2026-11-11 | Claude Code plugin (`/pbi:<cmd>`), live mode through Microsoft's Power BI Modeling MCP, /pbi:query, /pbi:setup, always-confirm writes, change journal. Settings, batch and audit-fix commands removed |
 
 ## Who This Is For
 

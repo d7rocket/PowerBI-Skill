@@ -1,144 +1,152 @@
-# Project: PowerBI DAX Skills for Claude Code
+# Project: pbi - Power BI DAX co-pilot plugin for Claude Code
 
 ## Overview
 
-This repo contains a Claude Code skill namespace (`/pbi`) that turns Claude into a Power BI DAX co-pilot. Each command is an individual skill invoked as `/pbi-<command>` (e.g., `/pbi-explain`, `/pbi-audit`). The base `/pbi` provides a menu, catch-all solver, and backward-compatible routing.
+This repo is a Claude Code plugin marketplace with one plugin, `pbi`, in `plugins/pbi/`.
+The plugin turns Claude into a Power BI DAX co-pilot.
+Each command is a skill invoked as `/pbi:<command>` (for example `/pbi:explain`, `/pbi:audit`).
+`/pbi:menu` is the menu and the free-text solver.
 
-## Skill Architecture (v6.0)
+## Architecture (v8)
 
-### Individual sub-skills
+### One preflight, shared rules
 
-Each command is a self-contained skill at `.claude/skills/pbi-<cmd>/SKILL.md`, directly invocable as `/pbi-<cmd>`. Each sub-skill includes its own detection blocks, auto-resume logic, command instructions, and shared rules.
+Every command file starts with a single dynamic block:
 
-The base `/pbi` (at `.claude/skills/pbi/SKILL.md`) serves as:
-- **Menu** — shows categories when invoked with no arguments
-- **Catch-all solver** — handles free-text DAX questions directly
-- **Backward-compatible router** — `/pbi explain` still works, routing to `/pbi-explain`
+```
+!`python "${CLAUDE_PLUGIN_ROOT}/scripts/detect.py" preflight ...`
+```
 
-### Command types
+`preflight` prints, in under a second:
 
-- **Paste-in** (work anywhere): `/pbi-explain`, `/pbi-format`, `/pbi-optimise`, `/pbi-comment`, `/pbi-error`, `/pbi-new`
-- **PBIP** (require `*.SemanticModel/` directory): `/pbi-load`, `/pbi-audit`, `/pbi-audit-fix`, `/pbi-diff`, `/pbi-commit`, `/pbi-edit`, `/pbi-undo`, `/pbi-comment-batch`, `/pbi-format-batch`, `/pbi-changelog`, `/pbi-extract`, `/pbi-docs`
-- **Workflow**: `/pbi-deep`
-- **Session**: `/pbi-resume`
-- **Utility** (work anywhere): `/pbi-help`, `/pbi-version`, `/pbi-settings`
+- project detection: `PBIP_MODE` (`file` or `paste`), `PBIP_FORMAT` (`tmdl`, `tmsl`, `unknown`), `PBIP_DIR`, `PBIR_DIR`, git state, `UNAPPLIED_CHANGES`
+- hints: `DESKTOP` (running or not), `LIVE_MCP_CONFIG`, `PENDING_LIVE_CHANGES`
+- the model index, parsed from disk: tables, column and measure counts, measure names, relationships
+- recent commands, saved notes and analyst-reported failures from `.pbi/context.md`
+- the full text of `shared/core.md`, the rules every command follows
+
+Command files therefore contain only what is specific to the command.
+Shared behaviour is changed in `shared/core.md` or `shared/live-mode.md`, never copied into command files.
+
+### Edit tiers
+
+- **LIVE**: Microsoft's Power BI Modeling MCP tools are available in the session. Commands read and write the model open in Power BI Desktop, and execute measures to verify them. Procedure: `shared/live-mode.md`.
+- **FILE**: otherwise. Commands edit TMDL or TMSL files. Procedure: `shared/core.md` section 5.
+- **Paste mode**: no project. DAX in, DAX out, nothing written.
+
+The MCP server is never bundled or auto-registered.
+`/pbi:setup` registers it only after explaining Microsoft's EULA and data collection and getting an explicit yes.
+
+### Command groups
+
+- **Measure** (paste DAX or name a project measure): `explain`, `format`, `optimise`, `comment`, `error`, `new`
+- **Model** (need a `*.SemanticModel/` folder): `load`, `edit`, `audit`, `extract`, `docs`, `deep`
+- **History**: `diff`, `commit`, `undo`, `changelog`, `resume`
+- **Live**: `query`, `setup`
+- **Utility**: `menu`, `help`, `version`
 
 ### Model selection
 
-- **Sonnet** (default): DAX reasoning commands — explain, format, format-batch, optimise, comment, error, new, edit, comment-batch, audit, audit-fix, docs, deep, extract
-- **Haiku** (set in frontmatter): file/git-heavy and mechanical commands — load, diff, commit, undo, changelog, resume, help, version, settings
-- **Opus** (via Agent spawn): extract detailed tier (high token usage, deep analysis)
-
-### Detection
-
-Each sub-skill runs its own detection blocks on load via `!` backtick syntax:
-- **PBIP detection**: globs for `*.SemanticModel` or `.SemanticModel` directories, outputs `PBIP_DIR=<actual folder name>`, then checks format (`model.bim` → TMSL, `definition/tables/` → TMDL)
-- **File Index**: lists all `.tmdl` files or model.bim under `$PBIP_DIR`
-- **PBIR detection**: globs for `*.Report` or `.Report` directories, outputs `PBIR_DIR=<actual folder name>`
-- **Git state**: checks if inside a git repo with commits
-- **Session context**: reads `.pbi/context.md`
-- **Settings**: reads `.pbi/settings.json`, outputs `PBI_CONFIRM=true/false`
-- **PBI directory setup**: ensures `.pbi/` exists and migrates legacy root files
+- **Sonnet**: DAX reasoning and anything that writes: explain, format, optimise, comment, error, new, edit, audit, docs, deep, extract, undo, query, setup, menu
+- **Haiku**: mechanical and read-only: load, diff, commit, changelog, resume, help, version
+- **Opus** (via Agent spawn): extract deep-dive tier
 
 ### Conventions
 
-- **Output folder (`.pbi/`)**: all skill-generated files live in `.pbi/` in the project root — `context.md` (session), `settings.json` (preferences), `project-docs.md` (docs output), `audit-report.md` (audit output). On first run, `detect.py ensure-dir` creates the folder and `detect.py migrate` moves any legacy root-level files (`.pbi-context.md`, `project-docs.md`, `audit-report.md`) into `.pbi/`.
-- **Session context**: all commands read/write `.pbi/context.md` using Read-then-Write (never bash append). Keep Command History to 20 rows max. Never modify the Analyst-Reported Failures section.
-- **Session-aware auto-load**: the first `/pbi` command in each session always runs a fresh load to ensure model data is current. Subsequent commands in the same session resume from cached context (2-hour session window). No explicit `/pbi-load` required.
-- **Confirm mode (`PBI_CONFIRM`)**: stored in `.pbi/settings.json` as `confirm_writes` (default: `true`). When `true`, commands show a preview and ask `(y/N)` before writing files. When `false` (auto mode), writes proceed without asking. Toggle with `/pbi settings auto` or `/pbi settings confirm`.
-- **Auto-commit**: edit, comment, error, and new auto-commit after successful writes. Use undo to revert. All commits are LOCAL only.
-- **Post-command staging**: after every command that writes to `$PBIP_DIR/`, changes are auto-staged (`git add`) and the user is notified.
-- **LOCAL-FIRST GIT POLICY (CRITICAL)**: NEVER `git pull`, `git fetch`, `git merge`, `git push`, or create PRs. Local files are always the source of truth. Pulling has previously overwritten PBIP changes and broken relationships. Git is used only for local version control (`init`, `add`, `commit`, `diff`, `log`, `status`, `revert`).
-- **Path quoting**: all bash paths must be double-quoted to handle spaces in directory names.
+- **Preview and confirm**: every model change shows Before and After and needs an explicit `y`. There is no auto mode and no settings file. Generated reports under `.pbi/` are written directly.
+- **Verify**: after a write, re-read the object (and execute it when live). State which checks ran. Never claim a change works when it was only written.
+- **Record**: after a confirmed change, the command writes `.pbi/change.json` and calls `detect.py record`. For file-tier changes that one call commits the model folder and journals the change with the commit it made. Commands do not run `git add` or `git commit` themselves, except `/pbi:commit`.
+- **Live changes commit on save**: a live change reaches the files when the analyst saves in Desktop. `detect.py snapshot` then commits it with the journaled message.
+- **Undo** reads the journal (`.pbi/journal.jsonl`): reverse through the MCP for live changes, `git revert` for file changes. Never `git reset`.
+- **Session log**: `detect.py log` and `detect.py note` write `.pbi/context.md` with a lock and an atomic rename. Commands never rewrite that file by hand. The Analyst-Reported Failures section is never modified.
+- **No bulk rewrites**: one object per change. The batch and auto-fix commands were removed in v8 on purpose.
+- **LOCAL ONLY (CRITICAL)**: never `git pull`, `fetch`, `merge`, `rebase`, `push`, or open PRs from a command. Never connect to a Fabric or Power BI service workspace, never deploy or publish.
+- **Output**: lead with the result. No banners, mode headers or loading lines. At most one `Next:` line.
+- **Path quoting**: all shell paths are double-quoted.
+- **No em dashes** in anything new. Use a plain dash.
 
 ### File format rules
 
-- **TMDL files use tabs for indentation** — never convert tabs to spaces when writing back
-- **TMSL expression format**: preserve original form (JSON string vs array). Use array form only if the expression contains line breaks
-- **Python-first file operations**: always use Python with `encoding='utf-8'` for file read/write and text search. Use `detect.py search` instead of `grep -rlF` for measure name search. Shell/bash is only for git CLI commands.
-- **UTF-8 encoding**: model files may contain French accented characters (é, è, ê, ç, à, ù). All file operations must handle UTF-8 correctly.
+- **TMDL files use tabs for indentation**. Never convert tabs to spaces.
+- **TMSL expression format**: preserve the original form (string or array). Use the array form only if the expression has line breaks.
+- **Python-first file operations**: Python with `encoding='utf-8'`, or the Read, Write and Edit tools. `detect.py search` and `detect.py measure` instead of `grep`. Shell is for git and for calling the scripts.
+- **UTF-8**: model files may contain French accented characters (é, è, ê, ç, à, ù).
 
-### DAX Style
+### DAX style
 
-- **Simplicity-first**: generated DAX must be the simplest expression that answers the business question. A plain `SUM`/`DIVIDE` beats a `CALCULATE` wrapper with no filter arguments; no `VAR/RETURN` for a single-use expression; never add `IFERROR` or defensive BLANK-handling unless the analyst asks (`DIVIDE` already handles division by zero). Trivial self-explanatory measures get a description property only, no inline comments.
+- **Simplicity-first**: the simplest expression that answers the business question. A plain `SUM`/`DIVIDE` beats a `CALCULATE` wrapper with no filter arguments. No `VAR/RETURN` for a single-use expression. No `IFERROR` or defensive BLANK handling unless the analyst asks.
+- The full guides are `shared/dax-style.md`, `shared/modeling.md` and `shared/performance.md`. They are distilled from Microsoft's `skills-for-fabric` (MIT) and carry an attribution section. Keep it.
+- Never suggest bidirectional cross-filtering as a first approach.
 
-### Power BI TMDL/PBIR Conventions
+### Power BI Desktop
 
-- When editing TMDL files, validate syntax carefully: use correct property names (e.g., `crossFilteringBehavior`), avoid stray control characters, and match expected enum types (string vs int).
-- Power BI Desktop does NOT hot-reload external PBIP/TMDL file changes — always remind user to close and reopen the project after edits.
-- Never suggest bidirectional cross-filtering as a first approach; prefer measure-based filtering solutions.
+- When project files change on disk, Desktop offers to refresh. Commands tell the analyst to accept that prompt (or reopen the project). They do not try to reload Desktop.
+- Report-side (PBIR) commands are not part of v8.
 
-### Python Environment
+### Documentation generation
 
-- This system has multiple Python versions installed. Always verify which `python`/`pip` is active before installing packages.
-- For large datasets (200k+ rows), avoid cell-by-cell styling with openpyxl — use batch/range operations or xlsxwriter instead.
-- npm may not be available in the shell; prefer pip-based or Python-native solutions.
+- Client-facing documentation uses French for headings and content unless told otherwise.
+- When generating Word documents, test RGBColor imports and markdown-to-docx conversion before a full run.
+- Verify stakeholder names and details with the user before finalizing onboarding or project docs.
 
-### Documentation Generation
+### Python environment
 
-- All client-facing documentation should use French language for headings and content unless explicitly told otherwise.
-- When generating Word documents, test RGBColor imports and markdown-to-docx conversion before running full generation.
-- Always verify stakeholder names and details with the user before finalizing onboarding or project docs.
+- Several Python versions are installed on the dev machine. Verify which `python`/`pip` is active before installing packages.
+- The scripts use the standard library only, except `gen_docx.py` (python-docx) and `gen_pdf.py` (reportlab).
+- Command files call `python` and fall back to `python3`.
 
-## Directory Structure
+## Directory structure
 
 ```
-.claude/skills/pbi/
-  SKILL.md              ← base /pbi (menu + catch-all + backward-compatible router)
+.claude-plugin/marketplace.json     marketplace "powerbi-skill", lists the pbi plugin
+plugins/pbi/
+  .claude-plugin/plugin.json        manifest; "version" is the single source of truth
+  skills/<command>/SKILL.md         22 commands
   scripts/
-    detect.py           ← Python detection, search, HTML parsing, version check, session check, gitignore, settings, migration (UTF-8 safe, 15 subcommands)
-    validate-edit.py    ← PostToolUse hook (registered in .claude/settings.json): TMDL control-char + space-indent validation after Edit/Write
-    gen_docx.py         ← Word document generation for /pbi-docs
-    gen_pdf.py          ← PDF generation for /pbi-docs
+    detect.py                       preflight, model index, measure, search, log, note,
+                                    record, journal-last, journal-undone, snapshot, env,
+                                    version, gitignore-check, html-parse, rules
+    validate-edit.py                PostToolUse hook: TMDL control characters and space indentation
+    gen_docx.py, gen_pdf.py         /pbi:docs generators
+  hooks/hooks.json                  registers validate-edit.py for Edit and Write
   shared/
-    api-notes.md        ← DAX Formatter API reference
-    CHANGELOG.md        ← version history (read by /pbi-version)
-    ui-brand.md         ← visual output standards reference
-    pbi-docs-contract.md ← docgen output contract for /pbi-docs
-.claude/skills/pbi-explain/SKILL.md      ← /pbi-explain (sonnet)
-.claude/skills/pbi-format/SKILL.md       ← /pbi-format (sonnet)
-.claude/skills/pbi-optimise/SKILL.md     ← /pbi-optimise (sonnet)
-.claude/skills/pbi-comment/SKILL.md      ← /pbi-comment (sonnet)
-.claude/skills/pbi-error/SKILL.md        ← /pbi-error (sonnet)
-.claude/skills/pbi-new/SKILL.md          ← /pbi-new (sonnet)
-.claude/skills/pbi-load/SKILL.md         ← /pbi-load (haiku)
-.claude/skills/pbi-audit/SKILL.md        ← /pbi-audit (sonnet, parallel agents for 5+ table models)
-.claude/skills/pbi-audit-fix/SKILL.md    ← /pbi-audit-fix (sonnet, autonomous scan→fix→validate→commit)
-.claude/skills/pbi-diff/SKILL.md         ← /pbi-diff (haiku)
-.claude/skills/pbi-commit/SKILL.md       ← /pbi-commit (haiku)
-.claude/skills/pbi-edit/SKILL.md         ← /pbi-edit (sonnet)
-.claude/skills/pbi-undo/SKILL.md         ← /pbi-undo (haiku)
-.claude/skills/pbi-comment-batch/SKILL.md ← /pbi-comment-batch (sonnet)
-.claude/skills/pbi-changelog/SKILL.md    ← /pbi-changelog (haiku)
-.claude/skills/pbi-format-batch/SKILL.md ← /pbi-format-batch (sonnet, bulk SQLBI formatting)
-.claude/skills/pbi-settings/SKILL.md     ← /pbi-settings (haiku, write-mode toggle)
-.claude/skills/pbi-deep/SKILL.md         ← /pbi-deep (sonnet)
-.claude/skills/pbi-extract/SKILL.md      ← /pbi-extract (sonnet, agents for opus tier)
-.claude/skills/pbi-docs/SKILL.md         ← /pbi-docs (sonnet)
-.claude/skills/pbi-help/SKILL.md         ← /pbi-help (haiku)
-.claude/skills/pbi-version/SKILL.md      ← /pbi-version (haiku)
-.claude/skills/pbi-resume/SKILL.md       ← /pbi-resume (haiku)
-.claude/commands/pbi-<cmd>.md            ← command descriptors (one per sub-skill)
+    core.md                         rules every command follows (injected by preflight)
+    live-mode.md                    LIVE tier procedure
+    dax-style.md, modeling.md, performance.md   distilled guides
+    api-notes.md                    DAX Formatter API reference
+    ui-brand.md                     visual output standards
+    pbi-docs-contract.md            docgen output contract for /pbi:docs
+    CHANGELOG.md                    version history (read by /pbi:version)
+tests/
+  test_detect.py                    script, hook and plugin-integrity tests
+  fixtures/                         .dax files and PBIP fixture projects
 ```
 
-## Testing
+## Working on the plugin
 
-Test fixtures are in `tests/fixtures/`:
+- Run it locally: `claude --plugin-dir plugins/pbi`, then `/pbi:help`.
+- Validate: `claude plugin validate .` and `claude plugin validate ./plugins/pbi`.
+- Test: `python tests/test_detect.py` (or pytest). The integrity test fails on stale v7 references, missing shared files and unknown `/pbi:` command names.
+- End-to-end check of a write command: run it with `claude --plugin-dir plugins/pbi -p "/pbi:edit ..."` in a copy of a fixture project, answer with `--continue -p "y"`, then inspect `git log`, the diff and `.pbi/journal.jsonl`.
+- Live mode can only be tested with Power BI Desktop open on a real project and the MCP registered.
+
+## Testing fixtures
+
 - `.dax` files: individual DAX measures for paste-in testing
-- `pbip-tmdl/`: TMDL project with git repo, 3 tables, relationships, bidirectional filter (audit trigger)
+- `pbip-tmdl/`: TMDL project, relationships, bidirectional filter (audit trigger), `unappliedChanges.json`
 - `pbip-tmsl/`: TMSL project (model.bim)
-- `pbip-no-repo/`: TMDL project with no git repo (tests git init flow)
-- `pbip-empty-model/`: project with tables but no measures
-- `pbip-tmdl-no-gitignore/`: TMDL project without .gitignore (tests gitignore-check detection)
-- `context-20-rows.md`: saturated command history (tests trim-to-20 logic)
+- `pbip-no-repo/`: TMDL project with no git repo (tests the git init flow)
+- `pbip-empty-model/`: tables but no measures
+- `pbip-tmdl-no-gitignore/`: TMDL project without .gitignore
+- `context-20-rows.md`: saturated command history (tests trim-to-20)
 
-Automated tests: `tests/test_detect.py` covers detect.py subcommands (run with `python tests/test_detect.py` or pytest).
+## Known limitations
 
-## Known Limitations
-
-- **Session context race condition**: simultaneous skill invocations can overwrite each other's `.pbi/context.md` updates. Not an issue in interactive use but worth noting.
-- **Audit parallelism**: for models with 5+ tables, audit spawns 3 parallel agents for domain passes. For < 5 tables, runs sequentially to avoid agent overhead.
+- **Live mode is untested in CI**: it needs Power BI Desktop. Changes to `shared/live-mode.md` must be checked by hand against a real model.
+- **MCP operation names** are not hardcoded. Commands read the tool schema at run time, because Microsoft may rename operations between releases.
+- **Audit parallelism**: for models with 5+ tables, audit spawns 3 parallel agents. Below that it runs sequentially.
 
 ## Version
 
-Current: 7.1.0 (set in `pbi/SKILL.md` frontmatter — the single source of truth; `shared/CHANGELOG.md` top entry must match)
+Current: 8.0.0, set in `plugins/pbi/.claude-plugin/plugin.json`.
+The top entry of `plugins/pbi/shared/CHANGELOG.md` must match (enforced by a test).
