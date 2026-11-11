@@ -1,0 +1,15 @@
+{
+  "name": "powerbi-skill",
+  "description": "Power BI DAX co-pilot for Claude Code",
+  "owner": {
+    "name": "d7rocket",
+    "url": "https://github.com/d7rocket"
+  },
+  "plugins": [
+    {
+      "name": "pbi",
+      "source": "./plugins/pbi",
+      "description": "Explain, write, fix, optimise and audit DAX and semantic models in PBIP projects, with optional live editing in Power BI Desktop."
+    }
+  ]
+}

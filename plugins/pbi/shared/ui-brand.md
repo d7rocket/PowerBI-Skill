@@ -46,7 +46,7 @@ For audit findings, error diagnosis, and model checks:
 Every command output ends with a `Next steps` line showing 3–5 contextually relevant commands:
 
 ```
-**Next steps:** `/pbi-format` · `/pbi-optimise` · `/pbi-comment`
+**Next steps:** `/pbi:format` · `/pbi:optimise` · `/pbi:comment`
 ```
 
 - Separator: ` · ` (space-middle-dot-space)

@@ -75,7 +75,7 @@ SUM ( Sales[Amount] )
 The canonical parser is `detect.py html-parse`:
 
 ```bash
-python ".claude/skills/pbi/scripts/detect.py" html-parse "<tmpfile-with-response>"
+python "${CLAUDE_PLUGIN_ROOT}/scripts/detect.py" html-parse "<tmpfile-with-response>"
 ```
 
 Save the raw HTTP response to a temp file, then pass it to `html-parse`. It extracts the `<div class="formatted">` content, converts `<br>` to newlines, strips span/div tags, converts `&nbsp;` to spaces, **unescapes HTML entities** (`&lt;` `&gt;` `&amp;` etc. — so DAX operators like `<`, `>`, `&&` come back as real characters, not escaped text), normalises non-breaking spaces, and prints clean UTF-8 DAX. Do NOT use grep/sed pipelines for this — they miss entity-unescaping and break on accented characters.

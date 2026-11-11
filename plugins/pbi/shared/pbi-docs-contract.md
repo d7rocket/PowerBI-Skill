@@ -3,7 +3,7 @@
 This document specifies the Markdown output requirements that the `pbi-docs` skill
 must follow for its output to be correctly parsed by the `pbi-docgen` pipeline.
 
-**Note:** The `pbi-docs` skill lives in this repository at `.claude/skills/pbi-docs/SKILL.md`; keep the two in sync when updating either side.
+**Note:** The `/pbi:docs` command lives in this repository at `plugins/pbi/skills/docs/SKILL.md`; keep the two in sync when updating either side.
 
 ## Markdown Output Requirements
 

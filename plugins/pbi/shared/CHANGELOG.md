@@ -3,6 +3,40 @@
 All notable changes to the PBI skill are documented here.
 Format: [Keep a Changelog](https://keepachangelog.com)
 
+## [8.0.0] - 2026-11-11
+
+Breaking release. Commands are renamed, four are removed, and installation moves to a Claude Code plugin.
+
+### Changed
+- **Now a Claude Code plugin.** Install with `/plugin install pbi --marketplace d7rocket/PowerBI-Skill`, update with `/plugin update pbi`. The `install.ps1` and `install.sh` scripts are retired.
+- **Commands are renamed** from `/pbi-<name>` to `/pbi:<name>` (plugins require the prefix). The base `/pbi` menu and free-text solver is now `/pbi:menu`.
+- **Every model change is previewed and needs a `y`.** There is no auto mode any more.
+- **The model is indexed from disk on every command** by `detect.py` in under a second. The 2-hour session cache and the "first command loads the model" step are gone, and commands can fetch a named measure themselves instead of asking for a paste.
+- **One preflight call per command** replaces seven detection blocks. Output is leaner: no mode banners or loading lines.
+- **Session history is written by the script** (`detect.py log`), with a lock and an atomic write. Two commands can no longer overwrite each other's history.
+- `/pbi:undo` works from a change journal instead of matching commit messages.
+- `/pbi:audit` only reports. `/pbi:edit` now updates references when it renames a measure.
+- The edit-validation hook ships with the plugin and checks `.tmdl` files only.
+- `plugin.json` is the single source of truth for the version.
+
+### Added
+- **Live mode (optional).** When Microsoft's Power BI Modeling MCP server is registered, commands edit the model open in Power BI Desktop directly, execute new and changed measures to verify them, and fall back to file edits when it is not available.
+- `/pbi:setup` checks requirements and enables live mode only after explaining Microsoft's EULA and data collection and getting an explicit yes.
+- `/pbi:query` runs a DAX query against the open model, with optional timings.
+- `/pbi:optimise` measures the original against the rewrite when live and discards rewrites that change the result.
+- `/pbi:format` and `/pbi:optimise` can write their result back to a project measure.
+- Shared guides distilled from Microsoft's `skills-for-fabric` (MIT): `dax-style.md`, `modeling.md`, `performance.md`.
+- Post-write verification on every change: re-read on disk, and executed when live.
+
+### Removed
+- `/pbi-settings`, `/pbi-comment-batch`, `/pbi-format-batch`, `/pbi-audit-fix`, and the audit auto-fix step. There is no bulk rewrite of a whole model.
+- `.pbi/settings.json` is no longer read.
+- The "close and reopen Desktop" reminder. Desktop offers to refresh when project files change.
+
+### Not in this release
+- Report-side (PBIR) commands are planned for a later release.
+- Live mode is local only: no Fabric workspace connections, no deploy, no publish.
+
 ## [7.1.0] — 2026-07-04
 
 ### Added

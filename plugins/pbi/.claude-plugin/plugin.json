@@ -1,0 +1,14 @@
+{
+  "name": "pbi",
+  "displayName": "Power BI DAX Co-pilot",
+  "version": "8.0.0",
+  "description": "Power BI DAX co-pilot: explain, write, fix, optimise and audit measures and semantic models in PBIP projects, with optional live editing of the model open in Power BI Desktop.",
+  "author": {
+    "name": "d7rocket",
+    "url": "https://github.com/d7rocket"
+  },
+  "homepage": "https://github.com/d7rocket/PowerBI-Skill",
+  "repository": "https://github.com/d7rocket/PowerBI-Skill",
+  "license": "MIT",
+  "keywords": ["power-bi", "dax", "pbip", "tmdl", "semantic-model"]
+}
