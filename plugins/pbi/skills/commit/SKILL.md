@@ -1,6 +1,6 @@
 ---
 name: commit
-description: "Stage all semantic model changes and create a local git commit with an auto-generated business-language message. Analyzes diffs to produce messages like 'feat: add Revenue YTD measure'. Auto-initializes git if needed. All commits are LOCAL only — never pushes."
+description: "Save a local commit with a business-language message."
 model: haiku
 allowed-tools: Read, Write, Edit, Bash, Agent
 disable-model-invocation: true

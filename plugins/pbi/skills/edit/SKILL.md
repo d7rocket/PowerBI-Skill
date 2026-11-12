@@ -1,6 +1,6 @@
 ---
 name: edit
-description: "Change one model object (measure, column, table property, relationship) from a plain-English instruction: rename, new expression, format string, display folder, description, add, remove. Edits the live Desktop model when the Power BI Modeling MCP is connected, otherwise the TMDL or TMSL files. Always previews and asks before writing."
+description: "Change a measure, column, property or relationship from a plain-English instruction."
 model: sonnet
 argument-hint: "[what to change]"
 allowed-tools: Read, Write, Edit, Bash

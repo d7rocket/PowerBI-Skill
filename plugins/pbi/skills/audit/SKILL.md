@@ -1,6 +1,6 @@
 ---
 name: audit
-description: "Run a comprehensive 21-rule health check across 8 domains: relationships, naming, date table, measure quality, hidden columns, report layer, advanced features, and performance. Severity-graded output (CRITICAL/WARN/INFO) and a suggested fix per finding. Report only: it never changes the model. Parallel agents for 5+ table models."
+description: "Health check of the model, graded by severity. Report only."
 model: sonnet
 allowed-tools: Read, Write, Edit, Bash, Agent
 disable-model-invocation: true

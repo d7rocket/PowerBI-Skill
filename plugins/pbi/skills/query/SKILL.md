@@ -1,6 +1,6 @@
 ---
 name: query
-description: "Run a DAX query against the model open in Power BI Desktop and show the result, optionally with timings. Accepts a DAX query, a measure name, or a plain-English question about the data. Read-only. Needs live mode (/pbi:setup)."
+description: "Run a DAX query against the model open in Power BI Desktop. Needs live mode."
 model: sonnet
 argument-hint: "[DAX query | measure name | question] [--timings]"
 allowed-tools: Read, Bash

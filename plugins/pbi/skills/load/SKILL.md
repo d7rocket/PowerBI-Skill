@@ -1,6 +1,6 @@
 ---
 name: load
-description: "Show the current semantic model at a glance: tables, measure and column counts, relationships, format, and whether live editing is available. The model is indexed from disk on every /pbi command, so this is a view, not a required first step."
+description: "Show the model at a glance: tables, measures, relationships."
 model: haiku
 allowed-tools: Read, Bash
 disable-model-invocation: true

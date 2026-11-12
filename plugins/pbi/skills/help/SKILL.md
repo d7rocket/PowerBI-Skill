@@ -1,6 +1,6 @@
 ---
 name: help
-description: "List every /pbi command with a one-line purpose, grouped by what it needs (pasted DAX, a PBIP project, or live Desktop)."
+description: "List every /pbi command."
 model: haiku
 allowed-tools: Bash
 disable-model-invocation: true

@@ -1,6 +1,6 @@
 ---
 name: setup
-description: "Check what the pbi plugin needs and, only if you agree, enable live mode by registering Microsoft's Power BI Modeling MCP server (live editing and DAX testing against open Power BI Desktop). Explains the Microsoft EULA and data collection before installing anything. Also removes it."
+description: "Enable or remove live mode (Microsoft's Power BI Modeling MCP), with your consent."
 model: sonnet
 argument-hint: "[status | remove]"
 allowed-tools: Read, Bash

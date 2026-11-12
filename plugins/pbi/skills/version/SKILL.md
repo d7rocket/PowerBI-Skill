@@ -1,6 +1,6 @@
 ---
 name: version
-description: "Show the installed version of the pbi plugin and what changed in recent releases. Works offline."
+description: "Installed version and release notes."
 model: haiku
 allowed-tools: Read, Bash
 disable-model-invocation: true

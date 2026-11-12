@@ -1,6 +1,6 @@
 ---
 name: comment
-description: "Add inline // comments and a structured description property to a single DAX measure. Comments explain business logic at each logical block. The description property provides a one-line summary visible in Power BI Desktop tooltips. Auto-writes to PBIP and auto-commits when detected."
+description: "Add comments and a tooltip description to a measure."
 model: sonnet
 allowed-tools: Read, Write, Edit, Bash, Agent
 disable-model-invocation: true

@@ -1,6 +1,6 @@
 ---
 name: undo
-description: "Undo the last change made by a /pbi command. Reverses a live change through the Power BI Modeling MCP so Desktop and the project files stay in step, or reverts the local git commit for a file change. Shows what will be undone and asks first. Never rewrites history."
+description: "Undo the last /pbi change, live or on disk."
 model: sonnet
 allowed-tools: Read, Write, Bash
 disable-model-invocation: true

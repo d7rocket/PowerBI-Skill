@@ -1,6 +1,6 @@
 ---
 name: changelog
-description: "Generate structured release notes from local git history in Keep a Changelog format. Groups commits by type (Added, Changed, Fixed, Removed). Covers a configurable range. Writes to .pbi/changelog.md. Translates commit messages into user-facing release notes."
+description: "Release notes from local git history."
 model: haiku
 allowed-tools: Read, Write, Edit, Bash, Agent
 disable-model-invocation: true

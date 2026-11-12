@@ -1,6 +1,6 @@
 ---
 name: optimise
-description: "Run a 14-rule performance scan on any DAX measure, identifying anti-patterns like unnecessary iterators, FILTER on full tables, nested CALCULATE chains, and gratuitous IFERROR wrappers. Produces a severity-graded report with before/after diffs. Works with pasted DAX and PBIP-embedded measures."
+description: "Find slow DAX patterns and suggest a faster version. Measures real timings when live."
 model: sonnet
 allowed-tools: Read, Write, Edit, Bash, Agent
 disable-model-invocation: true

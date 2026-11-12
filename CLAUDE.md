@@ -148,5 +148,5 @@ tests/
 
 ## Version
 
-Current: 8.0.0, set in `plugins/pbi/.claude-plugin/plugin.json`.
+Current: 8.0.1, set in `plugins/pbi/.claude-plugin/plugin.json`.
 The top entry of `plugins/pbi/shared/CHANGELOG.md` must match (enforced by a test).

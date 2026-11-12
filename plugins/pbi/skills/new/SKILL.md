@@ -1,6 +1,6 @@
 ---
 name: new
-description: "Generate a complete DAX measure from a plain-English business requirement. Produces the expression, format string, display folder, and description property. Validates against model context when available. Auto-writes to TMDL/TMSL files and auto-commits."
+description: "Write a new measure from a plain-English business need."
 model: sonnet
 allowed-tools: Read, Write, Edit, Bash, Agent
 disable-model-invocation: true

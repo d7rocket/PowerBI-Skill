@@ -4,7 +4,7 @@
 
 <p align="center">
   <img src="https://img.shields.io/badge/Claude_Code-plugin-8A63D2?style=flat-square" alt="Claude Code plugin">
-  <img src="https://img.shields.io/badge/version-8.0.0-F2C811?style=flat-square&labelColor=1b1f27" alt="Version 8.0.0">
+  <img src="https://img.shields.io/badge/version-8.0.1-F2C811?style=flat-square&labelColor=1b1f27" alt="Version 8.0.1">
   <img src="https://img.shields.io/badge/license-MIT-4CC38A?style=flat-square&labelColor=1b1f27" alt="MIT License">
   <img src="https://img.shields.io/badge/Power_BI-DAX_·_PBIP-9BA3B0?style=flat-square&labelColor=1b1f27" alt="Power BI, DAX, PBIP">
 </p>
@@ -74,48 +74,48 @@ Read the full story in [PROJECT-OVERVIEW.md](PROJECT-OVERVIEW.md).
 
 | Command | What it does |
 |:--------|:------------|
-| `/pbi:explain` | Plain-English breakdown with filter context, row context, and performance notes |
-| `/pbi:format` | Reformat DAX in SQLBI style via DAX Formatter (with offline fallback) |
-| `/pbi:optimise` | 14-rule performance scan with before/after. Measures real timings when live |
-| `/pbi:comment` | Add inline `//` comments and the description shown in Power BI tooltips |
-| `/pbi:error` | Diagnose errors across 7 categories with root cause and a minimal fix |
-| `/pbi:new` | A complete measure from plain English: expression, format string, display folder, description |
+| `/pbi:explain` | Explain what a DAX measure does, in plain English |
+| `/pbi:format` | Format DAX in SQLBI style |
+| `/pbi:optimise` | Find slow DAX patterns and suggest a faster version. Measures real timings when live |
+| `/pbi:comment` | Add comments and a tooltip description to a measure |
+| `/pbi:error` | Diagnose a DAX error and propose a fix |
+| `/pbi:new` | Write a new measure from a plain-English business need |
 
 ### Work on the model - *needs a `*.SemanticModel/` folder*
 
 | Command | What it does |
 |:--------|:------------|
-| `/pbi:load` | The model at a glance: tables, measures, relationships, editing mode |
+| `/pbi:load` | Show the model at a glance: tables, measures, relationships |
 | `/pbi:edit` | Change a measure, column, property or relationship from a plain-English instruction |
-| `/pbi:audit` | 21-rule health check across 8 domains, severity-graded. Report only |
-| `/pbi:docs` | Stakeholder-ready project documentation (Markdown / Word / PDF) |
-| `/pbi:extract` | Model inventory at three detail levels (overview, standard, deep-dive) |
-| `/pbi:deep` | Guided session with hard gates: intake, model review, DAX development, final check |
+| `/pbi:audit` | Health check of the model, graded by severity. Report only |
+| `/pbi:docs` | Client-ready project documentation (Markdown, Word, PDF) |
+| `/pbi:extract` | Model inventory for handover, at three levels of detail |
+| `/pbi:deep` | Guided session for a hard DAX or modeling problem |
 
 ### History - *local git only*
 
 | Command | What it does |
 |:--------|:------------|
-| `/pbi:diff` | Human-readable change summary grouped by object type |
-| `/pbi:commit` | A local commit with a generated business-language message |
-| `/pbi:undo` | Undo the last `/pbi` change, live or on disk, without rewriting history |
-| `/pbi:changelog` | `.pbi/changelog.md` from git history in Keep a Changelog format |
+| `/pbi:diff` | What changed in the model since the last commit |
+| `/pbi:commit` | Save a local commit with a business-language message |
+| `/pbi:undo` | Undo the last /pbi change, live or on disk |
+| `/pbi:changelog` | Release notes from local git history |
 | `/pbi:resume` | Where the last session stopped, and what to do next |
 
 ### Live Desktop - *optional*
 
 | Command | What it does |
 |:--------|:------------|
-| `/pbi:setup` | Check requirements and enable live mode (Microsoft's Power BI Modeling MCP), with your consent |
-| `/pbi:query` | Run a DAX query against the open model and show the result, optionally with timings |
+| `/pbi:setup` | Enable or remove live mode (Microsoft's Power BI Modeling MCP), with your consent |
+| `/pbi:query` | Run a DAX query against the model open in Power BI Desktop. Needs live mode |
 
 ### Utility
 
 | Command | What it does |
 |:--------|:------------|
-| `/pbi:menu` | Interactive menu, or ask any DAX or modeling question in plain English |
-| `/pbi:version` | Installed version and release notes (offline) |
-| `/pbi:help` | The command list |
+| `/pbi:menu` | Command menu, or ask any DAX or modeling question in plain English |
+| `/pbi:version` | Installed version and release notes |
+| `/pbi:help` | List every /pbi command |
 
 ---
 

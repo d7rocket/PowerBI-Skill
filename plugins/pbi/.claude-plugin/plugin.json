@@ -1,7 +1,7 @@
 {
   "name": "pbi",
   "displayName": "Power BI DAX Co-pilot",
-  "version": "8.0.0",
+  "version": "8.0.1",
   "description": "Power BI DAX co-pilot: explain, write, fix, optimise and audit measures and semantic models in PBIP projects, with optional live editing of the model open in Power BI Desktop.",
   "author": {
     "name": "d7rocket",

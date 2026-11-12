@@ -1,6 +1,6 @@
 ---
 name: diff
-description: "Generate a human-readable summary of all uncommitted changes in the semantic model since the last git commit. Groups changes by type (measures added/modified/removed, columns changed, relationships altered). Translates raw git diffs into business-language descriptions."
+description: "What changed in the model since the last commit."
 model: haiku
 allowed-tools: Read, Write, Edit, Bash, Agent
 disable-model-invocation: true

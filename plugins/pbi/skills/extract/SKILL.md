@@ -1,6 +1,6 @@
 ---
 name: extract
-description: "Generate a structured documentation export of the PBIP project at three detail levels. Overview: one-page model summary. Standard: full model documentation with expressions. Deep-dive: comprehensive analysis with lineage and dependencies (spawns Opus agent). Writes to .pbi/project-extract.md."
+description: "Model inventory for handover, at three levels of detail."
 model: sonnet
 allowed-tools: Read, Write, Edit, Bash, Agent
 disable-model-invocation: true

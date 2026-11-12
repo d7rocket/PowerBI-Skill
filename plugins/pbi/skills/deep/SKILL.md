@@ -1,6 +1,6 @@
 ---
 name: deep
-description: "Guided session for a hard DAX or modeling problem. Gathers the business question and existing measures first, reviews the model for structural risks, then develops measures with a final check that they answer the question. Hard gates between phases. Use only when asked for explicitly."
+description: "Guided session for a hard DAX or modeling problem. Use only when asked for explicitly."
 model: sonnet
 allowed-tools: Read, Write, Edit, Bash
 disable-model-invocation: true

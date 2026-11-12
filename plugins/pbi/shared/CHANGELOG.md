@@ -3,6 +3,13 @@
 All notable changes to the PBI skill are documented here.
 Format: [Keep a Changelog](https://keepachangelog.com)
 
+## [8.0.1] - 2026-11-12
+
+### Changed
+- **Shorter command descriptions.** Every command now has a one-line description in the command picker and in the README.
+- Descriptions no longer say "auto-writes" or "auto-commits". Every model change is previewed and needs a `y`.
+- README: new banner, install steps moved to the top.
+
 ## [8.0.0] - 2026-11-11
 
 Breaking release. Commands are renamed, four are removed, and installation moves to a Claude Code plugin.

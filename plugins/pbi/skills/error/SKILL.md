@@ -1,6 +1,6 @@
 ---
 name: error
-description: "Diagnose DAX errors across 7 categories (syntax, type mismatch, circular dependency, missing column, ambiguous name, filter context, runtime). Produces root cause analysis with fix suggestions. In PBIP file mode, auto-applies the fix and commits. Checks prior failures to avoid repeating failed approaches."
+description: "Diagnose a DAX error and propose a fix."
 model: sonnet
 allowed-tools: Read, Write, Edit, Bash, Agent
 disable-model-invocation: true

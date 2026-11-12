@@ -1,6 +1,6 @@
 ---
 name: resume
-description: "Pick up where the last session stopped: recent /pbi commands, the last change and whether it is committed, unsaved live changes, uncommitted model edits, and saved notes such as the business question. Read-only."
+description: "Where the last session stopped, and what to do next."
 model: haiku
 allowed-tools: Read, Bash
 disable-model-invocation: true

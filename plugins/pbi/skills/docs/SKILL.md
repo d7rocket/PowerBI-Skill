@@ -1,6 +1,6 @@
 ---
 name: docs
-description: "Generate polished, stakeholder-ready project documentation combining model metadata, measure catalog, relationship diagram, data dictionary, and usage guidelines. Formatted for direct sharing — no technical jargon, clear section headers, executive summary."
+description: "Client-ready project documentation (Markdown, Word, PDF)."
 model: sonnet
 allowed-tools: Read, Write, Edit, Bash, Agent
 disable-model-invocation: true

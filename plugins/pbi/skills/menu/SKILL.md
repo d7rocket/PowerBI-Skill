@@ -1,6 +1,6 @@
 ---
 name: menu
-description: "Power BI DAX co-pilot. With no arguments, shows the /pbi command menu. With a plain-English request, routes to the right /pbi command or answers the DAX or modeling question directly."
+description: "Command menu, or ask any DAX or modeling question in plain English."
 model: sonnet
 argument-hint: "[question or command]"
 allowed-tools: Read, Write, Edit, Bash

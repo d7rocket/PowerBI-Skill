@@ -1,6 +1,6 @@
 ---
 name: explain
-description: "Deconstruct any DAX measure into a structured plain-English breakdown covering business logic, filter context propagation, row context scope, context transitions, and performance implications. Adapts depth to measure complexity (Simple/Intermediate/Advanced). Works with pasted DAX or reads from PBIP model files."
+description: "Explain what a DAX measure does, in plain English."
 model: sonnet
 allowed-tools: Read, Write, Edit, Bash, Agent
 disable-model-invocation: true
